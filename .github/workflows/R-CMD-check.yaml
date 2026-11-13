@@ -46,7 +46,7 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2.14.0
         with:
-          extra-packages: any::rcmdcheck, symcompR=?ignore, modelcompR=?ignore
+          extra-packages: any::rcmdcheck, symcompR=?ignore, modelcompR=?ignore, optcompR=?ignore, jaxR=?ignore, z3r=?ignore, any::luz, any::generics
           needs: check
 
       - name: Check LibTorch

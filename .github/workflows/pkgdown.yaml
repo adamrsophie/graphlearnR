@@ -35,12 +35,12 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2.14.0
         with:
-          extra-packages: any::pkgdown, local::., symcompR=?ignore, modelcompR=?ignore
+          extra-packages: any::pkgdown, local::., symcompR=?ignore, modelcompR=?ignore, optcompR=?ignore, jaxR=?ignore, z3r=?ignore, any::luz, any::generics
           needs: website
 
       - name: Install optional sibling packages (their tests and chunks skip without them)
         continue-on-error: true
-        run: pak::pkg_install(c("adamrsophie/symcompR", "adamrsophie/modelcompR"))
+        run: pak::pkg_install(c("adamrsophie/symcompR", "adamrsophie/modelcompR", "adamrsophie/optcompR"))
         shell: Rscript {0}
 
       - name: Check LibTorch

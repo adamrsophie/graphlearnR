@@ -28,12 +28,20 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2.14.0
         with:
-          extra-packages: any::covr, any::xml2, any::pkgload, symcompR=?ignore, modelcompR=?ignore
+          extra-packages: any::covr, any::xml2, any::pkgload, symcompR=?ignore, modelcompR=?ignore, optcompR=?ignore, jaxR=?ignore, z3r=?ignore, any::luz, any::generics
           needs: coverage
 
       - name: Install optional sibling packages (their tests and chunks skip without them)
         continue-on-error: true
-        run: pak::pkg_install(c("adamrsophie/symcompR", "adamrsophie/modelcompR"))
+        run: pak::pkg_install(c("adamrsophie/symcompR", "adamrsophie/modelcompR", "adamrsophie/optcompR"))
+        shell: Rscript {0}
+
+      - name: Install jaxR and its XLA runtime (the jaxR test skips without them)
+        continue-on-error: true
+        run: |
+          pak::pkg_install("adamrsophie/jaxR")
+          lib <- jaxR::install_pjrt()
+          cat("JAXR_PJRT_PLUGIN=", lib, "\n", sep = "", file = Sys.getenv("GITHUB_ENV"), append = TRUE)
         shell: Rscript {0}
 
       - name: Check LibTorch

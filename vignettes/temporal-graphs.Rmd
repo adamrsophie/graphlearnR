@@ -133,6 +133,37 @@ To bring your own data, build the graph with any of the constructors and
 pass the array to `spatiotemporal_signal()`, which checks that the node
 dimension matches.
 
+## Memory based models: TGN
+
+Snapshot models see the graph at a fixed resolution. A temporal graph
+network (Rossi et al. 2020) works on the event stream directly. Every node
+has a memory vector, a GRU updates it each time the node takes part in an
+event, and the embedding used for prediction combines the memory with the
+time since the last update and, optionally, the node's most recent
+partners.
+
+`train_tgn()` processes the training events in chronological batches. Each
+batch is scored with the memory left by earlier batches only, and its own
+events update memory at the start of the next batch, so no event ever
+informs its own prediction. Validation and test continue the same memory
+in time order without gradient updates.
+
+```{r, eval = has_torch}
+stream <- dataset_synthetic_temporal(num_events = 1500, seed = 1)
+sp_t <- split_temporal(stream)
+torch_manual_seed(1)
+tgn <- tgn_model(stream$num_nodes, memory_dim = 32, time_dim = 8, embedding_dim = 32)
+fit_tgn <- train_tgn(tgn, sp_t, epochs = 10, batch_size = 50, lr = 0.01, seed = 1)
+fit_tgn$history
+fit_tgn$test_metrics
+```
+
+Each event is scored against one random destination. The synthetic stream
+repeats earlier pairs often, so memory and the learned node embeddings
+(`node_embedding = TRUE`, the default) carry most of the signal. The graph
+attention embedding and the other message aggregators of the paper are not
+implemented.
+
 ## The recurrent cell
 
 `graph_gru_cell()` replaces the matrix products of a GRU with graph

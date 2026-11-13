@@ -45,6 +45,9 @@ First release.
 
 - `sample_neighbors()`, `k_hop_subgraph()`, node and graph loaders, negative
   sampling, and corrupted tails for ranking evaluation.
+- `cluster_loader()` (Cluster-GCN) and `saint_loader()` (GraphSAINT random
+  walks with loss and edge normalization), used through
+  `train_graph_model(loader = )`.
 
 ## Heterogeneous, temporal, and transformer models
 
@@ -53,6 +56,9 @@ First release.
 - Event based temporal graphs, snapshots, strictly causal temporal neighbors,
   a graph GRU, spatiotemporal forecasting, and dynamic link prediction with
   baselines.
+- `tgn_model()` and `train_tgn()`: temporal graph networks with node memory.
+- `graph_ode_block()` and `graph_ode_model()`: GRAND style continuous depth
+  diffusion with fixed step Runge-Kutta or Euler integration.
 - Laplacian and random walk positional encodings, shortest path distances,
   and a Graphormer style graph transformer.
 
@@ -67,6 +73,8 @@ First release.
   graph, heterogeneous, and temporal datasets.
 - Downloaders with checksum verification for TU datasets and the LINQS
   citation graphs (Cora, CiteSeer); nothing third party is bundled.
+- `download_ogb()`, `read_ogb_node()`, and `read_ogb_graph()` for OGB node
+  and graph property datasets in their CSV layout, with official splits.
 
 ## Molecules
 
@@ -80,3 +88,9 @@ First release.
   solvers.
 - `graph_operator_symbolic()` returns exact adjacency, Laplacian, and GCN
   operators as symcompR matrices.
+- `consistent_labels()` finds the most probable labeling that obeys edge
+  rules with the z3r optimizer.
+- `select_links()` chooses links under a budget as a 0-1 program in optcompR.
+- `aggregate_jax()` performs neighborhood aggregation with jaxR arrays.
+- `luz_node_dataloader()` and `luz_node_module` train node models with luz;
+  `augment()` and `glance()` methods summarize fits for tidymodels.

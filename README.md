@@ -62,16 +62,16 @@ evaluate_graph_model(fit_l)                 # AUC, AP, MRR, Hits@k
 | Conversion | igraph, edge lists with arbitrary identifiers, dense and sparse adjacency matrices, torch tensors on any device |
 | Batching | `graph_batch()` and `unbatch()`, lazy and on disk datasets, transforms |
 | Message passing | vectorized scatter sum, mean, max, min, std, softmax; a general `message_passing()` for custom layers |
-| Layers | GraphSAGE, GCN, GraphConv, GIN and GINE, GAT, GATv2, transformer convolution, NNConv, RGCN; global, top-k and DiffPool pooling |
-| Training | node, edge, link and graph classification and regression; full batch or neighbor sampled; early stopping, schedulers, checkpoints, reproducibility record |
+| Layers | GraphSAGE, GCN, GraphConv, GIN and GINE, GAT, GATv2, transformer convolution, NNConv, RGCN; GRAND style graph neural ODE blocks; global, top-k and DiffPool pooling |
+| Training | node, edge, link and graph classification and regression; full batch, neighbor sampled, Cluster-GCN or GraphSAINT batches; early stopping, schedulers, checkpoints, reproducibility record |
 | Splits | stratified node splits, link splits without leakage, edge label, group, scaffold and temporal splits; negative sampling |
 | Heterogeneous graphs | typed nodes and relations, reverse relations, typed sampling, relation specific link splits, heterogeneous GNNs including RGCN and the heterogeneous graph transformer (HGT) |
-| Temporal graphs | event streams, causal neighborhoods, snapshots, graph GRU, spatiotemporal forecasting, dynamic link prediction with baselines |
+| Temporal graphs | event streams, causal neighborhoods, snapshots, graph GRU, spatiotemporal forecasting, dynamic link prediction with baselines, temporal graph networks (TGN) with node memory |
 | Graph transformers | Laplacian and random walk encodings, shortest path distances, Graphormer style model |
 | Molecules | graphs from atoms and bonds with element and bond order features, scaffold splits, synthetic molecules; TU loaders for MUTAG and similar sets |
 | Explainability | saliency, integrated gradients, edge gradients, occlusion, GNNExplainer, attention weights, explanation subgraphs, fidelity and stability |
-| Sibling packages | optional: graph diffusion solved by modelcompR, exact graph operators from symcompR |
-| Datasets | karate club, stochastic block models, synthetic graph, heterogeneous and temporal data; checksum verified downloaders for TU and LINQS datasets |
+| Sibling packages and frameworks | optional: graph diffusion solved by modelcompR, exact graph operators from symcompR, rule constrained labels with z3r, budgeted link selection with optcompR, jaxR aggregation, luz training, `augment()` and `glance()` |
+| Datasets | karate club, stochastic block models, synthetic graph, heterogeneous and temporal data; checksum verified downloaders for TU and LINQS datasets; readers for OGB node and graph property datasets |
 
 ## Conventions
 
@@ -116,10 +116,17 @@ Windows.
   chemistry toolkit and pass atoms, bonds and scaffold identifiers in.
 * `graph_diffusion()` solves on R numerics through modelcompR, so it is a
   simulation tool, not a trainable neural ODE layer.
-* Not yet included: luz and tidymodels integration, bridges to jaxR,
-  optcompR and z3r (see the ecosystem article), Chebyshev, APPNP and PNA
-  layers, cluster based samplers, memory based temporal models, HGT's
-  relative temporal encoding, and OGB loaders.
+* `graph_ode_block()` integrates with a fixed number of steps; it is not an
+  adaptive solver.
+* TGN uses the time projection or graph sum embedding with last message
+  aggregation; the graph attention embedding is not implemented.
+* OGB link property datasets (ogbl) ship splits as PyTorch files and are
+  not readable; node (ogbn) and graph (ogbg) datasets are.
+* The sibling bridges are tested in continuous integration on Linux only;
+  the z3r bridge is tested locally, because the Z3 on the runners is older
+  than z3r needs.
+* Not yet included: Chebyshev, APPNP and PNA layers, HGT's relative
+  temporal encoding, and a parsnip engine.
 
 ## Related work
 

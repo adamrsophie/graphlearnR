@@ -26,6 +26,7 @@ train_graph_model(
   grad_clip = NULL,
   class_weights = NULL,
   target_type = NULL,
+  loader = NULL,
   verbose = FALSE
 )
 }
@@ -80,6 +81,8 @@ Monitors validation loss; the best weights are restored at the end.}
 
 \item{target_type}{Node type to predict for heterogeneous graphs.}
 
+\item{loader}{A \code{\link[=cluster_loader]{cluster_loader()}} or \code{\link[=saint_loader]{saint_loader()}} for node tasks.}
+
 \item{verbose}{Print progress every \code{verbose} epochs (\code{FALSE} for none).}
 }
 \value{
@@ -103,6 +106,11 @@ accessible in the returned fit.
 \strong{Node mini-batches.} With \code{fanouts}, node tasks are trained on sampled
 neighborhoods (\code{\link[=node_loader]{node_loader()}}); the loss uses only the seed nodes of each
 batch, never the sampled context nodes. Validation uses the full graph.
+
+\strong{Subgraph batches.} With \code{loader} from \code{\link[=cluster_loader]{cluster_loader()}} or
+\code{\link[=saint_loader]{saint_loader()}}, node tasks are trained on induced subgraphs; the loss
+uses the training nodes in each batch, weighted by GraphSAINT's
+\code{node_norm} when present.
 
 \strong{Link prediction.} Message passing uses \code{split$train_graph}, which holds
 training edges only. Fresh negative pairs are drawn every epoch, excluding

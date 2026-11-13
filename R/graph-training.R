@@ -15,6 +15,11 @@
 #' neighborhoods ([node_loader()]); the loss uses only the seed nodes of each
 #' batch, never the sampled context nodes. Validation uses the full graph.
 #'
+#' **Subgraph batches.** With `loader` from [cluster_loader()] or
+#' [saint_loader()], node tasks are trained on induced subgraphs; the loss
+#' uses the training nodes in each batch, weighted by GraphSAINT's
+#' `node_norm` when present.
+#'
 #' **Link prediction.** Message passing uses `split$train_graph`, which holds
 #' training edges only. Fresh negative pairs are drawn every epoch, excluding
 #' training positives; validation and test pairs are never used for
@@ -47,6 +52,7 @@
 #' @param batch_size Graphs per batch (graph tasks) or seeds per batch (node
 #'   tasks with `fanouts`).
 #' @param fanouts Neighbor sampling fanouts for node mini-batches.
+#' @param loader A [cluster_loader()] or [saint_loader()] for node tasks.
 #' @param decoder Decoder module for link and edge tasks; defaults to
 #'   [link_decoder()] `"dot"` and an [edge_decoder()].
 #' @param scheduler `NULL`, a list such as `list(type = "step", step_size =
@@ -86,7 +92,7 @@ train_graph_model <- function(model, data,
                               scheduler = NULL, early_stopping = NULL,
                               checkpoint_path = NULL, device = NULL, seed = NULL,
                               grad_clip = NULL, class_weights = NULL,
-                              target_type = NULL, verbose = FALSE) {
+                              target_type = NULL, loader = NULL, verbose = FALSE) {
   task <- match.arg(task)
   if (!inherits(model, "nn_module")) stopf("`model` must be a torch nn_module.")
   epochs <- check_count(epochs, "epochs", 1L)
@@ -96,7 +102,7 @@ train_graph_model <- function(model, data,
 
   runner <- switch(task,
     node_classification = , node_regression =
-      node_task_runner(model, data, task, dev, fanouts, batch_size, seed, target_type),
+      node_task_runner(model, data, task, dev, fanouts, batch_size, seed, target_type, loader),
     graph_classification = , graph_regression =
       graph_task_runner(model, data, val_data, task, dev, batch_size %||% 32L, seed),
     link_prediction = link_task_runner(model, data, dev, decoder, seed),
@@ -214,17 +220,27 @@ resolve_loss <- function(loss, default, class_weights, dev) {
     if (pred$dim() == 2L && pred$size(2L) == 1L && target$dim() == 1L) pred$squeeze(2L) else pred
   }
   switch(match.arg(name, c("cross_entropy", "mse", "l1", "huber", "bce", "focal")),
-    cross_entropy = function(pred, target) nnf_cross_entropy(pred, target, weight = w),
-    mse = function(pred, target) nnf_mse_loss(as_target(pred, target), target),
-    l1 = function(pred, target) nnf_l1_loss(as_target(pred, target), target),
-    huber = function(pred, target) nnf_smooth_l1_loss(as_target(pred, target), target),
-    bce = function(pred, target) {
-      nnf_binary_cross_entropy_with_logits(as_target(pred, target), target$to(dtype = pred$dtype))
+    cross_entropy = function(pred, target, reduction = "mean") {
+      nnf_cross_entropy(pred, target, weight = w, reduction = reduction)
     },
-    focal = function(pred, target, gamma = 2) {
+    mse = function(pred, target, reduction = "mean") {
+      nnf_mse_loss(as_target(pred, target), target, reduction = reduction)
+    },
+    l1 = function(pred, target, reduction = "mean") {
+      nnf_l1_loss(as_target(pred, target), target, reduction = reduction)
+    },
+    huber = function(pred, target, reduction = "mean") {
+      nnf_smooth_l1_loss(as_target(pred, target), target, reduction = reduction)
+    },
+    bce = function(pred, target, reduction = "mean") {
+      nnf_binary_cross_entropy_with_logits(as_target(pred, target), target$to(dtype = pred$dtype),
+                                           reduction = reduction)
+    },
+    focal = function(pred, target, gamma = 2, reduction = "mean") {
       logp <- nnf_log_softmax(pred, dim = 2L)$gather(2L, target$unsqueeze(2L))$squeeze(2L)
       p <- torch_exp(logp)
-      (-(1 - p)$pow(gamma) * logp)$mean()
+      per <- -(1 - p)$pow(gamma) * logp
+      if (reduction == "none") per else per$mean()
     }
   )
 }
@@ -247,7 +263,8 @@ class_levels <- function(y) {
 
 # ---- node tasks -------------------------------------------------------------
 
-node_task_runner <- function(model, data, task, dev, fanouts, batch_size, seed, target_type) {
+node_task_runner <- function(model, data, task, dev, fanouts, batch_size, seed, target_type,
+                             subgraph_loader = NULL) {
   classif <- task == "node_classification"
   if (inherits(data, "hetero_graph_data")) {
     return(hetero_node_runner(model, data, classif, dev, target_type))
@@ -267,11 +284,26 @@ node_task_runner <- function(model, data, task, dev, fanouts, batch_size, seed, 
   loader <- if (!is.null(fanouts)) {
     node_loader(data, which(data$train_mask), batch_size %||% 64L, fanouts, TRUE, seed)
   }
+  if (!is.null(subgraph_loader)) {
+    if (!inherits(subgraph_loader, "subgraph_loader")) {
+      stopf("`loader` must come from cluster_loader() or saint_loader().")
+    }
+    if (!is.null(fanouts)) stopf("Use either `fanouts` or `loader`, not both.")
+    if (!identical(subgraph_loader$graph$num_nodes, data$num_nodes)) {
+      stopf("`loader` was built on a different graph.")
+    }
+    # The loader keeps its own copy of the graph; use the training masks of `data`.
+    subgraph_loader$graph$train_mask <- data$train_mask
+    subgraph_loader$graph$y <- data$y
+  }
   list(
     default_loss = if (classif) "cross_entropy" else "mse",
     metric_name = if (classif) "accuracy" else "rmse",
     levels = if (classif) class_levels(data$y),
     train_epoch = function(epoch, opt, loss_fn, grad_clip) {
+      if (!is.null(subgraph_loader)) {
+        return(subgraph_epoch(model, subgraph_loader, epoch, dev, opt, loss_fn, grad_clip))
+      }
       if (is.null(loader)) {
         out <- model_forward(model, tt)
         loss <- loss_fn(out$index_select(1L, train_idx), tt$y$index_select(1L, train_idx))
@@ -293,6 +325,32 @@ node_task_runner <- function(model, data, task, dev, fanouts, batch_size, seed, 
       list(loss = as.numeric(loss_fn(out, target)$item()), metric = metric_fn(out, target))
     }
   )
+}
+
+subgraph_epoch <- function(model, loader, epoch, dev, opt, loss_fn, grad_clip) {
+  tot <- 0
+  cnt <- 0
+  for (sg in loader_batches(loader, epoch)) {
+    if (!any(sg$train_mask)) next
+    bt <- graph_tensors(sg, dev)
+    idx <- tensor_which(bt$train_mask)
+    out <- model_forward(model, bt)$index_select(1L, idx)
+    target <- bt$y$index_select(1L, idx)
+    w <- sg$node_norm
+    loss <- if (!is.null(w) && "reduction" %in% names(formals(loss_fn))) {
+      wt <- torch_tensor(w[sg$train_mask], dtype = out$dtype, device = dev)
+      per <- loss_fn(out, target, reduction = "none")
+      if (per$dim() > 1L) per <- per$reshape(c(per$size(1L), -1L))$mean(dim = 2L)
+      (per * wt)$sum() / wt$sum()$clamp(min = 1e-12)
+    } else {
+      loss_fn(out, target)
+    }
+    k <- sum(sg$train_mask)
+    tot <- tot + step_optimizer(opt, loss, grad_clip, all_params(opt)) * k
+    cnt <- cnt + k
+  }
+  if (cnt == 0) stopf("No batch of `loader` contained a training node.")
+  tot / cnt
 }
 
 tensor_which <- function(mask) {

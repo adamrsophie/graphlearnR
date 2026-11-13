@@ -85,11 +85,13 @@ reference:
   contents:
   - gnn_model
   - link_decoder
+  - graph_ode_block
 - title: Sampling and loaders
   contents:
   - sample_neighbors
   - k_hop_subgraph
   - node_loader
+  - cluster_loader
   - negative_sampling
   - corrupt_tails
 - title: Splits
@@ -106,6 +108,8 @@ reference:
   - evaluate_graph_model
   - evaluate_predictions
   - save_graph_fit
+  - graph_fit-tidy
+  - luz_node_dataloader
   - metrics
 - title: Heterogeneous graphs
   contents:
@@ -133,6 +137,7 @@ reference:
   - train_spatiotemporal_model
   - train_dynamic_link_model
   - dynamic_link_baseline
+  - tgn_model
 - title: Graph transformers and encodings
   contents:
   - positional-encodings
@@ -153,12 +158,16 @@ reference:
   - dataset_synthetic_hetero
   - dataset_synthetic_temporal
   - download-datasets
+  - read_ogb_node
 - title: Molecules
   desc: Molecular graphs from atoms and bonds.
   contents:
   - molecule_graph
 - title: Sibling packages
-  desc: Optional bridges to modelcompR and symcompR.
+  desc: Optional bridges to modelcompR, symcompR, z3r, optcompR and jaxR.
   contents:
   - graph_diffusion
   - graph_operator_symbolic
+  - consistent_labels
+  - select_links
+  - aggregate_jax

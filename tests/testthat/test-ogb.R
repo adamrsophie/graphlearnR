@@ -1,0 +1,31 @@
+test_that("read_ogb_node converts indices, labels and the official split", {
+  g <- read_ogb_node(system.file("extdata", "ogbn-toy", package = "graphlearnR"))
+  expect_equal(num_nodes(g), 6L)
+  expect_true(g$directed)
+  expect_equal(g$edge_index[, 6], c(6L, 1L))
+  expect_equal(as.character(g$y), c("0", "1", "2", "0", "1", "2"))
+  expect_equal(which(g$train_mask), 1:3)
+  expect_equal(which(g$val_mask), 4L)
+  expect_equal(which(g$test_mask), 5:6)
+  expect_equal(g$metadata$split, "time")
+  u <- read_ogb_node(system.file("extdata", "ogbn-toy", package = "graphlearnR"), add_inverse_edge = TRUE)
+  expect_equal(num_edges(u), 12L)
+  expect_error(read_ogb_node(tempdir()), "OGB node dataset")
+})
+
+test_that("read_ogb_graph splits edges per graph and keeps local indices", {
+  ds <- read_ogb_graph(system.file("extdata", "ogbg-toy", package = "graphlearnR"))
+  expect_length(ds, 2L)
+  g1 <- ds[[1]]
+  g2 <- ds[[2]]
+  expect_equal(num_nodes(g1), 3L)
+  expect_equal(num_edges(g1, TRUE), 2L)
+  expect_equal(num_edges(g2), 2L)
+  expect_equal(g2$edge_index, rbind(c(1L, 2L), c(2L, 1L)))
+  expect_equal(g2$edge_attr[1, ], c(2, 0))
+  expect_equal(g2$x[, 1], c(6, 5))
+  expect_equal(as.character(c(g1$graph_y, g2$graph_y)), c("0", "1"))
+  expect_equal(ds$metadata$split, list(train = 1L, val = 2L, test = integer(0)))
+  expect_error(read_ogb_graph(tempdir()), "OGB graph dataset")
+  expect_error(download_ogb("ogbl-collab"), "Unknown OGB dataset")
+})
