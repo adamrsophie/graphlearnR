@@ -127,8 +127,9 @@ test_that("luz trains a node model on the masked nodes", {
       model = gnn_model("sage", ncol(g$x), 16, 2)), lr = 0.01),
     dl, epochs = 40, valid_data = luz_node_dataloader(g, "val"), verbose = FALSE,
     accelerator = luz::accelerator(cpu = TRUE))
-  met <- luz::get_metrics(fitted)
-  acc <- met$value[met$set == "valid" & met$metric == "acc"]
+  # luz::get_metrics() needs dplyr, so read the records directly
+  acc <- vapply(fitted$records$metrics$valid, function(e) e$acc, numeric(1))
+  expect_length(acc, 40)
   expect_gt(tail(acc, 1), 0.8)
   expect_error(luz_node_dataloader(dataset_karate(), "train"), "split_nodes")
 })

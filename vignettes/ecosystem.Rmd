@@ -184,7 +184,7 @@ fitted <- luz_node_module |>
   fit(luz_node_dataloader(gk, "train"), epochs = 50, verbose = FALSE,
       valid_data = luz_node_dataloader(gk, "val"),
       accelerator = accelerator(cpu = TRUE))
-tail(get_metrics(fitted), 2)
+unlist(tail(fitted$records$metrics$valid, 1))
 ```
 
 `train_graph_model()` remains the main trainer: it also covers sampled
