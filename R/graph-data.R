@@ -394,7 +394,8 @@ print.summary_graph_data <- function(x, ...) {
 #' to_zero_based(rbind(c(1, 2), c(2, 3)))
 #' @export
 to_zero_based <- function(index) {
-  if (anyNA(index) || any(index < 1)) {
+  check_index(index, "index")
+  if (any(index < 1)) {
     stopf("One based indices must be >= 1 and not missing.")
   }
   out <- index - 1L
@@ -405,7 +406,8 @@ to_zero_based <- function(index) {
 #' @rdname to_zero_based
 #' @export
 from_zero_based <- function(index) {
-  if (anyNA(index) || any(index < 0)) {
+  check_index(index, "index")
+  if (any(index < 0)) {
     stopf("Zero based indices must be >= 0 and not missing.")
   }
   out <- index + 1L

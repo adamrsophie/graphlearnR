@@ -22,7 +22,8 @@ gcn_norm(
   num_nodes,
   edge_weight = NULL,
   add_self_loops = TRUE,
-  improved = FALSE
+  improved = FALSE,
+  dtype = NULL
 )
 }
 \arguments{
@@ -43,6 +44,10 @@ edge feature of their incoming edges (zero if none).}
 
 \item{improved}{Use fill value 2 for self loops (Kipf and Welling's
 "improved" variant).}
+
+\item{dtype}{Floating point type of the weights (default float32); layers
+pass the dtype of their input so double precision models normalize in
+double precision.}
 }
 \value{
 A list with \code{edge_index}, \code{edge_weight} and \code{edge_attr}.

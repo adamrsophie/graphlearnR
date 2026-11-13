@@ -119,7 +119,7 @@ gcn_conv <- nn_module(
     n <- x$size(1L)
     h <- self$lin(x)
     if (self$normalize) {
-      nrm <- gcn_norm(edge_index, n, edge_weight, self$add_loops, self$improved)
+      nrm <- gcn_norm(edge_index, n, edge_weight, self$add_loops, self$improved, dtype = x$dtype)
       edge_index <- nrm$edge_index
       edge_weight <- nrm$edge_weight
     } else if (self$add_loops) {

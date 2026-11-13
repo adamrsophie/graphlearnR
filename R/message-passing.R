@@ -125,12 +125,17 @@ remove_self_loops_tensor <- function(edge_index, edge_weight = NULL, edge_attr =
 #' @param add_self_loops Add self loops before normalizing.
 #' @param improved Use fill value 2 for self loops (Kipf and Welling's
 #'   "improved" variant).
+#' @param dtype Floating point type of the weights (default float32); layers
+#'   pass the dtype of their input so double precision models normalize in
+#'   double precision.
 #' @export
 gcn_norm <- function(edge_index, num_nodes, edge_weight = NULL,
-                     add_self_loops = TRUE, improved = FALSE) {
+                     add_self_loops = TRUE, improved = FALSE, dtype = NULL) {
   dev <- edge_index$device
   if (is.null(edge_weight)) {
-    edge_weight <- torch_ones(edge_index$size(2L), device = dev)
+    edge_weight <- torch_ones(edge_index$size(2L), dtype = dtype %||% torch_float(), device = dev)
+  } else if (!is.null(dtype)) {
+    edge_weight <- edge_weight$to(dtype = dtype)
   }
   if (add_self_loops) {
     sl <- add_self_loops_tensor(edge_index, num_nodes, edge_weight,

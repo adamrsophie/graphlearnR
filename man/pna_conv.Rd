@@ -37,7 +37,8 @@ vector.
 }
 \description{
 The PNA layer of Corso, Cavalleri, Beaini, Liò and Veličković (2020), in
-the single tower form of PyTorch Geometric's \code{PNAConv}. For node \eqn{i}
+a single tower form modeled on PyTorch Geometric's \code{PNAConv} (not
+numerically compared with it). For node \eqn{i}
 with in degree \eqn{d_i}:
 }
 \details{
@@ -54,8 +55,11 @@ linear \eqn{\bar d / d_i}, with \eqn{d_i} clamped to at least 1 and
 \item \eqn{x_i' = W_2 \, M [x_i \Vert \text{scaled aggregates}]}.
 }
 
-Nodes without incoming edges get zeros from every aggregator except std,
-which gives \eqn{\sqrt{10^{-5}}}.
+The std aggregator is \eqn{\sqrt{\max(\mathrm{var}, 0) + 10^{-5}}}, as in
+the authors' reference code, so nodes without incoming edges, or with
+identical incoming messages, get \eqn{\sqrt{10^{-5}}} from it and zeros
+from every other aggregator. Other implementations may treat zero
+variance differently.
 
 \code{pna_degree()} computes the in degree histogram \code{deg} from training
 graphs: element \eqn{d + 1} counts nodes with in degree \eqn{d}.

@@ -4,7 +4,15 @@
 \alias{corrupt_tails}
 \title{Corrupted tails for ranking evaluation}
 \usage{
-corrupt_tails(pos, num_nodes, k, known = pos, filtered = TRUE, seed = NULL)
+corrupt_tails(
+  pos,
+  num_nodes,
+  k,
+  known = pos,
+  filtered = TRUE,
+  directed = TRUE,
+  seed = NULL
+)
 }
 \arguments{
 \item{pos}{2 by K matrix of positive pairs.}
@@ -17,10 +25,13 @@ corrupt_tails(pos, num_nodes, k, known = pos, filtered = TRUE, seed = NULL)
 
 \item{filtered}{Exclude known positives.}
 
+\item{directed}{With \code{FALSE}, a known pair excludes both orientations.}
+
 \item{seed}{Optional integer seed.}
 }
 \value{
-A K by \code{k} integer matrix of negative targets.
+A K by \code{k} integer matrix of negative targets. The head of a pair
+is never drawn as its own corrupted tail.
 }
 \description{
 For each positive pair \verb{(u, v)}, draws \code{k} candidate targets \verb{v'} such

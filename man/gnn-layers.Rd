@@ -107,7 +107,8 @@ features.}
 
 \item{bias}{Learn an additive bias.}
 
-\item{add_self_loops}{Add self loops before propagation.}
+\item{add_self_loops}{Add self loops before propagation (never for a pair
+of source and target feature sets, whose index spaces differ).}
 
 \item{improved}{Self loop weight 2 instead of 1 (\code{gcn_conv}).}
 

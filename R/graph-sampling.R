@@ -206,9 +206,9 @@ batch_split <- function(n, size, shuffle, seed) {
 loader_batches.node_loader <- function(loader, epoch = 1L) {
   s <- if (is.null(loader$seed)) NULL else loader$seed + epoch
   parts <- batch_split(length(loader$nodes), loader$batch_size, loader$shuffle, s)
+  seeds <- sub_seeds(s, length(parts))
   lapply(seq_along(parts), function(i) {
-    sample_neighbors(loader$graph, loader$nodes[parts[[i]]], loader$fanouts,
-                     seed = if (is.null(s)) NULL else s * 1000L + i)
+    sample_neighbors(loader$graph, loader$nodes[parts[[i]]], loader$fanouts, seed = seeds[i])
   })
 }
 
@@ -336,19 +336,24 @@ negative_sampling <- function(exclude, num_nodes = NULL, num_samples,
 #' @param k Negatives per positive.
 #' @param known 2 by E matrix of all known positives (filtered setting).
 #' @param filtered Exclude known positives.
+#' @param directed With `FALSE`, a known pair excludes both orientations.
 #' @param seed Optional integer seed.
-#' @return A K by `k` integer matrix of negative targets.
+#' @return A K by `k` integer matrix of negative targets. The head of a pair
+#'   is never drawn as its own corrupted tail.
 #' @export
-corrupt_tails <- function(pos, num_nodes, k, known = pos, filtered = TRUE, seed = NULL) {
+corrupt_tails <- function(pos, num_nodes, k, known = pos, filtered = TRUE, directed = TRUE,
+                          seed = NULL) {
   pos <- normalize_edge_index(pos)
   known <- normalize_edge_index(known)
+  if (!directed) known <- cbind(known, known[2:1, , drop = FALSE])
   kk <- (as.double(known[1L, ]) - 1) * num_nodes + known[2L, ]
   with_optional_seed(seed, {
     out <- matrix(0L, ncol(pos), k)
     for (i in seq_len(ncol(pos))) {
       u <- pos[1L, i]
       bad <- if (filtered) kk[kk > (u - 1) * num_nodes & kk <= u * num_nodes] - (u - 1) * num_nodes else pos[2L, i]
-      cand <- setdiff(seq_len(num_nodes), c(bad, pos[2L, i]))
+      # The head itself is never a candidate tail (no corrupted self pairs).
+      cand <- setdiff(seq_len(num_nodes), c(bad, pos[2L, i], u))
       if (length(cand) < k) stopf("Too few candidate tails for positive %d.", i)
       out[i, ] <- cand[sample.int(length(cand), k)]
     }

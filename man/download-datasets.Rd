@@ -54,7 +54,8 @@ CiteSeer (Sen et al. 2008) from \url{https://linqs-data.soe.ucsc.edu/}.
 These are the raw citation graphs. They are \strong{not} the Planetoid splits
 used by Kipf and Welling (2017) and PyG's \code{Planetoid} class (which also
 drop and reorder nodes), so results are not comparable to published
-leaderboards. Open Graph Benchmark datasets are not yet supported.
+leaderboards. Open Graph Benchmark datasets are read by
+\code{\link[=download_ogb]{download_ogb()}}.
 }
 
 \code{read_tu_dataset()} and \code{read_linqs_citation()} parse already downloaded

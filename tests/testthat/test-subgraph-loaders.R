@@ -58,3 +58,13 @@ test_that("training with subgraph loaders works and checks its input", {
   expect_error(train_graph_model(m, g, "node_classification", epochs = 1, loader = other),
                "different graph")
 })
+
+test_that("saint node weights estimate the full graph mean", {
+  g <- dataset_sbm(c(30, 30), p_in = 0.2, p_out = 0.02, seed = 1)
+  sl <- saint_loader(g, batch_size = 5, walk_length = 3, num_steps = 400,
+                     sample_coverage = 50, seed = 1)
+  # With a per node loss of 1, the weighted sum over a batch estimates
+  # sum(1) / n = 1 over all nodes.
+  est <- mean(vapply(loader_batches(sl), function(b) sum(b$node_norm), numeric(1)))
+  expect_equal(est, 1, tolerance = 0.1)
+})

@@ -42,8 +42,16 @@ graph_dataset_disk <- function(dir, transform = NULL) {
 }
 
 #' @rdname graph_dataset
+#' @param overwrite Replace the graph files of an existing dataset in `dir`;
+#'   without it, writing into such a directory is an error.
 #' @export
-write_graph_dataset <- function(graphs, dir, metadata = list()) {
+write_graph_dataset <- function(graphs, dir, metadata = list(), overwrite = FALSE) {
+  old <- list.files(dir, pattern = "^graph_[0-9]+\\.rds$|^metadata\\.rds$", full.names = TRUE)
+  if (length(old)) {
+    # Stale graph files from an earlier, larger dataset would be read back.
+    if (!overwrite) stopf("`%s` already holds a graph dataset; use `overwrite = TRUE` to replace it.", dir)
+    unlink(old)
+  }
   dir.create(dir, recursive = TRUE, showWarnings = FALSE)
   n <- length(graphs)
   for (i in seq_len(n)) {
@@ -212,7 +220,8 @@ dataset_synthetic_graphs <- function(n = 100L, min_nodes = 5L, max_nodes = 12L,
 #'   These are the raw citation graphs. They are **not** the Planetoid splits
 #'   used by Kipf and Welling (2017) and PyG's `Planetoid` class (which also
 #'   drop and reorder nodes), so results are not comparable to published
-#'   leaderboards. Open Graph Benchmark datasets are not yet supported.
+#'   leaderboards. Open Graph Benchmark datasets are read by
+#'   [download_ogb()].
 #'
 #' `read_tu_dataset()` and `read_linqs_citation()` parse already downloaded
 #' files.
@@ -237,7 +246,10 @@ fetch_archive <- function(url, dest, md5, overwrite) {
     dir.create(dirname(dest), recursive = TRUE, showWarnings = FALSE)
     utils::download.file(url, dest, mode = "wb", quiet = TRUE)
   }
-  if (!is.null(md5)) {
+  if (is.null(md5)) {
+    warnf("No checksum is recorded for `%s`; the download is not verified. Pass `md5` to check it.",
+          basename(dest))
+  } else {
     got <- unname(tools::md5sum(dest))
     if (!identical(got, md5)) {
       stopf("Checksum mismatch for `%s`: expected %s, got %s.", dest, md5, got)

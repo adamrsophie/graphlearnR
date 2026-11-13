@@ -16,7 +16,10 @@ split_nodes(
 \arguments{
 \item{g}{A \code{graph_data} object with node labels \code{y}.}
 
-\item{train, val, test}{Proportions (summing to at most 1) or counts.}
+\item{train, val, test}{Proportions (each at most 1, summing to at most 1)
+or whole counts. Values that are all at most 1 are read as proportions,
+so \verb{train = 1, val = 0, test = 0} puts every labeled node in training.
+With \code{stratify}, sizes apply within each class.}
 
 \item{stratify}{Split each class separately (factor labels only).}
 

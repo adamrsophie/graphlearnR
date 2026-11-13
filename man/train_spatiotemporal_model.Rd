@@ -45,6 +45,9 @@ last value baseline (\code{baseline_metrics}).
 Fits a \code{\link[=temporal_gnn_model]{temporal_gnn_model()}} to predict the target at step \code{s + horizon}
 from features at steps \verb{s - lags + 1, ..., s}. Windows are split in time
 order: the first \code{train} fraction of target steps trains the model, the
-next \code{val} fraction validates, and the rest is the test period. No window
-used for training has a target time inside the validation or test period.
+next \code{val} fraction validates, and the rest is the test period. Windows at
+the end of the training and validation periods whose target is observed
+after the first forecast origin of the next period are dropped (a purge of
+\code{horizon - 1} windows), so no training target is later than a validation
+or test forecast origin.
 }

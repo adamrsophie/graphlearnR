@@ -12,7 +12,7 @@
 \alias{compose_transforms}
 \title{Graph transformations}
 \usage{
-add_self_loops(g, fill_weight = 1)
+add_self_loops(g, fill_weight = 1, loop_type = NA)
 
 remove_self_loops(g)
 
@@ -32,6 +32,10 @@ compose_transforms(...)
 \item{g}{A \code{graph_data} object.}
 
 \item{fill_weight}{Weight of new self loops.}
+
+\item{loop_type}{Relation code of new self loops in a graph with
+\code{edge_type} (for example a dedicated code for \code{\link[=rgcn_conv]{rgcn_conv()}}). The default
+\code{NA} marks them as untyped, which typed layers reject.}
 
 \item{nodes}{Integer node indices to keep.}
 

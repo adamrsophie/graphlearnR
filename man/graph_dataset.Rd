@@ -10,7 +10,7 @@ graph_dataset(graphs, transform = NULL, metadata = list())
 
 graph_dataset_disk(dir, transform = NULL)
 
-write_graph_dataset(graphs, dir, metadata = list())
+write_graph_dataset(graphs, dir, metadata = list(), overwrite = FALSE)
 }
 \arguments{
 \item{graphs}{A list of \code{graph_data} objects.}
@@ -20,6 +20,9 @@ write_graph_dataset(graphs, dir, metadata = list())
 \item{metadata}{Named list (name, source, version, license, notes).}
 
 \item{dir}{Directory holding \code{graph_000001.rds}, ... and \code{metadata.rds}.}
+
+\item{overwrite}{Replace the graph files of an existing dataset in \code{dir};
+without it, writing into such a directory is an error.}
 }
 \value{
 An object of class \code{graph_dataset}.

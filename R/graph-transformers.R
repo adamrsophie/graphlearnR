@@ -10,8 +10,9 @@
 #'   rotation within repeated eigenvalues, so the encoding is **not**
 #'   permutation equivariant as a function: a permuted graph can give
 #'   different signs. Train with random sign flips ([random_sign_flip()]) to
-#'   make a model robust to this. Graphs with fewer than `k + 1` nodes are
-#'   padded with zero columns.
+#'   make a model robust to this. A graph with `c` connected components
+#'   (with edges) has `c` zero eigenvalues, all skipped. Graphs with too few
+#'   nonzero eigenvalues are padded with zero columns.
 #' * `random_walk_pe()`: the return probabilities
 #'   \eqn{[(D^{-1}A)^t]_{ii}} for \eqn{t = 1, \dots, k} (Dwivedi et al.
 #'   2022). This encoding is permutation equivariant and has no sign
@@ -52,7 +53,11 @@ laplacian_pe <- function(g, k = 8L, use_rspectra = TRUE) {
   d <- Matrix::rowSums(A)
   dinv <- ifelse(d > 0, 1 / sqrt(d), 0)
   L <- Matrix::Diagonal(n) - Matrix::Diagonal(x = dinv) %*% A %*% Matrix::Diagonal(x = dinv)
-  m <- min(k + 1L, n)
+  # Each connected component with an edge gives one zero eigenvalue (an
+  # isolated node has eigenvalue 1 here), so skip that many eigenvectors.
+  csize <- igraph::components(igraph::graph_from_adjacency_matrix(A, mode = "undirected"))$csize
+  z <- sum(csize > 1L)
+  m <- min(k + z, n)
   if (use_rspectra && n > 500L && requireNamespace("RSpectra", quietly = TRUE)) {
     es <- RSpectra::eigs_sym(L, m, which = "SA")
     vals <- es$values
@@ -63,7 +68,7 @@ laplacian_pe <- function(g, k = 8L, use_rspectra = TRUE) {
     vecs <- es$vectors
   }
   o <- order(vals)
-  vecs <- vecs[, o[seq_len(m)], drop = FALSE][, -1L, drop = FALSE]
+  vecs <- vecs[, o[seq_len(m)], drop = FALSE][, setdiff(seq_len(m), seq_len(z)), drop = FALSE]
   out <- matrix(0, n, k)
   if (ncol(vecs)) out[, seq_len(ncol(vecs))] <- vecs
   out

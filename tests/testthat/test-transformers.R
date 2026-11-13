@@ -76,3 +76,14 @@ test_that("pooled graph transformers are invariant and train on graph classes", 
   ev <- evaluate_graph_model(fit, gs)
   expect_gt(ev$value[ev$metric == "accuracy"], 0.8)
 })
+
+test_that("laplacian_pe skips every zero eigenvalue of a disconnected graph", {
+  g <- graph_data(edge_index = rbind(c(1, 3, 5), c(2, 4, 6)), num_nodes = 6, directed = FALSE)
+  pe <- laplacian_pe(g, 2)
+  A <- as.matrix(adjacency_from_graph(g, weighted = FALSE))
+  L <- diag(6) - A  # every degree is 1
+  for (j in 1:2) {
+    lam <- sum(pe[, j] * (L %*% pe[, j]))
+    expect_gt(lam, 1e-6)
+  }
+})

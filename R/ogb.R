@@ -129,13 +129,13 @@ ogb_split <- function(dir, split) {
 }
 
 ogb_registry <- list(
-  "ogbn-arxiv" = list(url = "http://snap.stanford.edu/ogb/data/nodeproppred/arxiv.zip",
+  "ogbn-arxiv" = list(url = "https://snap.stanford.edu/ogb/data/nodeproppred/arxiv.zip",
                       type = "node", inverse = FALSE, md5 = NULL),
-  "ogbn-products" = list(url = "http://snap.stanford.edu/ogb/data/nodeproppred/products.zip",
+  "ogbn-products" = list(url = "https://snap.stanford.edu/ogb/data/nodeproppred/products.zip",
                          type = "node", inverse = TRUE, md5 = NULL),
-  "ogbg-molhiv" = list(url = "http://snap.stanford.edu/ogb/data/graphproppred/csv_mol_download/hiv.zip",
+  "ogbg-molhiv" = list(url = "https://snap.stanford.edu/ogb/data/graphproppred/csv_mol_download/hiv.zip",
                        type = "graph", inverse = TRUE, md5 = "21a81e983fc62dea72f9653683577eb6"),
-  "ogbg-molpcba" = list(url = "http://snap.stanford.edu/ogb/data/graphproppred/csv_mol_download/pcba.zip",
+  "ogbg-molpcba" = list(url = "https://snap.stanford.edu/ogb/data/graphproppred/csv_mol_download/pcba.zip",
                         type = "graph", inverse = TRUE, md5 = NULL)
 )
 

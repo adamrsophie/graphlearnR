@@ -26,6 +26,15 @@ is_integerish <- function(x) {
   is.numeric(x) && all(is.na(x) | x == round(x))
 }
 
+# Whole number node indices: numeric, finite, not missing and without a
+# fractional part, so integer conversion never truncates silently.
+check_index <- function(x, name) {
+  if (!is.numeric(x) || anyNA(x) || any(!is.finite(x)) || any(x != round(x))) {
+    stopf("`%s` must hold whole numbers without missing values.", name)
+  }
+  invisible(x)
+}
+
 check_count <- function(x, name, min = 0L) {
   if (!is_scalar_integerish(x) || x < min) {
     stopf("`%s` must be a single whole number >= %d.", name, min)
@@ -106,6 +115,14 @@ with_optional_seed <- function(seed, code) {
     return(force(code))
   }
   withr::with_seed(seed, code)
+}
+
+# Independent integer seeds for `n` sub tasks, drawn from `seed`. Valid for
+# any integer seed, unlike arithmetic such as seed * 1000 + i, which can
+# overflow or give two tasks the same seed.
+sub_seeds <- function(seed, n) {
+  if (is.null(seed)) return(NULL)
+  withr::with_seed(seed, sample.int(.Machine$integer.max, n))
 }
 
 resolve_device <- function(device = NULL) {

@@ -55,11 +55,16 @@ must be divisible by it.}
 
 \item{epochs}{Passes over the training events.}
 
-\item{batch_size}{Events per batch.}
+\item{batch_size}{Events per batch. A batch is extended so it never splits
+events that share a timestamp; those are scored together before any of
+them updates the memory.}
 
 \item{lr}{Learning rate.}
 
-\item{seed}{Optional seed for weights, negatives and the epoch order.}
+\item{seed}{Optional seed for weights, negatives and the epoch order.
+Each event gets one random negative destination that differs from its
+own source and destination. The three periods of \code{split} must follow
+each other in time.}
 
 \item{device}{Device.}
 }

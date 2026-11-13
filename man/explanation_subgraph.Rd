@@ -23,8 +23,10 @@ Turns an edge attribution into a subgraph explanation: the \code{k} edges with
 the largest absolute attribution (and, for undirected graphs, their
 reverse directions), the nodes they touch, and the target node. The
 result is a \code{graph_data} object with local 1-based indices; its
-\code{node_ids} hold the original node indices so the subgraph can be mapped
-back, and \code{edge_original} the original edge positions.
+\code{node_ids} hold the original node identifiers (\code{g$node_ids}, which are
+the node indices unless the graph has external identifiers) so the
+subgraph can be mapped back, and \code{edge_original} the original edge
+positions.
 }
 \examples{
 if (torch::torch_is_installed()) {

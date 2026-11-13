@@ -58,7 +58,8 @@ tasks with \code{fanouts}).}
 
 \item{fanouts}{Neighbor sampling fanouts for node mini-batches.}
 
-\item{decoder}{Decoder module for link and edge tasks; defaults to
+\item{decoder}{Decoder module for link and edge tasks, or for link
+prediction the name of a \code{\link[=link_decoder]{link_decoder()}} type; defaults to
 \code{\link[=link_decoder]{link_decoder()}} \code{"dot"} and an \code{\link[=edge_decoder]{edge_decoder()}}.}
 
 \item{scheduler}{\code{NULL}, a list such as \code{list(type = "step", step_size = 50, gamma = 0.5)}, \code{list(type = "plateau", patience = 10, factor = 0.5)}
@@ -66,10 +67,15 @@ or \code{list(type = "cosine")}, or a function taking the optimizer and
 returning a \code{torch} scheduler.}
 
 \item{early_stopping}{Patience in epochs, or \code{NULL} to train all epochs.
-Monitors validation loss; the best weights are restored at the end.}
+Monitors validation loss (training loss when there is no validation
+set); the best weights are restored at the end.}
 
-\item{checkpoint_path}{Optional file; the model state is saved there with
-\code{\link[torch:torch_save]{torch::torch_save()}} whenever validation loss improves.}
+\item{checkpoint_path}{Optional file; the model state of the best epoch so
+far is saved there with \code{\link[torch:torch_save]{torch::torch_save()}} whenever the monitored
+loss improves. For link and edge tasks the decoder state is saved next
+to it, in \code{paste0(checkpoint_path, ".decoder")}. Without
+\code{early_stopping} the returned model holds the last epoch, not the
+checkpointed one.}
 
 \item{device}{Device, see \code{\link[=graph_tensors]{graph_tensors()}}.}
 
@@ -77,13 +83,15 @@ Monitors validation loss; the best weights are restored at the end.}
 
 \item{grad_clip}{Optional maximum gradient norm.}
 
-\item{class_weights}{Optional class weights for cross entropy.}
+\item{class_weights}{Optional class weights for the cross entropy loss
+(other losses do not use them, and a warning says so).}
 
 \item{target_type}{Node type to predict for heterogeneous graphs.}
 
 \item{loader}{A \code{\link[=cluster_loader]{cluster_loader()}} or \code{\link[=saint_loader]{saint_loader()}} for node tasks.}
 
-\item{verbose}{Print progress every \code{verbose} epochs (\code{FALSE} for none).}
+\item{verbose}{Print progress every \code{verbose} epochs (\code{FALSE} or \code{0} for
+none, \code{TRUE} for every epoch).}
 }
 \value{
 An object of class \code{graph_fit}.

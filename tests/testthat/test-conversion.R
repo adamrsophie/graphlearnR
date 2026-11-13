@@ -81,3 +81,13 @@ test_that("graph_tensors keeps one based indices and label types", {
   expect_equal(e$edge_index$size(2), 0)
   expect_output(print(tt), "graph_tensors")
 })
+
+test_that("graph_from_adjacency reads every stored triangle and pattern matrices", {
+  A <- matrix(0, 3, 3)
+  A[1, 2] <- A[2, 1] <- A[2, 3] <- A[3, 2] <- 1
+  S <- Matrix::forceSymmetric(Matrix::Matrix(A, sparse = TRUE), uplo = "L")
+  expect_equal(num_edges(graph_from_adjacency(S)), num_edges(graph_from_adjacency(A)))
+  expect_equal(num_edges(graph_from_adjacency(Matrix::Matrix(A, sparse = TRUE), directed = TRUE)), 4L)
+  P <- Matrix::Matrix(A, sparse = TRUE) != 0
+  expect_equal(num_edges(graph_from_adjacency(P)), num_edges(graph_from_adjacency(A)))
+})

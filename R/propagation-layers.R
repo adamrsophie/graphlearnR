@@ -37,7 +37,7 @@ cheb_conv <- nn_module(
   forward = function(x, edge_index, edge_weight = NULL, ...) {
     n <- x$size(1L)
     rl <- remove_self_loops_tensor(edge_index, edge_weight)
-    nrm <- gcn_norm(rl$edge_index, n, rl$edge_weight, add_self_loops = FALSE)
+    nrm <- gcn_norm(rl$edge_index, n, rl$edge_weight, add_self_loops = FALSE, dtype = x$dtype)
     w <- -nrm$edge_weight$to(dtype = x$dtype)
     lap <- function(h) message_passing(h, nrm$edge_index, aggr = "sum", edge_weight = w, num_nodes = n)
     t0 <- x
@@ -95,7 +95,7 @@ appnp <- nn_module(
   },
   forward = function(x, edge_index, edge_weight = NULL, ...) {
     n <- x$size(1L)
-    nrm <- gcn_norm(edge_index, n, edge_weight)
+    nrm <- gcn_norm(edge_index, n, edge_weight, dtype = x$dtype)
     # R scalars become float32 tensors; keep the constants in the input's precision.
     keep <- torch_tensor(1 - self$alpha, dtype = x$dtype, device = x$device)
     tele <- torch_tensor(self$alpha, dtype = x$dtype, device = x$device)
@@ -136,7 +136,8 @@ appnp_model <- nn_module(
 #' Principal neighborhood aggregation (PNA)
 #'
 #' The PNA layer of Corso, Cavalleri, Beaini, Liò and Veličković (2020), in
-#' the single tower form of PyTorch Geometric's `PNAConv`. For node \eqn{i}
+#' a single tower form modeled on PyTorch Geometric's `PNAConv` (not
+#' numerically compared with it). For node \eqn{i}
 #' with in degree \eqn{d_i}:
 #'
 #' 1. messages \eqn{m_{ji} = U [x_i \Vert x_j \Vert E e_{ji}]} (the edge term
@@ -150,8 +151,11 @@ appnp_model <- nn_module(
 #'    \eqn{d} over the training degree histogram `deg`;
 #' 3. \eqn{x_i' = W_2 \, M [x_i \Vert \text{scaled aggregates}]}.
 #'
-#' Nodes without incoming edges get zeros from every aggregator except std,
-#' which gives \eqn{\sqrt{10^{-5}}}.
+#' The std aggregator is \eqn{\sqrt{\max(\mathrm{var}, 0) + 10^{-5}}}, as in
+#' the authors' reference code, so nodes without incoming edges, or with
+#' identical incoming messages, get \eqn{\sqrt{10^{-5}}} from it and zeros
+#' from every other aggregator. Other implementations may treat zero
+#' variance differently.
 #'
 #' `pna_degree()` computes the in degree histogram `deg` from training
 #' graphs: element \eqn{d + 1} counts nodes with in degree \eqn{d}.
@@ -192,6 +196,9 @@ pna_conv <- nn_module(
     deg <- as.numeric(deg)
     if (!length(deg) || sum(deg) <= 0) stopf("`deg` must be a degree histogram from pna_degree().")
     bins <- seq_along(deg) - 1
+    if (sum(bins * deg) <= 0) {
+      stopf("`deg` counts only nodes of degree zero; the PNA scalers need graphs with edges.")
+    }
     self$avg_lin <- sum(bins * deg) / sum(deg)
     self$avg_log <- sum(log(bins + 1) * deg) / sum(deg)
     self$aggregators <- aggregators

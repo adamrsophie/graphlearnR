@@ -255,3 +255,23 @@ test_that("a 2 by 2 pair matrix with from and to names is a list of pairs", {
   m <- cbind(from = c(1, 2), to = c(33, 34))
   expect_equal(normalize_edge_index(m), rbind(c(1L, 2L), c(33L, 34L)))
 })
+
+test_that("mini batch options that a task would ignore are errors", {
+  skip_if_no_torch()
+  sp <- split_edges(dataset_karate(), seed = 1)
+  expect_error(train_graph_model(gnn_model("gcn", 34, 8), sp, "link_prediction", epochs = 1,
+                                 batch_size = 8), "batch_size")
+  hg <- dataset_synthetic_hetero(seed = 1)
+  expect_error(train_graph_model(hetero_gnn_model(hg, hidden_dim = 8, output_dim = 3, target_type = "drug"), hg,
+                                 "node_classification", target_type = "drug", epochs = 1,
+                                 fanouts = c(5, 5)), "fanouts")
+})
+
+test_that("write_graph_dataset refuses to mix with an existing dataset", {
+  dir <- withr::local_tempdir()
+  gs <- list(dataset_karate(), dataset_karate())
+  write_graph_dataset(gs, dir)
+  expect_error(write_graph_dataset(gs[1], dir), "overwrite")
+  write_graph_dataset(gs[1], dir, overwrite = TRUE)
+  expect_length(graph_dataset_disk(dir), 1L)
+})

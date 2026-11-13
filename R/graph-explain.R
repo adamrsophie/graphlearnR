@@ -39,9 +39,21 @@
 #' @name explain
 NULL
 
-explain_model <- function(model) {
+# The model in evaluation mode with parameters that do not track gradients,
+# so explanations take gradients with respect to inputs and masks only and
+# never accumulate into parameter gradients. The previous mode and
+# `requires_grad` flags are restored when the calling explainer returns.
+explain_model <- function(model, envir = parent.frame()) {
   m <- if (inherits(model, "graph_fit")) model$model else model
+  params <- m$parameters
+  flags <- vapply(params, function(p) isTRUE(p$requires_grad), logical(1))
+  was_training <- isTRUE(m$training)
+  for (p in params) p$requires_grad_(FALSE)
   m$eval()
+  withr::defer({
+    for (i in seq_along(params)) params[[i]]$requires_grad_(flags[[i]])
+    if (was_training) m$train()
+  }, envir = envir)
   m
 }
 
@@ -158,13 +170,22 @@ explain_occlusion <- function(model, g, target = NULL, output = NULL) {
 gnn_explainer <- function(model, g, target = NULL, output = NULL, epochs = 100L, lr = 0.01,
                           edge_size = 0.005, feature_size = 1, entropy = 1, seed = NULL) {
   model <- explain_model(model)
-  for (p in model$parameters) p$requires_grad_(FALSE)
-  on.exit(for (p in model$parameters) p$requires_grad_(TRUE), add = TRUE)
   dev <- model$parameters[[1L]]$device
   if (!is.null(seed)) torch_manual_seed(seed)
   tt <- graph_tensors(g, dev)
   w0 <- tt$edge_weight %||% torch_ones(tt$edge_index$size(2L), device = dev)
-  output <- output %||% with_no_grad(select_output(forward_with(model, tt), target, NULL))$index
+  full <- with_no_grad(forward_with(model, tt))
+  # The edge mask acts through `edge_weight`; a model that ignores edge
+  # weights (attention layers, for example) can not be explained this way.
+  if (tt$edge_index$size(2L) > 0L) {
+    half <- with_no_grad(forward_with(model, tt, edge_weight = w0 * 0.5))
+    if (as.logical(torch_allclose(full, half))) {
+      stopf("The model's output does not depend on `edge_weight`, so an edge mask can not explain it.")
+    }
+  }
+  regression <- full$size(2L) == 1L
+  output <- output %||% select_output(full, target, NULL)$index
+  orig <- select_output(full, target, output)$value
   em <- (torch_randn_like(w0) * 0.1 + 1)$requires_grad_(TRUE)
   fm <- (torch_randn(ncol(g$x), device = dev) * 0.1 + 1)$requires_grad_(TRUE)
   opt <- optim_adam(list(em, fm), lr = lr)
@@ -174,9 +195,15 @@ gnn_explainer <- function(model, g, target = NULL, output = NULL, epochs = 100L,
     e <- torch_sigmoid(em)
     f <- torch_sigmoid(fm)
     out <- forward_with(model, tt, tt$x * f, w0 * e)
-    logp <- if (is.null(target)) nnf_log_softmax(out[1L, ], dim = 1L)[output]
-            else nnf_log_softmax(out[target, ], dim = 1L)[output]
-    loss <- -logp + edge_size * e$sum() + entropy * ent(e) + feature_size * f$mean() + entropy * ent(f)
+    # Classification: keep the explained class likely. Regression (one
+    # output): keep the prediction close to the full graph prediction.
+    fit_term <- if (regression) {
+      (select_output(out, target, output)$value - orig)$pow(2)
+    } else {
+      row <- if (is.null(target)) out[1L, ] else out[target, ]
+      -nnf_log_softmax(row, dim = 1L)[output]
+    }
+    loss <- fit_term + edge_size * e$sum() + entropy * ent(e) + feature_size * f$mean() + entropy * ent(f)
     loss$backward()
     opt$step()
   }
@@ -241,8 +268,10 @@ explanation_stability <- function(model, g, explainer, noise = 0.01, reps = 5L, 
 #' the largest absolute attribution (and, for undirected graphs, their
 #' reverse directions), the nodes they touch, and the target node. The
 #' result is a `graph_data` object with local 1-based indices; its
-#' `node_ids` hold the original node indices so the subgraph can be mapped
-#' back, and `edge_original` the original edge positions.
+#' `node_ids` hold the original node identifiers (`g$node_ids`, which are
+#' the node indices unless the graph has external identifiers) so the
+#' subgraph can be mapped back, and `edge_original` the original edge
+#' positions.
 #'
 #' @param g The `graph_data` object that was explained.
 #' @param explanation A `graph_explanation` with an `edges` table, for
@@ -293,7 +322,10 @@ attention_weights <- function(model) {
   out <- list()
   for (m in model$modules) {
     la <- tryCatch(m$last_attention, error = function(e) NULL)
-    if (is.null(la) || !is.list(la)) next
+    # Only layers that store an edge list with coefficients (gat_conv,
+    # gatv2_conv, transformer_conv); other attention modules keep different
+    # structures and are skipped.
+    if (is.null(la) || !is.list(la) || is.null(la$edge_index) || is.null(la$alpha)) next
     ei <- as_r_array(la$edge_index)
     a <- as_r_array(la$alpha)
     if (!is.matrix(a)) a <- matrix(a, ncol = 1L)

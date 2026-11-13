@@ -54,8 +54,9 @@ symmetrized). Eigenvectors are defined only up to sign, and up to a
 rotation within repeated eigenvalues, so the encoding is \strong{not}
 permutation equivariant as a function: a permuted graph can give
 different signs. Train with random sign flips (\code{\link[=random_sign_flip]{random_sign_flip()}}) to
-make a model robust to this. Graphs with fewer than \code{k + 1} nodes are
-padded with zero columns.
+make a model robust to this. A graph with \code{c} connected components
+(with edges) has \code{c} zero eigenvalues, all skipped. Graphs with too few
+nonzero eigenvalues are padded with zero columns.
 \item \code{random_walk_pe()}: the return probabilities
 \eqn{[(D^{-1}A)^t]_{ii}} for \eqn{t = 1, \dots, k} (Dwivedi et al.
 2022). This encoding is permutation equivariant and has no sign

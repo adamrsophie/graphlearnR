@@ -82,3 +82,31 @@ test_that("explanation_subgraph keeps the top pairs and maps back", {
   expect_equal(num_edges(ed2), num_edges(g))
   expect_error(explanation_subgraph(g, list(), k = 1), "no edge attributions")
 })
+
+
+test_that("explainers restore frozen parameters and the training mode", {
+  skip_if_no_torch()
+  s <- explain_setup()
+  m <- s$fit$model
+  m$parameters[[1]]$requires_grad_(FALSE)
+  m$train()
+  for (p in m$parameters) if (!is.null(p$grad)) p$grad$zero_()
+  invisible(gnn_explainer(m, s$g, target = 1, epochs = 2, seed = 1))
+  invisible(explain_saliency(m, s$g, target = 1))
+  flags <- vapply(m$parameters, function(p) p$requires_grad, logical(1))
+  expect_false(flags[[1]])
+  expect_true(all(flags[-1]))
+  expect_true(m$training)
+  expect_true(all(vapply(m$parameters, function(p) is.null(p$grad) || !as.logical(p$grad$abs()$sum() > 0),
+                         logical(1))))
+  m$eval()
+  m$parameters[[1]]$requires_grad_(TRUE)
+})
+
+test_that("gnn_explainer rejects models that ignore edge weights", {
+  skip_if_no_torch()
+  g <- split_nodes(dataset_karate(), seed = 1)
+  fit <- train_graph_model(gnn_model("gat", 34, 8, 2, heads = 2), g, "node_classification",
+                           epochs = 2, seed = 1)
+  expect_error(gnn_explainer(fit, g, target = 1, epochs = 2), "edge_weight")
+})

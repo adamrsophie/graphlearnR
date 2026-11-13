@@ -31,7 +31,9 @@ vector (one feature), a numeric data frame, or \code{NULL}.}
 
 \item{edge_index}{Edges as a 2 by E matrix (row 1 source, row 2 target), an
 E by 2 matrix, or a data frame with columns \code{from} and \code{to}. Values are
-one based node indices. \code{NULL} means no edges.}
+one based node indices. \code{NULL} means no edges. A 2 by 2 matrix is read
+as 2 by E (two edges, one per column) unless its column names are
+\code{from} and \code{to}.}
 
 \item{y}{Node labels: factor (classification), integer or numeric vector,
 or numeric matrix (multi target), one entry per node. Character labels

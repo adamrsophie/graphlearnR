@@ -9,7 +9,8 @@ split_edges(g, val = 0.1, test = 0.1, neg_ratio = 1, seed = NULL)
 \arguments{
 \item{g}{A \code{graph_data} object.}
 
-\item{val, test}{Proportions (or counts) of pairs held out.}
+\item{val, test}{Proportions (both below 1) or whole counts of pairs held
+out.}
 
 \item{neg_ratio}{Negatives per positive for validation and test.}
 
@@ -27,7 +28,8 @@ training:
 \details{
 \enumerate{
 \item Undirected pairs are split as units, so \verb{(u, v)} and \verb{(v, u)} always
-land in the same set.
+land in the same set. Parallel copies of a pair (multigraphs) are also
+one unit, so a held out link never stays in training as a duplicate.
 \item \code{train_graph} keeps all nodes and features but only training edges;
 use it for message passing during training \strong{and} evaluation.
 \item Validation and test negatives are drawn once with
@@ -36,7 +38,8 @@ Training negatives should be redrawn each epoch, excluding training
 positives only, which \code{\link[=train_graph_model]{train_graph_model()}} does.
 }
 
-Positive pairs are returned in one direction (as given in the input).
+Positive pairs are returned once each, in one direction (as first given in
+the input).
 }
 \examples{
 sp <- split_edges(dataset_karate(), val = 0.1, test = 0.1, seed = 1)

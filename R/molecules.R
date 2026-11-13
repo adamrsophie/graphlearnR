@@ -41,8 +41,14 @@ molecule_graph <- function(atoms, bonds, elements = c("C", "N", "O", "S", "F", "
   if (!length(atoms)) stopf("`atoms` must not be empty.")
   bonds <- as.data.frame(bonds)
   if (ncol(bonds) < 2L) stopf("`bonds` needs `from` and `to` columns.")
-  if (!all(c("from", "to") %in% names(bonds))) names(bonds)[1:2] <- c("from", "to")
+  if (!all(c("from", "to") %in% names(bonds))) {
+    # Unnamed input: columns are from, to and (when present) the bond order.
+    names(bonds)[1:2] <- c("from", "to")
+    if (ncol(bonds) >= 3L && !"order" %in% names(bonds)) names(bonds)[3L] <- "order"
+  }
   if (is.null(bonds$order)) bonds$order <- rep(1, nrow(bonds))
+  check_index(bonds$from, "bonds$from")
+  check_index(bonds$to, "bonds$to")
   bad <- setdiff(unique(bonds$order), bond_orders)
   if (length(bad)) stopf("Unknown bond order(s): %s.", paste(bad, collapse = ", "))
   x <- outer(atoms, elements, "==") * 1

@@ -110,6 +110,17 @@ train_graph_model <- function(model, data,
   if (is.character(decoder) && task != "link_prediction") {
     stopf("A decoder name is only accepted for link prediction.")
   }
+  # Mini batch options are used by homogeneous node tasks (fanouts,
+  # batch_size, loader) and graph tasks (batch_size) only; elsewhere they
+  # would be silently ignored.
+  given <- c(fanouts = !is.null(fanouts), batch_size = !is.null(batch_size), loader = !is.null(loader))
+  used <- if (grepl("^node", task) && !inherits(data, "hetero_graph_data")) names(given)
+          else if (grepl("^graph", task)) "batch_size" else character()
+  unused <- setdiff(names(given)[given], used)
+  if (length(unused)) {
+    stopf("%s not supported for this task and data; training is full batch.",
+          paste0("`", unused, "`", collapse = ", "))
+  }
   if (!is.null(seed)) torch_manual_seed(seed)
   model$to(device = dev)
 
@@ -386,7 +397,10 @@ subgraph_epoch <- function(model, loader, epoch, dev, opt, loss_fn, grad_clip) {
       wt <- torch_tensor(w[sg$train_mask], dtype = out$dtype, device = dev)
       per <- loss_fn(out, target, reduction = "none")
       if (per$dim() > 1L) per <- per$reshape(c(per$size(1L), -1L))$mean(dim = 2L)
-      (per * wt)$sum() / wt$sum()$clamp(min = 1e-12)
+      # GraphSAINT estimator (Zeng et al. 2020; PyG's example): a weighted
+      # sum, not a weighted mean, so the inverse inclusion weights are not
+      # cancelled by renormalizing within the batch.
+      (per * wt)$sum()
     } else {
       loss_fn(out, target)
     }

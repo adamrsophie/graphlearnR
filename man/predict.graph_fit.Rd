@@ -22,7 +22,8 @@ that makes sense.}
 
 \item{type}{\code{"frame"} (a \code{graph_predictions} data frame), \code{"class"},
 \code{"prob"}, \code{"response"} (raw model output), \code{"embedding"} (node
-embeddings) or \code{"score"} (link logits).}
+embeddings; for graph tasks one pooled row per graph, using the model's
+readout or the mean) or \code{"score"} (link logits).}
 
 \item{pairs}{2 by K matrix of node pairs (link and edge tasks).}
 
@@ -50,5 +51,8 @@ Runs the model in evaluation mode without gradients.
 \item Link prediction: one row per pair in \code{pairs}; message passing uses
 \code{new_data}, by default the training graph of the split.
 \item Edge tasks: one row per pair in \code{pairs} (default every stored edge).
+When the model uses edge features, each requested pair takes the
+features of its stored edge in \code{new_data}; pairs that are not edges
+are an error.
 }
 }

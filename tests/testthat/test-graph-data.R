@@ -81,3 +81,11 @@ test_that("zero based conversion is the single explicit offset", {
   expect_error(to_zero_based(0L), ">= 1")
   expect_error(from_zero_based(-1L), ">= 0")
 })
+
+test_that("index checks reject fractional and missing node indices", {
+  expect_error(to_zero_based(c(1, 2.5)), "whole numbers")
+  expect_error(temporal_graph_data(src = c(1, 2.5), dst = c(2, 3), t = 1:2), "whole numbers")
+  e <- data.frame(from = factor(c("b", "a")), to = factor(c("a", "c")))
+  g <- graph_from_edgelist(e)
+  expect_equal(g$node_ids, c("b", "a", "c"))
+})

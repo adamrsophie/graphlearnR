@@ -161,6 +161,8 @@ graph_from_edgelist <- function(edges, from = "from", to = "to", nodes = NULL,
   for (col in c(from, to, edge_feature_cols, weight_col, edge_label_col)) {
     if (!col %in% names(edges)) stopf("Column `%s` not found in `edges`.", col)
   }
+  # Factor identifiers are matched by their labels, not their codes.
+  for (col in c(from, to)) if (is.factor(edges[[col]])) edges[[col]] <- as.character(edges[[col]])
   if (anyNA(edges[[from]]) || anyNA(edges[[to]])) {
     stopf("Edge endpoints contain missing values.")
   }
@@ -168,6 +170,7 @@ graph_from_edgelist <- function(edges, from = "from", to = "to", nodes = NULL,
     nodes <- as.data.frame(nodes)
     if (!id_col %in% names(nodes)) stopf("Column `%s` not found in `nodes`.", id_col)
     ids <- nodes[[id_col]]
+    if (is.factor(ids)) ids <- as.character(ids)
     if (anyDuplicated(ids)) stopf("Node identifiers in `nodes` are not unique.")
   } else {
     ids <- unique(c(rbind(edges[[from]], edges[[to]])))
@@ -239,7 +242,11 @@ graph_from_adjacency <- function(A, directed = NULL, weighted = TRUE, ...) {
   if (is.null(directed)) {
     directed <- !Matrix::isSymmetric(A)
   }
-  trip <- Matrix::summary(methods::as(methods::as(A, "CsparseMatrix"), "TsparseMatrix"))
+  # A general numeric sparse matrix lists every stored entry; symmetric and
+  # triangular classes store one triangle only, and pattern matrices have no
+  # values.
+  A <- methods::as(methods::as(methods::as(A, "CsparseMatrix"), "generalMatrix"), "dMatrix")
+  trip <- Matrix::summary(methods::as(A, "TsparseMatrix"))
   trip <- trip[trip$x != 0, , drop = FALSE]
   if (!directed) {
     trip <- trip[trip$i <= trip$j, , drop = FALSE]

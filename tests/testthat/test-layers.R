@@ -186,7 +186,7 @@ test_that("parameter gradients of gcn_conv match the analytic formula", {
   tt <- graph_tensors(g, dtype = torch::torch_double())
   R <- torch::torch_randn(6, 3, dtype = torch::torch_double())
   (layer(tt$x, tt$edge_index) * R)$sum()$backward()
-  nrm <- gcn_norm(tt$edge_index, 6)
+  nrm <- gcn_norm(tt$edge_index, 6, dtype = torch::torch_double())
   ei <- as_mat(nrm$edge_index)
   M <- matrix(0, 6, 6)
   for (j in seq_len(ncol(ei))) M[ei[2, j], ei[1, j]] <- M[ei[2, j], ei[1, j]] + as.numeric(as.array(nrm$edge_weight))[j]

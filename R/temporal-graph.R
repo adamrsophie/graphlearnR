@@ -37,6 +37,8 @@
 temporal_graph_data <- function(src, dst, t, num_nodes = NULL, x = NULL, edge_attr = NULL,
                                 y = NULL, node_ids = NULL, directed = TRUE,
                                 metadata = list()) {
+  check_index(src, "src")
+  check_index(dst, "dst")
   src <- as.integer(src)
   dst <- as.integer(dst)
   if (length(src) != length(dst) || length(src) != length(t)) {
@@ -495,6 +497,7 @@ train_dynamic_link_model <- function(snapshots, train_steps = NULL, hidden_dim =
   dot <- function(h, p) (h$index_select(1L, p[1L, ]) * h$index_select(1L, p[2L, ]))$sum(dim = 2L)
   history <- data.frame(epoch = integer(), train_loss = numeric())
   for (ep in seq_len(epochs)) {
+    ep_seeds <- sub_seeds(if (is.null(seed)) NULL else seed + ep, max(train_steps))
     cell$train()
     h <- NULL
     total <- 0
@@ -502,7 +505,7 @@ train_dynamic_link_model <- function(snapshots, train_steps = NULL, hidden_dim =
     for (k in seq_len(max(train_steps) - 1L)) {
       h <- cell(xt[[k]], tts[[k]]$edge_index, h, tts[[k]]$edge_weight)
       if ((k + 1L) %in% train_steps && ncol(snapshots$graphs[[k + 1L]]$edge_index)) {
-        pr <- pairs(k + 1L, if (is.null(seed)) NULL else seed * 100L + ep * 10L + k)
+        pr <- pairs(k + 1L, ep_seeds[k])
         sp <- dot(h, pr$pos)
         sn <- dot(h, pr$neg)
         loss <- nnf_binary_cross_entropy_with_logits(

@@ -95,3 +95,11 @@ test_that("corrupted tails exclude known positives", {
   expect_false(any(ct[1, ] %in% c(2, 4)))
   expect_false(any(ct[2, ] == 3))
 })
+
+test_that("corrupt_tails never draws the head and filters both orientations", {
+  pos <- rbind(c(1, 2), c(2, 3))
+  known <- rbind(c(1, 2, 4), c(2, 3, 1))
+  ct <- corrupt_tails(pos, num_nodes = 6, k = 3, known = known, directed = FALSE, seed = 1)
+  expect_false(any(ct[1, ] %in% c(1, 2, 4)))
+  expect_false(any(ct[2, ] %in% c(2, 3, 1)))
+})

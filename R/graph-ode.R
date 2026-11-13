@@ -54,7 +54,7 @@ graph_ode_block <- nn_module(
   },
   operator = function(x, edge_index, edge_weight = NULL) {
     n <- x$size(1L)
-    if (self$diffusion == "gcn") return(gcn_norm(edge_index, n, edge_weight))
+    if (self$diffusion == "gcn") return(gcn_norm(edge_index, n, edge_weight, dtype = x$dtype))
     sl <- add_self_loops_tensor(remove_self_loops_tensor(edge_index)$edge_index, n)
     ei <- sl$edge_index
     k <- self$key(x)$index_select(1L, ei[1L, ])

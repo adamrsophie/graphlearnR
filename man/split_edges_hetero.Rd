@@ -18,7 +18,8 @@ split_edges_hetero(
 
 \item{relation}{Relation key, \code{"src__rel__dst"}.}
 
-\item{val, test}{Proportions (or counts) of pairs held out.}
+\item{val, test}{Proportions (both below 1) or whole counts of pairs held
+out.}
 
 \item{neg_ratio}{Negatives per positive for validation and test.}
 
@@ -29,9 +30,12 @@ An object of class \code{hetero_link_split}.
 }
 \description{
 Holds out edges of \code{relation} for validation and test. Held out edges are
-removed from the training graph \strong{and from the paired reverse relation}
-(as recorded by \code{\link[=add_reverse_relations]{add_reverse_relations()}}), so a model cannot read a
-held out link through its reverse edge. Negatives are typed pairs (source
-type, target type) drawn with \code{\link[=negative_sampling]{negative_sampling()}}, excluding every
-known positive of the relation.
+removed from the training graph \strong{and from the paired relation} (as
+recorded by \code{\link[=add_reverse_relations]{add_reverse_relations()}}, whichever of the two keys is
+split), so a model cannot read a held out link through its reverse edge.
+Parallel copies of a pair are split as one unit. For a relation whose
+source and target type are the same, \verb{(u, v)} and \verb{(v, u)} are one unit
+and negatives are unordered pairs without self loops; otherwise negatives
+are typed pairs (source type, target type). Negatives are drawn with
+\code{\link[=negative_sampling]{negative_sampling()}}, excluding every known positive of the relation.
 }

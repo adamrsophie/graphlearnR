@@ -45,7 +45,7 @@ test_that("appnp converges to the personalized PageRank solution", {
   g <- und_graph(7, 12, 2, seed = 3)
   g$edge_weight <- NULL
   tt <- graph_tensors(g, dtype = torch::torch_double())
-  nrm <- gcn_norm(tt$edge_index, 7)
+  nrm <- gcn_norm(tt$edge_index, 7, dtype = torch::torch_double())
   ei <- as_mat(nrm$edge_index)
   w <- as.numeric(as.array(nrm$edge_weight))
   Ahat <- matrix(0, 7, 7)
