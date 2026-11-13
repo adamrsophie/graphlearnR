@@ -96,9 +96,13 @@ tgn_model <- nn_module(
   update_memory = function(mem, last_t, ev) {
     # ev: previous batch (src, dst, t, edge_attr); "last" message aggregation per node.
     dev <- mem$device
-    nodes <- c(ev$src, ev$dst)
-    other <- c(ev$dst, ev$src)
-    tt <- c(ev$t, ev$t)
+    # Interleave the two roles in event order, so the last entry of a node is
+    # its latest event whether it was the source or the destination there.
+    k <- length(ev$src)
+    o <- order(rep(seq_len(k), 2L), rep(1:2, each = k))
+    nodes <- c(ev$src, ev$dst)[o]
+    other <- c(ev$dst, ev$src)[o]
+    tt <- c(ev$t, ev$t)[o]
     keep <- !duplicated(nodes, fromLast = TRUE)
     u <- nodes[keep]
     v <- other[keep]
@@ -108,11 +112,11 @@ tgn_model <- nn_module(
     dt <- torch_tensor(tu - last_t[u], dtype = torch_float(), device = dev)
     parts <- list(mem$index_select(1L, ui), mem$index_select(1L, vi), self$time_encode(dt))
     if (self$edge_dim > 0L) {
-      ea <- rbind(ev$edge_attr, ev$edge_attr)[keep, , drop = FALSE]
+      ea <- rbind(ev$edge_attr, ev$edge_attr)[o, , drop = FALSE][keep, , drop = FALSE]
       parts[[4L]] <- torch_tensor(ea, dtype = torch_float(), device = dev)
     }
     s_new <- self$gru(torch_cat(parts, dim = 2L), mem$index_select(1L, ui))
-    last_t[u] <- tu
+    last_t[u] <- pmax(last_t[u], tu)
     list(mem = mem$index_copy(1L, ui, s_new), last_t = last_t)
   },
   gru = function(x, h) {
@@ -213,9 +217,14 @@ tgn_store_query <- function(store, nodes) {
 #' @param model A `tgn_model`.
 #' @param split Result of [split_temporal()] (`train`, `val`, `test`).
 #' @param epochs Passes over the training events.
-#' @param batch_size Events per batch.
+#' @param batch_size Events per batch. A batch is extended so it never splits
+#'   events that share a timestamp; those are scored together before any of
+#'   them updates the memory.
 #' @param lr Learning rate.
 #' @param seed Optional seed for weights, negatives and the epoch order.
+#'   Each event gets one random negative destination that differs from its
+#'   own source and destination. The three periods of `split` must follow
+#'   each other in time.
 #' @param device Device.
 #' @return `train_tgn()`: a `temporal_fit` with `history`, `val_metrics` and
 #'   `test_metrics` (ROC AUC and average precision against one random
@@ -227,6 +236,14 @@ train_tgn <- function(model, split, epochs = 10L, batch_size = 200L, lr = 1e-3, 
   if (!inherits(model, "tgn_model")) stopf("`model` must come from tgn_model().")
   for (nm in c("train", "val", "test")) {
     if (!inherits(split[[nm]], "temporal_graph_data")) stopf("`split` must come from split_temporal().")
+    if (is.unsorted(split[[nm]]$t)) stopf("Events of `split$%s` must be in time order.", nm)
+  }
+  ends <- vapply(split[c("train", "val", "test")], function(s) {
+    if (length(s$t)) c(min(s$t), max(s$t)) else c(NA_real_, NA_real_)
+  }, numeric(2))
+  bounds <- ends[, !is.na(ends[1L, ]), drop = FALSE]
+  if (ncol(bounds) > 1L && any(bounds[2L, -ncol(bounds)] > bounds[1L, -1L])) {
+    stopf("`split` periods overlap in time: train, val and test must follow each other.")
   }
   if (model$edge_dim > 0L && is.null(split$train$edge_attr)) stopf("The model expects event features.")
   epochs <- check_count(epochs, "epochs", 1L)
@@ -239,13 +256,10 @@ train_tgn <- function(model, split, epochs = 10L, batch_size = 200L, lr = 1e-3, 
 
   run <- function(tg, state, train, neg_seed) {
     m <- length(tg$t)
-    starts <- seq(1L, max(m, 1L), by = batch_size)
-    negs <- with_optional_seed(neg_seed, sample.int(n, m, replace = TRUE))
+    negs <- tgn_negatives(n, tg$src, tg$dst, neg_seed)
     scores <- list()
     losses <- numeric(0)
-    for (b in starts) {
-      if (m == 0L) break
-      idx <- b:min(m, b + batch_size - 1L)
+    for (idx in tgn_batches(tg$t, batch_size)) {
       ev <- list(src = tg$src[idx], dst = tg$dst[idx], t = tg$t[idx],
                  edge_attr = if (model$edge_dim > 0L) tg$edge_attr[idx, , drop = FALSE])
       step <- function() {
@@ -305,4 +319,37 @@ train_tgn <- function(model, split, epochs = 10L, batch_size = 200L, lr = 1e-3, 
                  test_metrics = metrics(te$scores), task = "continuous time link prediction",
                  device = dev, seed = seed),
             class = "temporal_fit")
+}
+
+# Event batches of about `batch_size` events that never split a timestamp:
+# events at the same time are scored together, before any of them updates
+# the memory or the neighbor store.
+tgn_batches <- function(t, batch_size) {
+  m <- length(t)
+  out <- list()
+  b <- 1L
+  while (b <= m) {
+    e <- min(m, b + batch_size - 1L)
+    while (e < m && t[e + 1L] == t[e]) e <- e + 1L
+    out[[length(out) + 1L]] <- b:e
+    b <- e + 1L
+  }
+  out
+}
+
+# One random destination per event, never equal to the event's own source or
+# destination, so a negative pair can not coincide with the positive one.
+tgn_negatives <- function(n, src, dst, seed) {
+  m <- length(src)
+  if (!m) return(integer())
+  if (n < 3L) stopf("TGN negative sampling needs at least three nodes.")
+  with_optional_seed(seed, {
+    neg <- sample.int(n, m, replace = TRUE)
+    bad <- neg == src | neg == dst
+    while (any(bad)) {
+      neg[bad] <- sample.int(n, sum(bad), replace = TRUE)
+      bad <- neg == src | neg == dst
+    }
+    neg
+  })
 }

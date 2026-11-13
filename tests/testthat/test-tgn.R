@@ -120,3 +120,31 @@ test_that("train_tgn learns with graph attention and event features", {
   expect_gt(fit$test_metrics[["roc_auc"]], 0.6)
   expect_true(all(is.finite(fit$history$train_loss)))
 })
+
+test_that("tgn memory uses the latest event of a node in either role", {
+  skip_if_no_torch()
+  torch::torch_manual_seed(1)
+  m <- tgn_model(5, memory_dim = 4, time_dim = 2, embedding_dim = 4)
+  mem <- torch::torch_randn(5, 4)
+  a <- m$update_memory(mem, rep(0, 5), list(src = c(1L, 2L), dst = c(2L, 3L), t = c(1, 2)))
+  b <- m$update_memory(mem, rep(0, 5), list(src = 2L, dst = 3L, t = 2))
+  expect_equal(a$last_t, c(1, 2, 2, 0, 0))
+  expect_equal(as_mat(a$mem[2, ]$unsqueeze(1)), as_mat(b$mem[2, ]$unsqueeze(1)), tolerance = 1e-6)
+  later <- m$update_memory(mem, c(0, 5, 0, 0, 0), list(src = 2L, dst = 3L, t = 2))
+  expect_equal(later$last_t[2], 5)
+})
+
+test_that("tgn negatives avoid the event's own nodes and batches keep timestamps whole", {
+  neg <- tgn_negatives(4L, c(1L, 2L, 3L, 1L), c(2L, 3L, 4L, 4L), seed = 1)
+  expect_true(all(neg != c(1L, 2L, 3L, 1L) & neg != c(2L, 3L, 4L, 4L)))
+  b <- tgn_batches(c(1, 1, 2, 2, 2, 3), 2L)
+  expect_equal(b, list(1:2, 3:5, 6L))
+})
+
+test_that("train_tgn rejects periods that overlap in time", {
+  skip_if_no_torch()
+  tg <- dataset_synthetic_temporal(num_events = 300, seed = 1)
+  sp <- split_temporal(tg)
+  sp$val <- sp$train
+  expect_error(train_tgn(tgn_model(tg$num_nodes, 8, 4, 8), sp, epochs = 1), "overlap")
+})
