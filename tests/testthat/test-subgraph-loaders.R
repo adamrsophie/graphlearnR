@@ -43,6 +43,7 @@ test_that("saint_loader walks along edges and normalizes", {
 
 test_that("training with subgraph loaders works and checks its input", {
   skip_if_no_torch()
+  testthat::skip_on_cran()  # trains for many epochs
   g <- split_nodes(dataset_sbm(c(60, 60, 60), seed = 4), seed = 4)
   for (L in list(cluster_loader(g, 6, 2, seed = 1), saint_loader(g, 20, 2, 5, seed = 1))) {
     torch::torch_manual_seed(1)

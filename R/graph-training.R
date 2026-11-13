@@ -212,7 +212,9 @@ train_graph_model <- function(model, data,
       seed = seed, task = task, epochs = epochs, optimizer = optimizer, lr = lr,
       weight_decay = weight_decay, loss = loss, batch_size = batch_size,
       fanouts = fanouts, early_stopping = early_stopping, scheduler = scheduler,
-      device = dev, model = model, data = data
+      device = dev, model = model, data = data, grad_clip = grad_clip,
+      class_weights = class_weights, decoder = runner$decoder, loader = loader,
+      target_type = target_type, val_data = val_data
     )
   ), class = "graph_fit")
 }
@@ -605,21 +607,44 @@ edge_task_runner <- function(model, data, task, dev, decoder) {
 
 reproducibility_info <- function(seed, task, epochs, optimizer, lr, weight_decay,
                                  loss, batch_size, fanouts, early_stopping,
-                                 scheduler, device, model, data) {
-  data_meta <- if (inherits(data, "graph_data")) data$metadata
+                                 scheduler, device, model, data, grad_clip = NULL,
+                                 class_weights = NULL, decoder = NULL, loader = NULL,
+                                 target_type = NULL, val_data = NULL) {
+  data_meta <- if (inherits(data, "graph_data") || inherits(data, "hetero_graph_data")) data$metadata
                else if (inherits(data, "link_split")) data$train_graph$metadata
+               else if (inherits(data, "hetero_link_split")) data$train_graph$metadata
                else if (inherits(data, "graph_dataset")) data$metadata
-  splits <- if (inherits(data, "graph_data")) {
-    c(train = sum(data$train_mask %||% FALSE), val = sum(data$val_mask %||% FALSE),
-      test = sum(data$test_mask %||% FALSE))
-  } else if (inherits(data, "link_split")) {
-    c(train = ncol(data$train_pos), val = ncol(data$val_pos), test = ncol(data$test_pos))
+               else if (is.list(data)) list(num_graphs = length(data))
+  # Split membership: counts and the exact members (node or edge indices,
+  # held out pairs), so the evaluation set can be rebuilt.
+  mask_members <- function(obj, prefix = "") {
+    ms <- lapply(c(train = "train", val = "val", test = "test"),
+                 function(k) which(obj[[paste0(prefix, k, "_mask")]] %||% logical()))
+    list(counts = vapply(ms, length, integer(1)), members = ms)
   }
+  splits <- if (inherits(data, "hetero_graph_data") && !is.null(target_type)) {
+    mask_members(data$nodes[[target_type]])
+  } else if (inherits(data, "graph_data")) {
+    if (grepl("^edge", task)) mask_members(data, "edge_") else mask_members(data)
+  } else if (inherits(data, "link_split") || inherits(data, "hetero_link_split")) {
+    list(counts = c(train = ncol(data$train_pos), val = ncol(data$val_pos), test = ncol(data$test_pos)),
+         members = data[c("val_pos", "val_neg", "test_pos", "test_neg")])
+  } else if (grepl("^graph", task)) {
+    list(counts = c(train = length(data), val = length(val_data %||% list())))
+  }
+  dtype <- tryCatch(as.character(model$parameters[[1L]]$dtype), error = function(e) NA_character_)
   list(
     seed = seed, task = task,
     hyperparameters = list(epochs = epochs, lr = lr, weight_decay = weight_decay,
                            batch_size = batch_size, fanouts = fanouts,
-                           early_stopping = early_stopping),
+                           early_stopping = early_stopping, grad_clip = grad_clip,
+                           class_weights = class_weights, target_type = target_type),
+    decoder = if (!is.null(decoder)) list(class = class(decoder)[1L],
+                                          type = tryCatch(decoder$type, error = function(e) NULL)),
+    loader = if (!is.null(loader)) {
+      lc <- unclass(loader)
+      c(list(class = class(loader)[1L]), lc[setdiff(names(lc), c("graph", "parts", "node_norm", "edge_norm"))])
+    },
     optimizer = if (is.character(optimizer)) optimizer else "custom",
     scheduler = if (is.list(scheduler)) scheduler else if (!is.null(scheduler)) "custom",
     loss = if (is.character(loss)) loss else if (is.null(loss)) "default" else "custom",
@@ -627,7 +652,7 @@ reproducibility_info <- function(seed, task, epochs, optimizer, lr, weight_decay
     model_class = class(model)[1L],
     num_parameters = sum(vapply(model$parameters, function(p) p$numel(), numeric(1))),
     dataset = data_meta, splits = splits,
-    device = device$type, precision = "float32",
+    device = device$type, precision = dtype,
     versions = c(R = paste(R.version$major, R.version$minor, sep = "."),
                  graphlearnR = as.character(packageVersion("graphlearnR")),
                  torch = as.character(packageVersion("torch"))),

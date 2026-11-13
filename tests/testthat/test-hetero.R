@@ -85,6 +85,7 @@ test_that("hetero_conv aggregates relations into each target type", {
 
 test_that("heterogeneous models learn drug classes from typed relations", {
   skip_if_no_torch()
+  testthat::skip_on_cran()  # trains for many epochs
   hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
   for (cv in c("rgcn", "sage", "gat")) {
     m <- hetero_gnn_model(hg, hidden_dim = 16, output_dim = 3, target_type = "drug", conv = cv,
@@ -126,6 +127,7 @@ test_that("hetero link splits remove held out edges from the reverse relation", 
 
 test_that("relation specific link prediction trains", {
   skip_if_no_torch()
+  testthat::skip_on_cran()  # trains for many epochs
   hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 3))
   sp <- split_edges_hetero(hg, "drug__targets__protein", seed = 3)
   torch::torch_manual_seed(1)

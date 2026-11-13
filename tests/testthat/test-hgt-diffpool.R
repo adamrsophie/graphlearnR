@@ -116,6 +116,7 @@ test_that("hgt input gradients match finite differences", {
 
 test_that("hetero models with HGT layers train", {
   skip_if_no_torch()
+  testthat::skip_on_cran()  # trains for many epochs
   hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
   torch::torch_manual_seed(1)
   m <- hetero_gnn_model(hg, hidden_dim = 16, output_dim = 3, target_type = "drug", conv = "hgt",
@@ -163,6 +164,7 @@ test_that("dense_diff_pool with hard assignments sums clusters", {
 
 test_that("diffpool_model is permutation invariant and trains", {
   skip_if_no_torch()
+  testthat::skip_on_cran()  # trains for many epochs
   torch::torch_manual_seed(5)
   g <- random_graph(8, 16, 1, seed = 5)
   g$edge_weight <- NULL

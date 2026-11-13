@@ -29,6 +29,7 @@ test_that("synthetic molecules support scaffold splits without overlap", {
 
 test_that("an edge aware GIN learns ring versus chain", {
   skip_if_no_torch()
+  testthat::skip_on_cran()  # trains for many epochs
   m <- dataset_synthetic_molecules(120, seed = 2)
   sp <- split_graphs(120, labels = vapply(m, function(g) as.character(g$graph_y), ""), seed = 2)
   torch::torch_manual_seed(1)

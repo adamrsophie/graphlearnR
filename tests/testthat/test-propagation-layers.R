@@ -62,6 +62,7 @@ test_that("appnp converges to the personalized PageRank solution", {
 
 test_that("appnp_model trains on a node task", {
   skip_if_no_torch()
+  testthat::skip_on_cran()  # trains for many epochs
   g <- split_nodes(dataset_sbm(c(40, 40), seed = 4), seed = 4)
   torch::torch_manual_seed(1)
   fit <- train_graph_model(appnp_model(ncol(g$x), 16, 2, K = 5), g, "node_classification",

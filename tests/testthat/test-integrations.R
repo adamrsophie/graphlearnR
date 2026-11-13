@@ -114,6 +114,7 @@ test_that("aggregate_jax matches torch aggregation and its gradient", {
 test_that("luz trains a node model on the masked nodes", {
   skip_if_not_installed("luz")
   skip_if_no_torch()
+  testthat::skip_on_cran()  # trains for many epochs
   g <- split_nodes(dataset_sbm(c(40, 40), seed = 6), seed = 6)
   dl <- luz_node_dataloader(g, "train")
   b <- torch::dataloader_next(torch::dataloader_make_iter(dl))

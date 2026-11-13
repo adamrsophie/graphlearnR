@@ -1,5 +1,6 @@
 test_that("node classification learns an SBM well above chance", {
   skip_if_no_torch()
+  testthat::skip_on_cran()  # trains for many epochs
   g <- split_nodes(dataset_sbm(c(40, 40, 40), p_in = 0.15, p_out = 0.01, feature_signal = 0.5,
                                seed = 1), seed = 1)
   fit <- train_graph_model(gnn_model("sage", 8, 16, 3, dropout = 0.2), g, "node_classification",
@@ -62,6 +63,7 @@ test_that("mini-batch training uses seed nodes only", {
 
 test_that("graph classification learns structural classes", {
   skip_if_no_torch()
+  testthat::skip_on_cran()  # trains for many epochs
   gs <- dataset_synthetic_graphs(80, seed = 4)
   sp <- split_graphs(80, labels = vapply(gs, function(g) as.character(g$graph_y), ""), seed = 4)
   fit <- train_graph_model(gnn_model("gin", 1, 16, 2, pool = "sum", dropout = 0), gs[sp$train],
@@ -84,6 +86,7 @@ test_that("graph regression works with a dataset object", {
 
 test_that("link prediction trains on training edges and evaluates held out pairs", {
   skip_if_no_torch()
+  testthat::skip_on_cran()  # trains for many epochs
   g <- dataset_sbm(c(40, 40), p_in = 0.25, p_out = 0.01, seed = 6)
   sp <- split_edges(g, val = 0.1, test = 0.1, seed = 6)
   fit <- train_graph_model(gnn_model("gcn", 8, 16, dropout = 0), sp, "link_prediction",
@@ -98,6 +101,7 @@ test_that("link prediction trains on training edges and evaluates held out pairs
 
 test_that("edge classification uses edge masks", {
   skip_if_no_torch()
+  testthat::skip_on_cran()  # trains for many epochs
   g <- dataset_sbm(c(20, 20), p_in = 0.3, p_out = 0.05, seed = 7)
   same <- g$y[g$edge_index[1, ]] == g$y[g$edge_index[2, ]]
   g$edge_y <- factor(ifelse(same, "within", "between"))
@@ -110,6 +114,7 @@ test_that("edge classification uses edge masks", {
 
 test_that("early stopping, schedulers and checkpoints work", {
   skip_if_no_torch()
+  testthat::skip_on_cran()  # trains for many epochs
   g <- split_nodes(dataset_karate(), seed = 1)
   ck <- withr::local_tempfile(fileext = ".pt")
   fit <- train_graph_model(gnn_model("gcn", 34, 8, 2), g, "node_classification", epochs = 200,
@@ -159,9 +164,18 @@ test_that("reproducibility record captures settings", {
   r <- fit$reproducibility
   expect_equal(r$seed, 3)
   expect_equal(r$model_config$architecture, "sage")
-  expect_equal(unname(r$splits), c(sum(g$train_mask), sum(g$val_mask), sum(g$test_mask)))
+  expect_equal(unname(r$splits$counts), c(sum(g$train_mask), sum(g$val_mask), sum(g$test_mask)))
+  expect_equal(r$splits$members$test, which(g$test_mask))
   expect_true(all(c("R", "graphlearnR", "torch") %in% names(r$versions)))
   expect_equal(r$device, "cpu")
+  expect_equal(r$precision, "Float")
+  sp <- split_edges(dataset_karate(), seed = 1)
+  f2 <- train_graph_model(gnn_model("gcn", 34, 8), sp, "link_prediction", epochs = 1,
+                          decoder = "mlp", grad_clip = 1, seed = 1)
+  r2 <- f2$reproducibility
+  expect_equal(r2$splits$members$test_pos, sp$test_pos)
+  expect_equal(r2$decoder$type, "mlp")
+  expect_equal(r2$hyperparameters$grad_clip, 1)
 })
 
 test_that("training input errors are informative", {

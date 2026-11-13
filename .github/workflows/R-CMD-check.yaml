@@ -33,6 +33,8 @@ jobs:
       # Installs LibTorch together with the torch R package.
       TORCH_INSTALL: 1
       TORCH_TEST: 1
+      # Run the long training tests that are skipped on CRAN.
+      NOT_CRAN: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 

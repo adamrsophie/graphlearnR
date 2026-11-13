@@ -53,6 +53,7 @@ test_that("attention diffusion is row stochastic, equivariant and differentiable
 
 test_that("graph_ode_model trains on a node task", {
   skip_if_no_torch()
+  testthat::skip_on_cran()  # trains for many epochs
   g <- split_nodes(dataset_sbm(c(50, 50), seed = 5), seed = 5)
   torch::torch_manual_seed(1)
   m <- graph_ode_model(ncol(g$x), 16, 2, t_end = 2, steps = 4)
