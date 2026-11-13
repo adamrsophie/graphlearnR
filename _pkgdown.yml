@@ -32,11 +32,16 @@ articles:
   - heterogeneous-graphs
   - temporal-graphs
   - graph-transformers
+  - molecular-graphs
 - title: Trust and evaluation
   navbar: Trust and evaluation
   contents:
   - explainability
   - evaluation-and-reproducibility
+- title: Ecosystem
+  navbar: Ecosystem
+  contents:
+  - ecosystem
 
 reference:
 - title: Package
@@ -74,6 +79,8 @@ reference:
   - global-pooling
   - global_attention_pool
   - topk_pool
+- to_dense_adj
+- diffpool_model
 - title: Models and decoders
   contents:
   - gnn_model
@@ -111,6 +118,7 @@ reference:
   - sample_hetero_neighbors
   - split_edges_hetero
   - hetero_conv
+- hgt_conv
   - hetero_gnn_model
 - title: Temporal graphs
   contents:
@@ -144,3 +152,12 @@ reference:
   - dataset_synthetic_hetero
   - dataset_synthetic_temporal
   - download-datasets
+- title: Molecules
+  desc: Molecular graphs from atoms and bonds.
+  contents:
+  - molecule_graph
+- title: Sibling packages
+  desc: Optional bridges to modelcompR and symcompR.
+  contents:
+  - graph_diffusion
+  - graph_operator_symbolic

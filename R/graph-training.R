@@ -338,7 +338,10 @@ graph_task_runner <- function(model, data, val_data, task, dev, batch_size, seed
       for (b in loader_batches(loader, epoch)) {
         bt <- graph_tensors(b, dev)
         out <- model_forward(model, bt)
-        tot <- tot + step_optimizer(opt, loss_fn(out, bt$graph_y), grad_clip, all_params(opt)) * b$num_graphs
+        loss <- loss_fn(out, bt$graph_y)
+        # Models with auxiliary objectives (such as diffpool_model) expose them here.
+        if (!is.null(model$aux_loss)) loss <- loss + model$aux_loss
+        tot <- tot + step_optimizer(opt, loss, grad_clip, all_params(opt)) * b$num_graphs
         n <- n + b$num_graphs
       }
       tot / n

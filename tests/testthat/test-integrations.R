@@ -1,0 +1,37 @@
+path_graph <- function() graph_data(edge_index = rbind(1:3, 2:4), num_nodes = 4, directed = FALSE)
+
+test_that("graph_diffusion matches the matrix exponential solution", {
+  skip_if_not_installed("modelcompR")
+  g <- path_graph()
+  u0 <- c(1, 0, 0, 2)
+  times <- c(0, 0.5, 2)
+  u <- graph_diffusion(g, u0, times, rate = 0.7, abstol = 1e-10, reltol = 1e-10)
+  L <- as.matrix(graphlearnR:::graph_laplacian(g, "laplacian"))
+  e <- eigen(L, symmetric = TRUE)
+  ref <- t(vapply(times, function(t) {
+    as.vector(e$vectors %*% (exp(-0.7 * t * e$values) * crossprod(e$vectors, u0)))
+  }, numeric(4)))
+  expect_equal(unname(u), ref, tolerance = 1e-6, ignore_attr = TRUE)
+  expect_equal(rowSums(u), rep(sum(u0), 3), tolerance = 1e-8)
+  expect_equal(attr(u, "times"), times)
+  un <- graph_diffusion(g, u0, c(0, 50), operator = "normalized_laplacian")
+  expect_equal(dim(un), c(2L, 4L))
+  expect_error(graph_diffusion(g, 1, times), "one value per node")
+  expect_error(graph_diffusion(g, u0, c(1, 0)), "increasing")
+})
+
+test_that("graph_operator_symbolic is exact and matches gcn_conv", {
+  skip_if_not_installed("symcompR")
+  skip_if_no_torch()
+  g <- path_graph()
+  P <- graph_operator_symbolic(g, "gcn")
+  expect_equal(format(P[1, 2]), format(sqrt(symcompR::Integer(6)) / 6))
+  layer <- gcn_conv(4, 4, bias = FALSE)
+  torch::with_no_grad(layer$lin$weight$copy_(torch::torch_eye(4)))
+  out <- as_mat(layer(torch::torch_eye(4), graph_tensors(g)$edge_index))
+  expect_equal(out, as.matrix(P), tolerance = 1e-6)
+  Lsym <- as.matrix(graph_operator_symbolic(g, "laplacian"))
+  expect_equal(Lsym, as.matrix(graphlearnR:::graph_laplacian(g, "laplacian")), ignore_attr = TRUE)
+  expect_equal(as.matrix(graph_operator_symbolic(g, "adjacency")),
+               unname(t(as.matrix(adjacency_from_graph(g, weighted = FALSE)))))
+})

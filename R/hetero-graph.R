@@ -546,6 +546,9 @@ hetero_conv <- nn_module(
 #'   relation, combined with [hetero_conv()]. `"gat"` gives relation specific
 #'   attention (a heterogeneous GAT in the sense of PyG's `to_hetero` applied
 #'   to `GATConv`; it is not HAN or HGT).
+#' * `conv = "hgt"`: heterogeneous graph transformer layers, see
+#'   [hgt_conv()]; attention is normalized over all incoming relations of a
+#'   node.
 #'
 #' Embedding tables make the model transductive for featureless types: it
 #' can only predict for nodes seen during training.
@@ -567,7 +570,7 @@ hetero_conv <- nn_module(
 #'   outputs.
 #' @export
 hetero_gnn_model <- function(hg, hidden_dim = 64L, output_dim = NULL, target_type = NULL,
-                             num_layers = 2L, conv = c("sage", "graph_conv", "gat", "rgcn"),
+                             num_layers = 2L, conv = c("sage", "graph_conv", "gat", "rgcn", "hgt"),
                              heads = 2L, dropout = 0.5, aggr = "mean",
                              relation_aggr = "sum", num_bases = NULL) {
   conv <- match.arg(conv)
@@ -575,7 +578,7 @@ hetero_gnn_model <- function(hg, hidden_dim = 64L, output_dim = NULL, target_typ
   if (!is.null(target_type) && !target_type %in% hg$node_types) {
     stopf("Unknown target type `%s`.", target_type)
   }
-  if (conv == "gat" && hidden_dim %% heads != 0L) stopf("`hidden_dim` must be divisible by `heads`.")
+  if (conv %in% c("gat", "hgt") && hidden_dim %% heads != 0L) stopf("`hidden_dim` must be divisible by `heads`.")
   schema <- list(
     node_types = hg$node_types,
     keys = names(hg$edges),
@@ -602,6 +605,10 @@ hetero_gnn <- nn_module(
     if (config$conv == "rgcn") {
       self$layers <- nn_module_list(lapply(seq_len(config$num_layers), function(i) {
         rgcn_conv(h, h, num_relations = length(sc$keys), num_bases = config$num_bases)
+      }))
+    } else if (config$conv == "hgt") {
+      self$layers <- nn_module_list(lapply(seq_len(config$num_layers), function(i) {
+        hgt_conv(sc$node_types, sc$keys, h, h, heads = config$heads)
       }))
     } else {
       self$layers <- nn_module_list(lapply(seq_len(config$num_layers), function(i) {

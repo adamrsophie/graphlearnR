@@ -14,7 +14,7 @@ It covers the whole workflow: validated graph data with explicit 1-based
 indexing, conversion from igraph, edge lists and sparse matrices, message
 passing layers, neighbor sampling, leakage safe splits, training for node,
 edge, link and graph level tasks, evaluation, heterogeneous and temporal
-graphs, graph transformers, and explanations.
+graphs, graph transformers, molecular graphs, and explanations.
 
 ## Installation
 
@@ -62,13 +62,15 @@ evaluate_graph_model(fit_l)                 # AUC, AP, MRR, Hits@k
 | Conversion | igraph, edge lists with arbitrary identifiers, dense and sparse adjacency matrices, torch tensors on any device |
 | Batching | `graph_batch()` and `unbatch()`, lazy and on disk datasets, transforms |
 | Message passing | vectorized scatter sum, mean, max, min, std, softmax; a general `message_passing()` for custom layers |
-| Layers | GraphSAGE, GCN, GraphConv, GIN and GINE, GAT, GATv2, transformer convolution, NNConv, RGCN; global and top-k pooling |
+| Layers | GraphSAGE, GCN, GraphConv, GIN and GINE, GAT, GATv2, transformer convolution, NNConv, RGCN; global, top-k and DiffPool pooling |
 | Training | node, edge, link and graph classification and regression; full batch or neighbor sampled; early stopping, schedulers, checkpoints, reproducibility record |
 | Splits | stratified node splits, link splits without leakage, edge label, group, scaffold and temporal splits; negative sampling |
-| Heterogeneous graphs | typed nodes and relations, reverse relations, typed sampling, relation specific link splits, heterogeneous GNNs |
+| Heterogeneous graphs | typed nodes and relations, reverse relations, typed sampling, relation specific link splits, heterogeneous GNNs including RGCN and the heterogeneous graph transformer (HGT) |
 | Temporal graphs | event streams, causal neighborhoods, snapshots, graph GRU, spatiotemporal forecasting, dynamic link prediction with baselines |
 | Graph transformers | Laplacian and random walk encodings, shortest path distances, Graphormer style model |
+| Molecules | graphs from atoms and bonds with element and bond order features, scaffold splits, synthetic molecules; TU loaders for MUTAG and similar sets |
 | Explainability | saliency, integrated gradients, edge gradients, occlusion, GNNExplainer, attention weights, fidelity and stability |
+| Sibling packages | optional: graph diffusion solved by modelcompR, exact graph operators from symcompR |
 | Datasets | karate club, stochastic block models, synthetic graph, heterogeneous and temporal data; checksum verified downloaders for TU and LINQS datasets |
 
 ## Conventions
@@ -87,7 +89,7 @@ evaluate_graph_model(fit_l)                 # AUC, AP, MRR, Hits@k
 The [package website](https://adamrsophie.github.io/graphlearnR/) has a
 reference for every function and articles on graph data, message passing,
 each task, sampling, heterogeneous and temporal graphs, graph transformers,
-explainability, and evaluation.
+molecular graphs, explainability, evaluation, and the sibling packages.
 
 ## How it is tested
 
@@ -108,9 +110,16 @@ Windows.
   aggregation uses torch scatter operations.
 * CPU and Apple MPS results agree in tests on an Apple M2; CUDA has not been
   tested.
-* Not yet included: luz and tidymodels integration, Chebyshev, APPNP and PNA
-  layers, cluster based samplers, memory based temporal models, and OGB
-  loaders.
+* DiffPool and the graph transformer build dense per graph matrices, so
+  their memory grows with the square of the largest graph in a batch.
+* graphlearnR does not parse SMILES or compute chemical scaffolds; use a
+  chemistry toolkit and pass atoms, bonds and scaffold identifiers in.
+* `graph_diffusion()` solves on R numerics through modelcompR, so it is a
+  simulation tool, not a trainable neural ODE layer.
+* Not yet included: luz and tidymodels integration, bridges to jaxR,
+  optcompR and z3r (see the ecosystem article), Chebyshev, APPNP and PNA
+  layers, cluster based samplers, memory based temporal models, HGT's
+  relative temporal encoding, and OGB loaders.
 
 ## Related work
 
@@ -119,8 +128,12 @@ graphlearnR follows the layer designs of
 [igraph](https://r.igraph.org) and [tidygraph](https://tidygraph.data-imaginist.com)
 cover graph analysis and manipulation, and graphlearnR converts from both.
 It is part of a series of R packages by the same author with
-[symcompR](https://github.com/adamrsophie/symcompR) and
-[z3r](https://github.com/adamrsophie/z3r).
+[modelcompR](https://github.com/adamrsophie/modelcompR),
+[symcompR](https://github.com/adamrsophie/symcompR),
+[optcompR](https://github.com/adamrsophie/optcompR),
+[jaxR](https://github.com/adamrsophie/jaxR) and
+[z3r](https://github.com/adamrsophie/z3r); the optional bridges to
+modelcompR and symcompR are described in the ecosystem article.
 
 ## Citation
 

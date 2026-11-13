@@ -10,7 +10,7 @@ hetero_gnn_model(
   output_dim = NULL,
   target_type = NULL,
   num_layers = 2L,
-  conv = c("sage", "graph_conv", "gat", "rgcn"),
+  conv = c("sage", "graph_conv", "gat", "rgcn", "hgt"),
   heads = 2L,
   dropout = 0.5,
   aggr = "mean",
@@ -62,6 +62,9 @@ averaged per relation.
 relation, combined with \code{\link[=hetero_conv]{hetero_conv()}}. \code{"gat"} gives relation specific
 attention (a heterogeneous GAT in the sense of PyG's \code{to_hetero} applied
 to \code{GATConv}; it is not HAN or HGT).
+\item \code{conv = "hgt"}: heterogeneous graph transformer layers, see
+\code{\link[=hgt_conv]{hgt_conv()}}; attention is normalized over all incoming relations of a
+node.
 }
 
 Embedding tables make the model transductive for featureless types: it

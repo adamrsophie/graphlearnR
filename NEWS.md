@@ -21,7 +21,11 @@ First release.
 - Layers: GraphSAGE, GCN, GraphConv, GIN and GINE, GAT, GATv2, graph
   transformer convolution, edge conditioned convolution (NNConv), and RGCN
   with basis decomposition.
-- Global add, mean, max, and attention pooling, and top-k pooling.
+- Global add, mean, max, and attention pooling, top-k pooling, and DiffPool
+  (`dense_diff_pool()`, `to_dense_adj()`, `dense_graph_conv()`,
+  `diffpool_model()`), whose auxiliary losses the trainer adds.
+- `hgt_conv()`: heterogeneous graph transformer layer, also available as
+  `hetero_gnn_model(conv = "hgt")`.
 - `gnn_model()` builds node, edge, link, and graph level models with
   normalization, residual connections, and dropout.
 
@@ -63,3 +67,16 @@ First release.
   graph, heterogeneous, and temporal datasets.
 - Downloaders with checksum verification for TU datasets and the LINQS
   citation graphs (Cora, CiteSeer); nothing third party is bundled.
+
+## Molecules
+
+- `molecule_graph()` builds graphs from atoms and bonds with element and
+  bond order features; `dataset_synthetic_molecules()` generates small
+  synthetic molecules with scaffold identifiers for scaffold splits.
+
+## Sibling packages (optional)
+
+- `graph_diffusion()` simulates diffusion on a graph with the modelcompR ODE
+  solvers.
+- `graph_operator_symbolic()` returns exact adjacency, Laplacian, and GCN
+  operators as symcompR matrices.

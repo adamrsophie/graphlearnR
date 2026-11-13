@@ -1,0 +1,164 @@
+---
+title: "Molecular graphs"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Molecular graphs}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+has_torch <- torch::torch_is_installed()
+```
+
+```{r setup}
+library(graphlearnR)
+```
+
+A molecule is a graph: atoms are nodes and bonds are edges. Molecular
+property prediction is graph classification or regression with node
+features (the element, charge, aromaticity) and edge features (the bond
+order). This article shows how to build such graphs, how to split them by
+scaffold so that test molecules are structurally new, and how to train an
+edge aware GIN.
+
+graphlearnR does not parse SMILES strings or compute chemical scaffolds.
+Use a chemistry toolkit such as RDKit (in Python, or through an R
+interface) to get atoms, bonds and Bemis-Murcko scaffolds, and pass them
+to graphlearnR as plain vectors and tables.
+
+## Atoms and bonds
+
+`molecule_graph()` takes element symbols and a bond table. Atoms become a
+one hot encoding over a list of common elements plus an "other" column;
+bonds become a one hot encoding of the bond order (1, 2, 3, and 1.5 for
+aromatic) on both directions of each bond.
+
+```{r}
+# acetic acid, heavy atoms only: C-C(=O)-O
+acetic <- molecule_graph(
+  atoms = c("C", "C", "O", "O"),
+  bonds = data.frame(from = c(1, 2, 2), to = c(2, 3, 4), order = c(1, 2, 1))
+)
+acetic
+acetic$x[, c("C", "O", "other")]
+cbind(t(acetic$edge_index), acetic$edge_attr)
+```
+
+Element and bond order vocabularies can be changed with `elements` and
+`bond_orders`. Further atom features (formal charge, hydrogen count) can be
+added by binding columns to `g$x` before training.
+
+## A synthetic data set
+
+`dataset_synthetic_molecules()` generates small random molecules with a
+carbon backbone that is either a chain or a ring of five or six atoms,
+with random nitrogen and oxygen atoms and side chains. The label says
+whether the molecule has a ring. The molecules are synthetic and carry no
+chemical meaning; they exist to demonstrate the workflow without
+downloading anything.
+
+```{r}
+mols <- dataset_synthetic_molecules(200, seed = 1)
+labels <- vapply(mols, function(m) as.character(m$graph_y), "")
+table(labels)
+scaffolds <- attr(mols, "scaffold")
+head(sort(table(scaffolds), decreasing = TRUE))
+```
+
+## Scaffold splits
+
+A random split puts near copies of the same scaffold in training and test,
+which overstates how well a model generalizes to new chemistry. The
+scaffold split of MoleculeNet (Wu et al. 2018) groups molecules by
+scaffold, sorts the groups from largest to smallest, and fills training,
+then validation, then test. No scaffold appears in two parts.
+
+```{r}
+sp <- split_graphs(length(mols), method = "scaffold", groups = scaffolds)
+lengths(sp)
+intersect(scaffolds[sp$train], scaffolds[sp$test])
+table(labels[sp$test])
+```
+
+Because the largest group (here every acyclic molecule) goes to training,
+the test set of a scaffold split can have a very different label mix from
+training. Report the label distribution of each part along with the
+metrics.
+
+## Training an edge aware GIN
+
+`gnn_model("gin", edge_dim = ...)` uses GINE layers, which add the bond
+features to each message, and sum pooling gives one vector per molecule.
+
+```{r, eval = has_torch}
+library(torch)
+torch_manual_seed(1)
+model <- gnn_model("gin", input_dim = ncol(mols[[1]]$x), hidden_dim = 32,
+                   output_dim = 2, num_layers = 3, pool = "sum",
+                   edge_dim = ncol(mols[[1]]$edge_attr))
+fit <- train_graph_model(model, mols[sp$train], "graph_classification",
+                         val_data = mols[sp$val], epochs = 40, batch_size = 32,
+                         seed = 1)
+evaluate_graph_model(fit, mols[sp$test])
+```
+
+For comparison, a random stratified split:
+
+```{r, eval = has_torch}
+sp_r <- split_graphs(length(mols), labels = labels, seed = 1)
+torch_manual_seed(1)
+model_r <- gnn_model("gin", ncol(mols[[1]]$x), 32, 2, num_layers = 3, pool = "sum",
+                     edge_dim = ncol(mols[[1]]$edge_attr))
+fit_r <- train_graph_model(model_r, mols[sp_r$train], "graph_classification",
+                           val_data = mols[sp_r$val], epochs = 40, batch_size = 32,
+                           seed = 1)
+evaluate_graph_model(fit_r, mols[sp_r$test])
+```
+
+## Real data: MUTAG
+
+MUTAG (Debnath et al. 1991) holds 188 nitroaromatic compounds labeled by
+mutagenicity on bacteria, distributed with the TU graph kernel benchmarks
+(Morris et al. 2020). graphlearnR does not ship it; `download_tu_dataset()`
+fetches the archive from the TU Dortmund site, checks its checksum, and
+reads it. Node labels (the element) become one hot node features and edge
+labels (the bond type) become edge features. The chunk below is not run
+when this article is built, so building the documentation never downloads
+data.
+
+```{r, eval = FALSE}
+mutag <- download_tu_dataset("MUTAG")
+mutag
+graphs <- lapply(seq_along(mutag), function(i) mutag[[i]])
+y <- vapply(graphs, function(g) as.character(g$graph_y), "")
+sp <- split_graphs(length(graphs), labels = y, seed = 1)
+torch_manual_seed(1)
+model <- gnn_model("gin", ncol(graphs[[1]]$x), 64, 2, num_layers = 4, pool = "sum",
+                   edge_dim = ncol(graphs[[1]]$edge_attr))
+fit <- train_graph_model(model, graphs[sp$train], "graph_classification",
+                         val_data = graphs[sp$val], epochs = 100, batch_size = 32,
+                         early_stopping = 20, seed = 1)
+evaluate_graph_model(fit, graphs[sp$test])
+```
+
+MUTAG is small, so test metrics vary a lot between splits. Repeat over
+several seeds or use cross validation and report the spread, not one
+number; see the evaluation article. MUTAG does not come with SMILES, so a
+scaffold split needs the structures from another source.
+
+## References
+
+Debnath, A. K., Lopez de Compadre, R. L., Debnath, G., Shusterman, A. J.
+and Hansch, C. (1991). Structure-activity relationship of mutagenic
+aromatic and heteroaromatic nitro compounds. *Journal of Medicinal
+Chemistry*, 34, 786 to 797.
+
+Morris, C., Kriege, N. M., Bause, F., Kersting, K., Mutzel, P. and
+Neumann, M. (2020). TUDataset: a collection of benchmark datasets for
+learning with graphs. ICML workshop on graph representation learning.
+
+Wu, Z., Ramsundar, B., Feinberg, E. N. et al. (2018). MoleculeNet: a
+benchmark for molecular machine learning. *Chemical Science*, 9, 513 to
+530.
