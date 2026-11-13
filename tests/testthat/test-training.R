@@ -205,3 +205,53 @@ test_that("multi target regression is evaluated column by column", {
   expect_equal(ev$value[ev$metric == "mse"],
                mean((g$y[m, , drop = FALSE] - p[m, , drop = FALSE])^2), tolerance = 1e-6)
 })
+
+test_that("checkpoints keep the decoder and verbose = 0 is silent", {
+  skip_if_no_torch()
+  sp <- split_edges(dataset_karate(), seed = 1)
+  ck <- withr::local_tempfile(fileext = ".pt")
+  fit <- train_graph_model(gnn_model("gcn", 34, 8), sp, "link_prediction", epochs = 3,
+                           decoder = "mlp", checkpoint_path = ck, verbose = 0, seed = 1)
+  expect_true(file.exists(paste0(ck, ".decoder")))
+  dec <- link_decoder("mlp", 8)
+  dec$load_state_dict(torch::torch_load(paste0(ck, ".decoder")))
+  expect_silent(train_graph_model(gnn_model("gcn", 34, 8, 2), split_nodes(dataset_karate(), seed = 1),
+                                  "node_classification", epochs = 2, verbose = 0, seed = 1))
+  expect_warning(train_graph_model(gnn_model("gcn", 34, 8, 2), split_nodes(dataset_karate(), seed = 1),
+                                   "node_classification", epochs = 1, loss = "focal",
+                                   class_weights = c(1, 2), seed = 1), "cross entropy")
+})
+
+test_that("edge predictions take the features of the requested edges", {
+  skip_if_no_torch()
+  g <- dataset_karate()
+  g$edge_attr <- matrix(seq_len(num_edges(g)) / num_edges(g), ncol = 1)
+  g$edge_y <- factor(ifelse(g$edge_index[1, ] < g$edge_index[2, ], "up", "down"))
+  g <- split_edge_labels(g, seed = 1)
+  fit <- train_graph_model(gnn_model("gcn", 34, 8), g, "edge_classification", epochs = 2, seed = 1)
+  all <- predict(fit, g, type = "response")
+  rev <- rev(seq_len(num_edges(g)))
+  sub <- predict(fit, g, type = "response", pairs = g$edge_index[, rev])
+  expect_equal(sub, all[rev, , drop = FALSE], tolerance = 1e-5)
+  expect_error(predict(fit, g, pairs = rbind(1, 1)), "not edges")
+})
+
+test_that("saved heterogeneous link fits still predict", {
+  skip_if_no_torch()
+  hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
+  sp <- split_edges_hetero(hg, "drug__targets__protein", seed = 1)
+  m <- hetero_gnn_model(hg, hidden_dim = 8, num_layers = 1)
+  fit <- train_graph_model(m, sp, "link_prediction", epochs = 2, seed = 1)
+  path <- withr::local_tempfile(fileext = ".rds")
+  save_graph_fit(fit, path)
+  back <- load_graph_fit(path)
+  s1 <- predict(fit, pairs = sp$test_pos, type = "score")
+  s2 <- predict(back, sp$train_graph, pairs = sp$test_pos, type = "score")
+  expect_equal(s1, s2, tolerance = 1e-5)
+  expect_error(predict(back, pairs = sp$test_pos), "new_data")
+})
+
+test_that("a 2 by 2 pair matrix with from and to names is a list of pairs", {
+  m <- cbind(from = c(1, 2), to = c(33, 34))
+  expect_equal(normalize_edge_index(m), rbind(c(1L, 2L), c(33L, 34L)))
+})

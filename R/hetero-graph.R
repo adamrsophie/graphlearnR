@@ -774,8 +774,12 @@ hetero_node_runner <- function(model, hg, classif, dev, target_type) {
 }
 
 hetero_link_runner <- function(model, split, dev, decoder, seed) {
-  decoder <- decoder %||% link_decoder("dot")
   ht <- hetero_tensors(split$train_graph, dev)
+  if (is.character(decoder)) {
+    dim <- with_no_grad(model(ht, return_embedding = TRUE))[[split$src_type]]$size(2L)
+    decoder <- link_decoder(decoder, dim = dim)
+  }
+  decoder <- decoder %||% link_decoder("dot")
   pt <- function(m) torch_tensor(m, dtype = torch_long(), device = dev)
   st <- split$src_type
   dt <- split$dst_type
@@ -813,8 +817,9 @@ hetero_link_runner <- function(model, split, dev, decoder, seed) {
 }
 
 predict_hetero_links <- function(object, new_data, pairs, type) {
-  split <- object$data
-  g <- new_data %||% split$train_graph
+  split <- object$link_schema %||% object$data
+  g <- new_data %||% object$data$train_graph %||%
+    stopf("Give `new_data`: this fit does not carry its training graph.")
   z <- object$model(hetero_tensors(g, object$device), return_embedding = TRUE)
   if (type == "embedding") return(lapply(z, as_r_array))
   if (is.null(pairs)) stopf("Link prediction needs `pairs` to score.")

@@ -53,22 +53,30 @@
 #'   tasks with `fanouts`).
 #' @param fanouts Neighbor sampling fanouts for node mini-batches.
 #' @param loader A [cluster_loader()] or [saint_loader()] for node tasks.
-#' @param decoder Decoder module for link and edge tasks; defaults to
+#' @param decoder Decoder module for link and edge tasks, or for link
+#'   prediction the name of a [link_decoder()] type; defaults to
 #'   [link_decoder()] `"dot"` and an [edge_decoder()].
 #' @param scheduler `NULL`, a list such as `list(type = "step", step_size =
 #'   50, gamma = 0.5)`, `list(type = "plateau", patience = 10, factor = 0.5)`
 #'   or `list(type = "cosine")`, or a function taking the optimizer and
 #'   returning a `torch` scheduler.
 #' @param early_stopping Patience in epochs, or `NULL` to train all epochs.
-#'   Monitors validation loss; the best weights are restored at the end.
-#' @param checkpoint_path Optional file; the model state is saved there with
-#'   [torch::torch_save()] whenever validation loss improves.
+#'   Monitors validation loss (training loss when there is no validation
+#'   set); the best weights are restored at the end.
+#' @param checkpoint_path Optional file; the model state of the best epoch so
+#'   far is saved there with [torch::torch_save()] whenever the monitored
+#'   loss improves. For link and edge tasks the decoder state is saved next
+#'   to it, in `paste0(checkpoint_path, ".decoder")`. Without
+#'   `early_stopping` the returned model holds the last epoch, not the
+#'   checkpointed one.
 #' @param device Device, see [graph_tensors()].
 #' @param seed Optional integer seed.
 #' @param grad_clip Optional maximum gradient norm.
-#' @param class_weights Optional class weights for cross entropy.
+#' @param class_weights Optional class weights for the cross entropy loss
+#'   (other losses do not use them, and a warning says so).
 #' @param target_type Node type to predict for heterogeneous graphs.
-#' @param verbose Print progress every `verbose` epochs (`FALSE` for none).
+#' @param verbose Print progress every `verbose` epochs (`FALSE` or `0` for
+#'   none, `TRUE` for every epoch).
 #' @return An object of class `graph_fit`.
 #' @examples
 #' if (torch::torch_is_installed()) {
@@ -97,6 +105,11 @@ train_graph_model <- function(model, data,
   if (!inherits(model, "nn_module")) stopf("`model` must be a torch nn_module.")
   epochs <- check_count(epochs, "epochs", 1L)
   dev <- resolve_device(device)
+  every <- if (isTRUE(verbose)) 1L else if (is.numeric(verbose) && length(verbose) == 1L &&
+                                             !is.na(verbose) && verbose >= 1) as.integer(verbose) else 0L
+  if (is.character(decoder) && task != "link_prediction") {
+    stopf("A decoder name is only accepted for link prediction.")
+  }
   if (!is.null(seed)) torch_manual_seed(seed)
   model$to(device = dev)
 
@@ -110,6 +123,11 @@ train_graph_model <- function(model, data,
       edge_task_runner(model, data, task, dev, decoder)
   )
   if (!is.null(runner$decoder)) runner$decoder$to(device = dev)
+  eff_loss <- if (is.character(loss)) loss else if (is.null(loss)) runner$default_loss else "custom"
+  if (!is.null(class_weights) && !identical(eff_loss, "cross_entropy")) {
+    warning("`class_weights` are used by the cross entropy loss only; they are ignored here.",
+            call. = FALSE)
+  }
   loss_fn <- resolve_loss(loss, runner$default_loss, class_weights, dev)
   params <- c(model$parameters, if (!is.null(runner$decoder)) runner$decoder$parameters)
   opt <- make_optimizer(optimizer, params, lr, weight_decay)
@@ -142,13 +160,18 @@ train_graph_model <- function(model, data,
       if (!is.null(early_stopping) || !is.null(checkpoint_path)) {
         best$state <- clone_state(model)
         if (!is.null(runner$decoder)) best$dec_state <- clone_state(runner$decoder)
-        if (!is.null(checkpoint_path)) torch_save(model$state_dict(), checkpoint_path)
+        if (!is.null(checkpoint_path)) {
+          torch_save(model$state_dict(), checkpoint_path)
+          if (!is.null(runner$decoder)) {
+            torch_save(runner$decoder$state_dict(), paste0(checkpoint_path, ".decoder"))
+          }
+        }
       }
       wait <- 0L
     } else {
       wait <- wait + 1L
     }
-    if (!isFALSE(verbose) && (epoch %% as.integer(verbose) == 0L || epoch == 1L)) {
+    if (every > 0L && (epoch %% every == 0L || epoch == 1L)) {
       message(sprintf("epoch %d  train_loss %.4f  val_loss %s  val_%s %s", epoch,
                       train_loss, format(val$loss %||% NA, digits = 4),
                       runner$metric_name, format(val$metric %||% NA, digits = 4)))
@@ -166,6 +189,7 @@ train_graph_model <- function(model, data,
     model = model, decoder = runner$decoder, optimizer = opt, scheduler = sched,
     task = task, history = history, best_epoch = best$epoch,
     levels = runner$levels, data = data, target_type = target_type,
+    link_schema = link_schema(data),
     metric_name = runner$metric_name, device = dev,
     reproducibility = reproducibility_info(
       seed = seed, task = task, epochs = epochs, optimizer = optimizer, lr = lr,
@@ -461,8 +485,11 @@ link_task_runner <- function(model, split, dev, decoder, seed) {
     return(hetero_link_runner(model, split, dev, decoder, seed))
   }
   if (!inherits(split, "link_split")) stopf("Link prediction needs a link_split from split_edges().")
-  decoder <- decoder %||% link_decoder("dot")
   tt <- graph_tensors(split$train_graph, dev)
+  if (is.character(decoder)) {
+    decoder <- link_decoder(decoder, dim = with_no_grad(model_forward(model, tt))$size(2L))
+  }
+  decoder <- decoder %||% link_decoder("dot")
   pairs_t <- function(m) torch_tensor(m, dtype = torch_long(), device = dev)
   train_pos <- pairs_t(split$train_pos)
   val_pos <- if (ncol(split$val_pos)) pairs_t(split$val_pos)
@@ -602,6 +629,7 @@ print.graph_fit <- function(x, ...) {
 #' @export
 save_graph_fit <- function(fit, path) {
   obj <- list(
+    link_schema = fit$link_schema %||% link_schema(fit$data),
     model = torch_serialize(fit$model),
     decoder = if (!is.null(fit$decoder)) torch_serialize(fit$decoder),
     task = fit$task, history = fit$history, best_epoch = fit$best_epoch,
@@ -626,6 +654,15 @@ load_graph_fit <- function(path, device = NULL) {
   structure(list(model = model, decoder = decoder, optimizer = NULL, task = obj$task,
                  history = obj$history, best_epoch = obj$best_epoch, levels = obj$levels,
                  data = NULL, target_type = obj$target_type, metric_name = obj$metric_name,
-                 device = dev, reproducibility = obj$reproducibility),
+                 device = dev, reproducibility = obj$reproducibility,
+                 link_schema = obj$link_schema),
             class = "graph_fit")
+}
+
+# What link prediction needs to score pairs without the training data: the
+# typed relation of a heterogeneous split.
+link_schema <- function(data) {
+  if (inherits(data, "hetero_link_split")) {
+    data[c("relation", "src_type", "dst_type", "num_src", "num_dst")]
+  }
 }

@@ -9,6 +9,9 @@
 #' * Link prediction: one row per pair in `pairs`; message passing uses
 #'   `new_data`, by default the training graph of the split.
 #' * Edge tasks: one row per pair in `pairs` (default every stored edge).
+#'   When the model uses edge features, each requested pair takes the
+#'   features of its stored edge in `new_data`; pairs that are not edges
+#'   are an error.
 #'
 #' @param object A `graph_fit`.
 #' @param new_data Data to predict on; defaults to the training data where
@@ -37,7 +40,8 @@ predict.graph_fit <- function(object, new_data = NULL,
   task <- object$task
   with_no_grad({
     if (task %in% c("node_classification", "node_regression")) {
-      new_data <- new_data %||% object$data
+      new_data <- new_data %||% object$data %||%
+        stopf("Give `new_data`: this fit does not carry its training data.")
       if (inherits(new_data, "hetero_graph_data")) {
         ht <- hetero_tensors(new_data, dev)
         out <- model(ht, return_embedding = type == "embedding")[[object$target_type]]
@@ -50,7 +54,8 @@ predict.graph_fit <- function(object, new_data = NULL,
       return(format_predictions(out, type, object, ids, "node_id"))
     }
     if (task %in% c("graph_classification", "graph_regression")) {
-      new_data <- new_data %||% object$data
+      new_data <- new_data %||% object$data %||%
+        stopf("Give `new_data`: this fit does not carry its training data.")
       if (inherits(new_data, "graph_data")) new_data <- list(new_data)
       batches <- loader_batches(graph_loader(new_data, batch_size, FALSE))
       out <- torch_cat(lapply(batches, function(b) {
@@ -63,10 +68,11 @@ predict.graph_fit <- function(object, new_data = NULL,
     }
     if (task == "link_prediction") {
       split <- object$data
-      if (inherits(split, "hetero_link_split")) {
+      if (inherits(split, "hetero_link_split") || !is.null(object$link_schema)) {
         return(predict_hetero_links(object, new_data, pairs, type))
       }
-      g <- new_data %||% split$train_graph
+      g <- new_data %||% split$train_graph %||%
+        stopf("Give `new_data`: this fit does not carry its training data.")
       z <- model_forward(model, graph_tensors(g, dev))
       if (type == "embedding") return(as_r_array(z))
       if (is.null(pairs)) stopf("Link prediction needs `pairs` to score.")
@@ -80,12 +86,27 @@ predict.graph_fit <- function(object, new_data = NULL,
                                   .prob = stats::plogis(s)),
                        class = c("graph_predictions", "data.frame")))
     }
-    g <- new_data %||% object$data
-    pairs <- if (is.null(pairs)) g$edge_index else normalize_edge_index(pairs)
+    g <- new_data %||% object$data %||%
+      stopf("Give `new_data`: this fit does not carry its training data.")
     tt <- graph_tensors(g, dev)
     z <- model_forward(model, tt)
     if (type == "embedding") return(as_r_array(z))
-    ea <- if (!is.null(tt$edge_attr) && ncol(pairs) == ncol(g$edge_index)) tt$edge_attr
+    ea <- NULL
+    if (is.null(pairs)) {
+      pairs <- g$edge_index
+      ea <- tt$edge_attr
+    } else {
+      pairs <- normalize_edge_index(pairs)
+      if (!is.null(tt$edge_attr)) {
+        # Each requested pair takes the features of its own stored edge.
+        idx <- match(paste(pairs[1L, ], pairs[2L, ]), paste(g$edge_index[1L, ], g$edge_index[2L, ]))
+        if (anyNA(idx)) {
+          stopf("%d requested pairs are not edges of `new_data`, so they have no edge features.",
+                sum(is.na(idx)))
+        }
+        ea <- tt$edge_attr$index_select(1L, torch_tensor(idx, dtype = torch_long(), device = dev))
+      }
+    }
     out <- object$decoder(z, torch_tensor(pairs, dtype = torch_long(), device = dev), ea)
     format_predictions(out, type, object, seq_len(ncol(pairs)), "edge")
   })
@@ -183,13 +204,8 @@ evaluate_graph_model <- function(fit, new_data = NULL, split = c("test", "val", 
     pos <- sp[[paste0(split, "_pos")]]
     neg <- sp[[paste0(split, "_neg")]]
     if (split == "train") stopf("Use split = \"val\" or \"test\" for link prediction.")
-    if (inherits(sp, "hetero_link_split")) {
-      s_pos <- predict(fit, pairs = pos, type = "score")
-      s_neg <- predict(fit, pairs = neg, type = "score")
-    } else {
-      s_pos <- predict(fit, sp$train_graph, type = "score", pairs = pos)
-      s_neg <- predict(fit, sp$train_graph, type = "score", pairs = neg)
-    }
+    s_pos <- predict(fit, sp$train_graph, type = "score", pairs = pos)
+    s_neg <- predict(fit, sp$train_graph, type = "score", pairs = neg)
     return(evaluate_predictions(s_pos, s_pos, "link", neg = s_neg, ks = ks))
   }
   mask <- data[[paste0("edge_", split, "_mask")]]

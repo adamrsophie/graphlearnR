@@ -31,7 +31,9 @@
 #'   vector (one feature), a numeric data frame, or `NULL`.
 #' @param edge_index Edges as a 2 by E matrix (row 1 source, row 2 target), an
 #'   E by 2 matrix, or a data frame with columns `from` and `to`. Values are
-#'   one based node indices. `NULL` means no edges.
+#'   one based node indices. `NULL` means no edges. A 2 by 2 matrix is read
+#'   as 2 by E (two edges, one per column) unless its column names are
+#'   `from` and `to`.
 #' @param y Node labels: factor (classification), integer or numeric vector,
 #'   or numeric matrix (multi target), one entry per node. Character labels
 #'   are converted to a factor (as are character `edge_y` and `graph_y`).
@@ -172,7 +174,12 @@ normalize_edge_index <- function(edge_index) {
   if (!is.matrix(edge_index)) {
     stopf("`edge_index` must be a 2 by E matrix, an E by 2 matrix or a data frame.")
   }
-  if (nrow(edge_index) != 2L) {
+  # A 2 by 2 matrix is read as 2 by E unless its column names say it is a
+  # list of pairs (`from` and `to`).
+  if (nrow(edge_index) == 2L && ncol(edge_index) == 2L &&
+      identical(colnames(edge_index), c("from", "to"))) {
+    edge_index <- t(edge_index)
+  } else if (nrow(edge_index) != 2L) {
     if (ncol(edge_index) == 2L) {
       edge_index <- t(edge_index)
     } else {
