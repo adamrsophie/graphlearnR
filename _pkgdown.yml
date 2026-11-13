@@ -142,6 +142,7 @@ reference:
   contents:
   - explain
   - explanation_fidelity
+  - explanation_subgraph
   - attention_weights
 - title: Datasets
   contents:

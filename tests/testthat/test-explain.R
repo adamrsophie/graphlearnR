@@ -63,3 +63,22 @@ test_that("attention weights are collected from attention layers", {
   expect_true(all(c("from", "to", "head1", "head2") %in% names(aw[[1]])))
   expect_equal(as.vector(tapply(aw[[1]]$head1, aw[[1]]$to, sum)), rep(1, 34), tolerance = 1e-5)
 })
+
+test_that("explanation_subgraph keeps the top pairs and maps back", {
+  g <- graph_data(x = diag(4), edge_index = rbind(c(1, 2, 3), c(2, 3, 4)), num_nodes = 4,
+                  directed = FALSE)
+  ed <- data.frame(edge = seq_len(num_edges(g)), from = g$edge_index[1, ], to = g$edge_index[2, ],
+                   attribution = 0)
+  pair_23 <- which(g$edge_index[1, ] %in% c(2, 3) & g$edge_index[2, ] %in% c(2, 3))
+  ed$attribution[pair_23[1]] <- -5
+  ex <- structure(list(target = 4, edges = ed), class = "graph_explanation")
+  sub <- explanation_subgraph(g, ex, k = 1)
+  expect_equal(sub$node_ids, c(2L, 3L, 4L))
+  expect_equal(num_edges(sub), 2L)
+  expect_setequal(sub$edge_original, pair_23)
+  expect_equal(sub$x, diag(4)[2:4, ])
+  expect_silent(validate_graph(sub))
+  ed2 <- explanation_subgraph(g, ex, k = 10)
+  expect_equal(num_edges(ed2), num_edges(g))
+  expect_error(explanation_subgraph(g, list(), k = 1), "no edge attributions")
+})

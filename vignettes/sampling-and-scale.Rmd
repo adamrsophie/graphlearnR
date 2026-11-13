@@ -130,6 +130,15 @@ negative_sampling(rbind(1:3, 1:3), num_src = 5, num_dst = 4, num_samples = 4,
 * The model runs on whichever device you pass as `device`. For very large
   graphs, keep the graph in memory once and let the loader slice it, rather
   than building many graph copies.
+* Memory: in one run on a GitHub Ubuntu runner (CPU only), the peak
+  resident memory of a fresh R process for one forward and backward pass
+  on a random graph with 50,000 nodes, 500,000 edges and 32 features was
+  about 560 MB for `sage_conv`, 580 MB for `gin_conv`, 1.1 GB for
+  `gcn_conv` and 1.3 GB for `gat_conv`, against about 290 MB after loading
+  torch. GPU memory has not been measured.
+* Construction: building an undirected graph with 1,000,000 input edges
+  took 2.6 s in the same run, against 0.05 s for a directed one, so build
+  large graphs once and reuse them.
 * The `benchmarks/` folder of the source repository has timing scripts for
   layers and for full batch against sampled training. Their results are
   produced on GitHub Actions runners and reported with the hardware they ran

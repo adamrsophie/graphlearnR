@@ -235,6 +235,48 @@ explanation_stability <- function(model, g, explainer, noise = 0.01, reps = 5L, 
   c(mean_spearman = mean(cors), min_spearman = min(cors))
 }
 
+#' Explanation subgraph
+#'
+#' Turns an edge attribution into a subgraph explanation: the `k` edges with
+#' the largest absolute attribution (and, for undirected graphs, their
+#' reverse directions), the nodes they touch, and the target node. The
+#' result is a `graph_data` object with local 1-based indices; its
+#' `node_ids` hold the original node indices so the subgraph can be mapped
+#' back, and `edge_original` the original edge positions.
+#'
+#' @param g The `graph_data` object that was explained.
+#' @param explanation A `graph_explanation` with an `edges` table, for
+#'   example from [explain_edges()] or [gnn_explainer()].
+#' @param k Number of top edges (directions of one undirected pair count
+#'   once).
+#' @return A `graph_data` object.
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   g <- split_nodes(dataset_karate(), seed = 1)
+#'   fit <- train_graph_model(gnn_model("gcn", 34, 8, 2), g,
+#'                            "node_classification", epochs = 20, seed = 1)
+#'   sub <- explanation_subgraph(g, explain_edges(fit, g, target = 1), k = 5)
+#'   sub$node_ids
+#' }
+#' @export
+explanation_subgraph <- function(g, explanation, k = 5L) {
+  ed <- explanation$edges
+  if (is.null(ed)) stopf("`explanation` has no edge attributions.")
+  k <- check_count(k, "k", 1L)
+  key <- if (!is.null(g$edge_pair)) g$edge_pair[ed$edge] else ed$edge
+  # Rank pairs by the largest absolute attribution of either direction.
+  score <- tapply(abs(ed$attribution), key, max)
+  top_keys <- names(sort(score, decreasing = TRUE))[seq_len(min(k, length(score)))]
+  edges <- sort(ed$edge[as.character(key) %in% top_keys])
+  nodes <- sort(unique(c(explanation$target, g$edge_index[, edges])))
+  sub <- edge_subset(g, edges)
+  ids <- g$node_ids %||% seq_len(g$num_nodes)
+  out <- induced_subgraph(sub, nodes)
+  out$node_ids <- ids[nodes]
+  out$edge_original <- edges
+  out
+}
+
 #' Attention weights of attention layers
 #'
 #' Collects the attention coefficients stored by attention layers

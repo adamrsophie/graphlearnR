@@ -41,7 +41,10 @@ if (nzchar(case)) {
   layer$to(device = dev)
   out <- layer(tt$x, tt$edge_index)
   out$sum()$backward()
-  gpu <- if (dev == "cuda") cuda_max_memory_allocated() / 2^20 else NA_real_
+  # Untested: no GPU runner. Falls back to NA if the stats layout differs.
+  gpu <- if (dev == "cuda") {
+    tryCatch(cuda_memory_stats()$allocated_bytes$all$peak / 2^20, error = function(e) NA_real_)
+  } else NA_real_
   cat(sprintf("RESULT %f %f %f\n", base, peak_mb(), gpu))
   quit(save = "no")
 }

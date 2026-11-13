@@ -101,6 +101,19 @@ head(gx$edges[order(-gx$edges$attribution), ])
 range(gx$edges$attribution)
 ```
 
+### Explanation subgraphs
+
+`explanation_subgraph()` turns any edge attribution into a small graph: the
+`k` most important edges (both directions of an undirected pair count as
+one), the nodes they touch, and the target. Its `node_ids` map back to the
+original graph, so it can be plotted or passed to the model again.
+
+```{r}
+sub <- explanation_subgraph(g, gx, k = 5)
+sub
+sub$node_ids
+```
+
 ## Attention
 
 For attention models, `attention_weights()` collects the coefficients of the

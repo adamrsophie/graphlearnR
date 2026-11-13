@@ -59,7 +59,7 @@ First release.
 ## Explainability
 
 - Saliency, integrated gradients, edge gradients, occlusion, GNNExplainer,
-  attention weights, fidelity, and stability.
+  attention weights, explanation subgraphs, fidelity, and stability.
 
 ## Datasets
 
