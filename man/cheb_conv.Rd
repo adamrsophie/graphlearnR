@@ -29,6 +29,12 @@ default, \eqn{\lambda_{max} = 2}, so \eqn{\hat L = -D^{-1/2} A D^{-1/2}}
 are weighted in degrees, so the operator is the symmetric Laplacian for
 undirected graphs.
 }
+\details{
+Input \code{x} is N by F; output N by F'. Edge input: \code{edge_weight} only.
+Cost: \eqn{K - 1} sparse propagations, \eqn{O(K E F)}, plus
+\eqn{O(K N F F')} for the transforms; memory holds the K terms
+\eqn{T_k X} (\eqn{K N F}).
+}
 \examples{
 if (torch::torch_is_installed()) {
   g <- dataset_karate()

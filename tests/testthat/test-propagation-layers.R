@@ -97,9 +97,9 @@ test_that("pna_conv matches an explicit per node computation", {
     msgs <- matrix(msgs, nrow = 2)
     ag <- if (length(inc)) {
       c(rowMeans(msgs), apply(msgs, 1, min), apply(msgs, 1, max),
-        sqrt(pmax(rowMeans(msgs^2) - rowMeans(msgs)^2, 0) + 1e-5), rowSums(msgs))
+        {sd <- sqrt(pmax(rowMeans(msgs^2) - rowMeans(msgs)^2, 1e-5)); ifelse(sd <= sqrt(1e-5), 0, sd)}, rowSums(msgs))
     } else {
-      c(rep(0, 6), rep(sqrt(1e-5), 2), 0, 0)
+      c(rep(0, 10))
     }
     d <- max(length(inc), 1)
     sc <- c(ag, ag * log(d + 1) / avg_log, ag * avg_log / log(d + 1), ag * d / avg_lin, ag * avg_lin / d)

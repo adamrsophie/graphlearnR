@@ -16,9 +16,15 @@ test_that("scatter kernels match reference loops", {
   expect_equal(as_mat(scatter_mean(s, index, n)), ref_aggregate(src, index, n, mean), tolerance = 1e-5)
   expect_equal(as_mat(scatter_max(s, index, n)), ref_aggregate(src, index, n, max), tolerance = 1e-5)
   expect_equal(as_mat(scatter_min(s, index, n)), ref_aggregate(src, index, n, min), tolerance = 1e-5)
-  sdp <- function(v) sqrt(mean((v - mean(v))^2) + 1e-5)
-  expect_equal(as_mat(scatter_std(s, index, n)), ref_aggregate(src, index, n, sdp, sqrt(1e-5)),
+  sdp <- function(v) {
+    r <- sqrt(max(mean((v - mean(v))^2), 1e-5))
+    if (r <= sqrt(1e-5)) 0 else r
+  }
+  expect_equal(as_mat(scatter_std(s, index, n)), ref_aggregate(src, index, n, sdp, 0),
                tolerance = 1e-4)
+  # a constant group has std 0, as in PyTorch Geometric
+  const <- torch::torch_tensor(matrix(c(2, 2, 5), 3, 1))
+  expect_equal(as.numeric(as.array(scatter_std(const, c(1L, 1L, 2L), 2L))), c(0, 0))
   both <- scatter_aggregate(s, index, n, c("sum", "max"))
   expect_equal(dim(both), c(6, 6))
   expect_equal(as.numeric(as.array(scatter_count(index, n))), c(3, 0, 3, 0, 2, 0))

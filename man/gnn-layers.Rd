@@ -171,10 +171,21 @@ the usual neighborhood.
 }
 
 
-Cost is \eqn{O(E F)} for message construction plus the dense transforms
-(\eqn{O(N F F')}); attention layers keep an E by heads attention tensor;
-\code{nn_conv} stores an E by F by F' tensor of edge specific weights and is the
-most memory hungry. All layers are permutation equivariant: permuting node
+Normalization, attention and cost per forward pass (N nodes, E edges,
+input size F, output size F', H heads, R relations):\tabular{llll}{
+   Layer \tab Normalization or attention \tab Time \tab Extra memory \cr
+   \code{sage_conv} \tab \code{aggr} (mean by default) over incoming edges; optional L2 row normalization \tab \eqn{O(EF + NFF')} \tab \eqn{E F} messages \cr
+   \code{gcn_conv} \tab symmetric \eqn{D^{-1/2}(A+I)D^{-1/2}}, weighted in degree \tab \eqn{O(EF' + NFF')} \tab \eqn{E F'} messages \cr
+   \code{graph_conv} \tab none (sum by default) \tab \eqn{O(EF + NFF')} \tab \eqn{E F} \cr
+   \code{gin_conv} \tab none (sum) \tab \eqn{O(EF)} plus the MLP \tab \eqn{E F} \cr
+   \code{gat_conv}, \code{gatv2_conv} \tab softmax of attention scores over the incoming edges of each node, per head \tab \eqn{O(EHF' + NFHF')} \tab \eqn{E H F'} messages and \eqn{E H} coefficients \cr
+   \code{transformer_conv} \tab scaled dot product softmax over incoming edges, per head \tab \eqn{O(EHF' + NFHF')} \tab \eqn{E H F'} and \eqn{E H} \cr
+   \code{nn_conv} \tab \code{aggr} (mean by default) \tab \eqn{O(E F F')} \tab \eqn{E F F'} edge specific weights, the largest \cr
+   \code{rgcn_conv} \tab mean per relation \tab \eqn{O(EF' + RNFF')} \tab \eqn{R F F'} weights (or bases) \cr
+}
+
+
+All layers are permutation equivariant: permuting node
 rows and relabeling \code{edge_index} permutes the output rows the same way.
 
 The formulas follow the PyTorch Geometric layers of the same names

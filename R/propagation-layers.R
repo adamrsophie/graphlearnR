@@ -177,9 +177,10 @@ appnp_model <- nn_module(
 #' E by F messages and the N by \eqn{(a s + 1) F} concatenation.
 #'
 #' The benchmark workflow (`benchmarks/pyg/`) copies the weights of a layer
-#' with the mean, min, max and sum aggregators and all five scalers into
-#' PyTorch Geometric's `PNAConv` (one tower, one pre and post layer) and
-#' checks that the outputs agree.
+#' with the mean, min, max and sum aggregators and all five scalers, and of
+#' one with the std aggregator, into PyTorch Geometric's `PNAConv` (one
+#' tower, one pre and post layer) and checks that the outputs agree (the
+#' first agreed to 2e-6 on CI).
 #'
 #' @param in_features,out_features Feature sizes.
 #' @param deg Degree histogram from `pna_degree()`.

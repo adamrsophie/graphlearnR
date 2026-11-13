@@ -41,8 +41,7 @@ for (n in sizes) {
     wcsv(as.matrix(layers$sage(tt$x, tt$edge_index)$detach()), "sage_out_r.csv")
     wcsv(as.matrix(layers$gcn(tt$x, tt$edge_index)$detach()), "gcn_out_r.csv")
     # PNA with every scaler: once with mean, min, max and sum, and once with
-    # std alone, whose treatment of zero variance may differ between
-    # implementations.
+    # std alone (zero variance gives 0 in both libraries).
     deg <- pna_degree(g)
     wcsv(deg, "pna_deg.csv")
     scal <- c("identity", "amplification", "attenuation", "linear", "inverse_linear")

@@ -71,6 +71,7 @@ reference:
   contents:
   - scatter
   - message_passing
+  - meta_layer
   - add_self_loops_tensor
 - title: Layers and pooling
   contents:
@@ -110,6 +111,7 @@ reference:
   - predict.graph_fit
   - evaluate_graph_model
   - evaluate_predictions
+  - evaluate_embeddings
   - save_graph_fit
   - graph_fit-tidy
   - luz_node_dataloader
@@ -141,6 +143,7 @@ reference:
   - train_dynamic_link_model
   - dynamic_link_baseline
   - tgn_model
+  - predict.temporal_fit
 - title: Graph transformers and encodings
   contents:
   - positional-encodings
@@ -162,6 +165,7 @@ reference:
   - dataset_synthetic_temporal
   - download-datasets
   - read_ogb_node
+  - ogb_evaluate
 - title: Molecules
   desc: Molecular graphs from atoms and bonds.
   contents:

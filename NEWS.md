@@ -111,6 +111,9 @@ First release.
   settings.
 - `graph_transformer_model()` caches shortest path distances of recent
   batches.
+- `scatter_std()` (and the PNA `std` aggregator) now returns 0 for empty
+  and constant groups, as PyTorch Geometric's `StdAggregation`; PNA layers
+  are compared with PyG's `PNAConv` in the benchmark workflow.
 
 ## Correctness and safety behavior
 

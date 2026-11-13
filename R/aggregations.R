@@ -10,8 +10,10 @@
 #' * `scatter_max()`, `scatter_min()`: elementwise maximum or minimum.
 #'   Empty groups give 0. Gradients flow to the selected entries; ties
 #'   split the gradient as `torch` defines for `scatter_reduce`.
-#' * `scatter_std()`: population standard deviation, with a small constant
-#'   inside the square root so the gradient stays finite.
+#' * `scatter_std()`: population standard deviation, computed as
+#'   \eqn{\sqrt{\max(\mathrm{var}, \epsilon)}} and set to 0 where the
+#'   variance is at most \eqn{\epsilon} (empty or constant groups), as in
+#'   PyTorch Geometric's `StdAggregation`; the gradient stays finite.
 #' * `scatter_softmax()`: softmax of `src` within each group (used for
 #'   attention over incoming edges); columns are treated separately.
 #' * `scatter_aggregate()`: dispatch by name; several names give their
@@ -101,7 +103,10 @@ scatter_std <- function(src, index, dim_size, eps = 1e-5) {
   index <- as_index_tensor(index, src$device)
   mean <- scatter_mean(src, index, dim_size)
   sq <- scatter_mean(src * src, index, dim_size)
-  torch_sqrt((sq - mean * mean)$clamp(min = 0) + eps)
+  # As PyTorch Geometric's StdAggregation: clamp the variance at eps, then
+  # report 0 where the clamp was active (empty groups, constant groups).
+  out <- (sq - mean * mean)$clamp(min = eps)$sqrt()
+  out$masked_fill(out <= sqrt(eps), 0)
 }
 
 #' @rdname scatter
@@ -120,7 +125,7 @@ scatter_softmax <- function(src, index, dim_size) {
 #' @param aggr One or more of `"sum"` (alias `"add"`), `"mean"`, `"max"`,
 #'   `"min"`, `"std"`.
 #' @param dtype,device Dtype and device of the count tensor.
-#' @param eps Constant added under the square root in `scatter_std()`.
+#' @param eps Variance floor in `scatter_std()`; smaller variances give 0.
 #' @export
 scatter_aggregate <- function(src, index, dim_size, aggr = "sum") {
   if (length(aggr) > 1L) {

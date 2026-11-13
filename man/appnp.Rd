@@ -38,6 +38,11 @@ added, symmetric normalization). It has no parameters. As \code{K} grows the
 result approaches \eqn{\alpha (I - (1 - \alpha)\hat A)^{-1} X}.
 }
 \details{
+Input and output are N by F (the feature size is unchanged). Edge input:
+\code{edge_weight}. Cost \eqn{O(K E F)} time and \eqn{O(E + N F)} memory per
+pass (each step only needs the previous one), plus the autograd graph of
+the K steps during training.
+
 \code{appnp_model()} is the full APPNP model: an MLP predicts per node and the
 predictions are then propagated. It can be passed to
 \code{\link[=train_graph_model]{train_graph_model()}} for node tasks.

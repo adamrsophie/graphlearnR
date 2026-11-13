@@ -37,8 +37,8 @@ vector.
 }
 \description{
 The PNA layer of Corso, Cavalleri, Beaini, Liò and Veličković (2020), in
-a single tower form modeled on PyTorch Geometric's \code{PNAConv} (not
-numerically compared with it). For node \eqn{i}
+the single tower form of PyTorch Geometric's \code{PNAConv} (one pre and one
+post layer, \code{divide_input = FALSE}). For node \eqn{i}
 with in degree \eqn{d_i}:
 }
 \details{
@@ -63,6 +63,18 @@ variance differently.
 
 \code{pna_degree()} computes the in degree histogram \code{deg} from training
 graphs: element \eqn{d + 1} counts nodes with in degree \eqn{d}.
+
+Input \code{x} is N by F; output N by F'. No self loops are added; edge input
+is \code{edge_attr} when \code{edge_dim} is set. Cost: \eqn{O(E F^2)} for the
+message transform, \eqn{O(a E F)} for \code{a} aggregators, and
+\eqn{O(N a s F F')} for the post transform with \code{s} scalers; memory holds
+E by F messages and the N by \eqn{(a s + 1) F} concatenation.
+
+The benchmark workflow (\verb{benchmarks/pyg/}) copies the weights of a layer
+with the mean, min, max and sum aggregators and all five scalers, and of
+one with the std aggregator, into PyTorch Geometric's \code{PNAConv} (one
+tower, one pre and post layer) and checks that the outputs agree (the
+first agreed to 2e-6 on CI).
 }
 \examples{
 if (torch::torch_is_installed()) {

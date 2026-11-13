@@ -55,11 +55,7 @@ for n in sizes:
                 ref = torch.tensor(load(f"{name}_out_r.csv"), dtype=torch.float32)
                 diff = (p(x, ei) - ref).abs().max().item()
                 print(f"{name}: max abs difference to graphlearnR = {diff:.3g}")
-                if name == "pna":
-                    checks.append((name, diff))
-                else:
-                    # Reported, not enforced: zero variance handling of std.
-                    checks.append((name + " (reported only)", diff))
+                checks.append((name, diff))
     for a, layer in layers.items():
         rows.append(("PyG", a, n, ei.shape[1],
                      time_it(lambda: layer(x, ei).sum().backward())))
@@ -76,5 +72,5 @@ with open(f"{out_dir}/versions-pyg.txt", "w") as f:
     f.write(f"torch {torch.__version__}\ntorch_geometric {torch_geometric.__version__}\nthreads {torch.get_num_threads()}\n")
 for r in rows:
     print(r)
-if max(d for a, d in checks if "reported only" not in a) > 1e-3:
+if max(d for _, d in checks) > 1e-3:
     sys.exit("graphlearnR and PyG outputs differ")

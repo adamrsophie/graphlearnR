@@ -38,7 +38,7 @@ per row of \code{src}.}
 
 \item{dtype, device}{Dtype and device of the count tensor.}
 
-\item{eps}{Constant added under the square root in \code{scatter_std()}.}
+\item{eps}{Variance floor in \code{scatter_std()}; smaller variances give 0.}
 
 \item{aggr}{One or more of \code{"sum"} (alias \code{"add"}), \code{"mean"}, \code{"max"},
 \code{"min"}, \code{"std"}.}
@@ -59,8 +59,10 @@ aggregation kernels used by \code{\link[=message_passing]{message_passing()}}; t
 \item \code{scatter_max()}, \code{scatter_min()}: elementwise maximum or minimum.
 Empty groups give 0. Gradients flow to the selected entries; ties
 split the gradient as \code{torch} defines for \code{scatter_reduce}.
-\item \code{scatter_std()}: population standard deviation, with a small constant
-inside the square root so the gradient stays finite.
+\item \code{scatter_std()}: population standard deviation, computed as
+\eqn{\sqrt{\max(\mathrm{var}, \epsilon)}} and set to 0 where the
+variance is at most \eqn{\epsilon} (empty or constant groups), as in
+PyTorch Geometric's \code{StdAggregation}; the gradient stays finite.
 \item \code{scatter_softmax()}: softmax of \code{src} within each group (used for
 attention over incoming edges); columns are treated separately.
 \item \code{scatter_aggregate()}: dispatch by name; several names give their
