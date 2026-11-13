@@ -39,7 +39,7 @@
     <li><a class="dropdown-item" href="../articles/evaluation-and-reproducibility.html">Evaluation, leakage, and reproducibility</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Ecosystem</h6></li>
-    <li><a class="dropdown-item" href="../articles/ecosystem.html">Working with modelcompR, symcompR and other sibling packages</a></li>
+    <li><a class="dropdown-item" href="../articles/ecosystem.html">Sibling packages and other frameworks</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -293,6 +293,13 @@
 
         </dt>
         <dd>Link and edge decoders</dd>
+
+        <dt>
+
+          <code><a href="graph_ode_block.html">graph_ode_block()</a></code> <code><a href="graph_ode_block.html">graph_ode_model()</a></code>
+
+        </dt>
+        <dd>Continuous depth graph diffusion (graph neural ODE)</dd>
       </dl></div><div class="section level2">
       <h2 id="sampling-and-loaders">Sampling and loaders<a class="anchor" aria-label="anchor" href="#sampling-and-loaders"></a></h2>
 
@@ -323,6 +330,13 @@
 
         </dt>
         <dd>Mini-batch loaders</dd>
+
+        <dt>
+
+          <code><a href="cluster_loader.html">cluster_loader()</a></code> <code><a href="cluster_loader.html">saint_loader()</a></code>
+
+        </dt>
+        <dd>Cluster and GraphSAINT subgraph loaders</dd>
 
         <dt>
 
@@ -418,6 +432,20 @@
 
         </dt>
         <dd>Save and load a trained model</dd>
+
+        <dt>
+
+          <code><a href="graph_fit-tidy.html">augment(<i>&lt;graph_fit&gt;</i>)</a></code> <code><a href="graph_fit-tidy.html">glance(<i>&lt;graph_fit&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Tidy summaries of a fitted graph model</dd>
+
+        <dt>
+
+          <code><a href="luz_node_dataloader.html">luz_node_dataloader()</a></code> <code><a href="luz_node_dataloader.html">luz_node_module()</a></code>
+
+        </dt>
+        <dd>Training node models with luz</dd>
 
         <dt>
 
@@ -597,6 +625,13 @@
 
         </dt>
         <dd>Heuristic baseline for dynamic link prediction</dd>
+
+        <dt>
+
+          <code><a href="tgn_model.html">tgn_model()</a></code> <code><a href="tgn_model.html">train_tgn()</a></code>
+
+        </dt>
+        <dd>Temporal graph network with node memory</dd>
       </dl></div><div class="section level2">
       <h2 id="graph-transformers-and-encodings">Graph transformers and encodings<a class="anchor" aria-label="anchor" href="#graph-transformers-and-encodings"></a></h2>
 
@@ -722,6 +757,13 @@
 
         </dt>
         <dd>Download and read public benchmark datasets</dd>
+
+        <dt>
+
+          <code><a href="read_ogb_node.html">read_ogb_node()</a></code> <code><a href="read_ogb_node.html">read_ogb_graph()</a></code> <code><a href="read_ogb_node.html">download_ogb()</a></code>
+
+        </dt>
+        <dd>Open Graph Benchmark datasets</dd>
       </dl></div><div class="section level2">
       <h2 id="molecules">Molecules<a class="anchor" aria-label="anchor" href="#molecules"></a></h2>
 
@@ -741,7 +783,7 @@
       </dl></div><div class="section level2">
       <h2 id="sibling-packages">Sibling packages<a class="anchor" aria-label="anchor" href="#sibling-packages"></a></h2>
 
-      <div class="section-desc"><p>Optional bridges to modelcompR and symcompR.</p></div>
+      <div class="section-desc"><p>Optional bridges to modelcompR, symcompR, z3r, optcompR and jaxR.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -761,6 +803,27 @@
 
         </dt>
         <dd>Exact graph operators with symcompR</dd>
+
+        <dt>
+
+          <code><a href="consistent_labels.html">consistent_labels()</a></code>
+
+        </dt>
+        <dd>Rule constrained node labels with z3r</dd>
+
+        <dt>
+
+          <code><a href="select_links.html">select_links()</a></code>
+
+        </dt>
+        <dd>Budgeted link selection with optcompR</dd>
+
+        <dt>
+
+          <code><a href="aggregate_jax.html">aggregate_jax()</a></code>
+
+        </dt>
+        <dd>Neighborhood aggregation with jaxR</dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

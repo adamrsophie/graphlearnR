@@ -128,6 +128,78 @@ evaluate_graph_model(fit, big)
 Prediction and evaluation run on the full graph, so the reported numbers
 do not depend on the sampling.
 
+## Subgraph batches: Cluster-GCN and GraphSAINT
+
+Neighbor sampling grows each batch outward from seed nodes. Two other
+strategies train on whole subgraphs instead, and plug into the same
+trainer through the `loader` argument.
+
+[`cluster_loader()`](https://adamrsophie.github.io/graphlearnR/reference/cluster_loader.md)
+follows Cluster-GCN: it partitions the graph once and each batch is the
+subgraph induced by a few parts, edges between them included. Parts
+follow Louvain communities, so most edges stay inside a batch.
+
+``` r
+
+cl <- cluster_loader(big, num_parts = 12, clusters_per_batch = 3, seed = 1)
+cl
+#> <cluster_loader> 12 parts (louvain), 3 per batch
+summary(lengths(cl$parts))
+#>    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#>      75      75      75      75      75      75
+torch_manual_seed(2)
+fit_cl <- train_graph_model(gnn_model("sage", 8, 32, 3), big, "node_classification",
+                            epochs = 15, loader = cl, seed = 2)
+evaluate_graph_model(fit_cl, big)
+#>              metric      value
+#> 1          accuracy 0.98888889
+#> 2 balanced_accuracy 0.98888889
+#> 3   precision_macro 0.98907104
+#> 4      recall_macro 0.98888889
+#> 5          f1_macro 0.98884064
+#> 6               ece 0.03582429
+#> 7             brier 0.02780312
+#> 8           roc_auc 0.99699074
+```
+
+[`saint_loader()`](https://adamrsophie.github.io/graphlearnR/reference/cluster_loader.md)
+follows the GraphSAINT random walk sampler. Each batch is the subgraph
+induced by the nodes that short random walks visit. Nodes and edges are
+not sampled uniformly, so the loader estimates how often each one
+appears and corrects for it: the loss of each node is weighted by
+`node_norm` and edge weights are rescaled, as in PyTorch Geometric’s
+`GraphSAINTSampler`.
+
+``` r
+
+sl <- saint_loader(big, batch_size = 100, walk_length = 2, num_steps = 8, seed = 1)
+sl
+#> <saint_loader> 100 roots, walk length 2, 8 batches per epoch, normalized from 73 samples
+b <- loader_batches(sl)[[1]]
+c(nodes = num_nodes(b), edges = num_edges(b))
+#> nodes edges 
+#>   243   984
+summary(b$node_norm)
+#>     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+#> 0.002192 0.003244 0.004056 0.004095 0.004506 0.008111
+torch_manual_seed(2)
+fit_sl <- train_graph_model(gnn_model("sage", 8, 32, 3), big, "node_classification",
+                            epochs = 15, loader = sl, seed = 2)
+evaluate_graph_model(fit_sl, big)
+#>              metric     value
+#> 1          accuracy 0.9611111
+#> 2 balanced_accuracy 0.9611111
+#> 3   precision_macro 0.9629630
+#> 4      recall_macro 0.9611111
+#> 5          f1_macro 0.9607759
+#> 6               ece 0.1814339
+#> 7             brier 0.1283164
+#> 8           roc_auc 0.9972685
+```
+
+Both loaders return `graph_data` batches whose `node_ids` hold the
+original node indices, so a batch can be inspected like any other graph.
+
 ## Negative sampling
 
 Link prediction needs pairs that are not edges.

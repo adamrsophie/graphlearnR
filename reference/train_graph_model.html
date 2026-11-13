@@ -43,7 +43,7 @@ accessible in the returned fit."></head><body>
     <li><a class="dropdown-item" href="../articles/evaluation-and-reproducibility.html">Evaluation, leakage, and reproducibility</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Ecosystem</h6></li>
-    <li><a class="dropdown-item" href="../articles/ecosystem.html">Working with modelcompR, symcompR and other sibling packages</a></li>
+    <li><a class="dropdown-item" href="../articles/ecosystem.html">Sibling packages and other frameworks</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -98,6 +98,7 @@ accessible in the returned fit.</p>
 <span>  grad_clip <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  class_weights <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  target_type <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  loader <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -196,6 +197,10 @@ Monitors validation loss; the best weights are restored at the end.</p></dd>
 <dd><p>Node type to predict for heterogeneous graphs.</p></dd>
 
 
+<dt id="arg-loader">loader<a class="anchor" aria-label="anchor" href="#arg-loader"></a></dt>
+<dd><p>A <code><a href="cluster_loader.html">cluster_loader()</a></code> or <code><a href="cluster_loader.html">saint_loader()</a></code> for node tasks.</p></dd>
+
+
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
 <dd><p>Print progress every <code>verbose</code> epochs (<code>FALSE</code> for none).</p></dd>
 
@@ -210,6 +215,10 @@ Monitors validation loss; the best weights are restored at the end.</p></dd>
 <table class="table table"><tr><td><code>task</code></td><td><code>data</code></td><td>targets</td><td>loss on</td></tr><tr><td><code>"node_classification"</code>, <code>"node_regression"</code></td><td><code>graph_data</code> (or <code>hetero_graph_data</code> with <code>target_type</code>) with <code>train_mask</code></td><td>node <code>y</code></td><td>training nodes only</td></tr><tr><td><code>"graph_classification"</code>, <code>"graph_regression"</code></td><td>list of <code>graph_data</code> or a <code>graph_dataset</code>; <code>val_data</code> likewise</td><td><code>graph_y</code></td><td>every training graph</td></tr><tr><td><code>"link_prediction"</code></td><td>a <code>link_split</code> from <code><a href="split_edges.html">split_edges()</a></code> (or <code><a href="split_edges_hetero.html">split_edges_hetero()</a></code>)</td><td>positive and sampled negative pairs</td><td>training pairs</td></tr><tr><td><code>"edge_classification"</code>, <code>"edge_regression"</code></td><td><code>graph_data</code> with <code>edge_y</code> and masks from <code><a href="split_edge_labels.html">split_edge_labels()</a></code></td><td>edge <code>y</code></td><td>training edges</td></tr></table><p><strong>Node mini-batches.</strong> With <code>fanouts</code>, node tasks are trained on sampled
 neighborhoods (<code><a href="node_loader.html">node_loader()</a></code>); the loss uses only the seed nodes of each
 batch, never the sampled context nodes. Validation uses the full graph.</p>
+<p><strong>Subgraph batches.</strong> With <code>loader</code> from <code><a href="cluster_loader.html">cluster_loader()</a></code> or
+<code><a href="cluster_loader.html">saint_loader()</a></code>, node tasks are trained on induced subgraphs; the loss
+uses the training nodes in each batch, weighted by GraphSAINT's
+<code>node_norm</code> when present.</p>
 <p><strong>Link prediction.</strong> Message passing uses <code>split$train_graph</code>, which holds
 training edges only. Fresh negative pairs are drawn every epoch, excluding
 training positives; validation and test pairs are never used for
@@ -237,12 +246,12 @@ fixed.</p>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">g</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   .row node_id .pred_class .prob_Mr. Hi .prob_Officer</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1    1       1      Mr. Hi    0.9544085    0.04559154</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2    2       2      Mr. Hi    0.9202641    0.07973581</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3    3       3      Mr. Hi    0.8686622    0.13133772</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4    4       4      Mr. Hi    0.9575266    0.04247343</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5    5       5      Mr. Hi    0.9668903    0.03310970</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6    6       6      Mr. Hi    0.9623488    0.03765118</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    1       1      Mr. Hi    0.9628773    0.03712269</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2    2       2      Mr. Hi    0.9669216    0.03307841</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    3       3      Mr. Hi    0.9286499    0.07135003</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4    4       4      Mr. Hi    0.9844617    0.01553830</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5    5       5      Mr. Hi    0.9754194    0.02458063</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6    6       6      Mr. Hi    0.9762313    0.02376873</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

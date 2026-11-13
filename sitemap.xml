@@ -22,7 +22,10 @@
 <url><loc>https://adamrsophie.github.io/graphlearnR/news/index.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/add_reverse_relations.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/add_self_loops_tensor.html</loc></url>
+<url><loc>https://adamrsophie.github.io/graphlearnR/reference/aggregate_jax.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/attention_weights.html</loc></url>
+<url><loc>https://adamrsophie.github.io/graphlearnR/reference/cluster_loader.html</loc></url>
+<url><loc>https://adamrsophie.github.io/graphlearnR/reference/consistent_labels.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/corrupt_tails.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/dataset_karate.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/dataset_sbm.html</loc></url>
@@ -49,10 +52,12 @@
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/graph_data.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/graph_dataset.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/graph_diffusion.html</loc></url>
+<url><loc>https://adamrsophie.github.io/graphlearnR/reference/graph_fit-tidy.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/graph_from_adjacency.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/graph_from_edgelist.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/graph_gru_cell.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/graph_mlp.html</loc></url>
+<url><loc>https://adamrsophie.github.io/graphlearnR/reference/graph_ode_block.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/graph_operator_symbolic.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/graph_tensors.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/graph_transformer_layer.html</loc></url>
@@ -67,6 +72,7 @@
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/index.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/k_hop_subgraph.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/link_decoder.html</loc></url>
+<url><loc>https://adamrsophie.github.io/graphlearnR/reference/luz_node_dataloader.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/message_passing.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/metrics.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/molecule_graph.html</loc></url>
@@ -74,10 +80,12 @@
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/node_loader.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/positional-encodings.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/predict.graph_fit.html</loc></url>
+<url><loc>https://adamrsophie.github.io/graphlearnR/reference/read_ogb_node.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/sample_hetero_neighbors.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/sample_neighbors.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/save_graph_fit.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/scatter.html</loc></url>
+<url><loc>https://adamrsophie.github.io/graphlearnR/reference/select_links.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/snapshot_sequence.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/spatiotemporal_signal.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/split_edge_labels.html</loc></url>
@@ -90,6 +98,7 @@
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/temporal_graph_data.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/temporal_neighbors.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/temporal_window.html</loc></url>
+<url><loc>https://adamrsophie.github.io/graphlearnR/reference/tgn_model.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/to_dense_adj.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/to_dense_batch.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/to_homogeneous.html</loc></url>

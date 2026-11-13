@@ -39,7 +39,7 @@
     <li><a class="dropdown-item" href="../articles/evaluation-and-reproducibility.html">Evaluation, leakage, and reproducibility</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Ecosystem</h6></li>
-    <li><a class="dropdown-item" href="../articles/ecosystem.html">Working with modelcompR, symcompR and other sibling packages</a></li>
+    <li><a class="dropdown-item" href="../articles/ecosystem.html">Sibling packages and other frameworks</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -98,12 +98,18 @@
 <h3 id="sampling-and-scale-0-1-0">Sampling and scale<a class="anchor" aria-label="anchor" href="#sampling-and-scale-0-1-0"></a></h3>
 <ul><li>
 <code><a href="../reference/sample_neighbors.html">sample_neighbors()</a></code>, <code><a href="../reference/k_hop_subgraph.html">k_hop_subgraph()</a></code>, node and graph loaders, negative sampling, and corrupted tails for ranking evaluation.</li>
+<li>
+<code><a href="../reference/cluster_loader.html">cluster_loader()</a></code> (Cluster-GCN) and <code><a href="../reference/cluster_loader.html">saint_loader()</a></code> (GraphSAINT random walks with loss and edge normalization), used through <code>train_graph_model(loader = )</code>.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="heterogeneous-temporal-and-transformer-models-0-1-0">Heterogeneous, temporal, and transformer models<a class="anchor" aria-label="anchor" href="#heterogeneous-temporal-and-transformer-models-0-1-0"></a></h3>
 <ul><li>
 <code><a href="../reference/hetero_graph_data.html">hetero_graph_data()</a></code>, reverse relations, typed sampling, typed link splits, <code><a href="../reference/hetero_conv.html">hetero_conv()</a></code>, and <code><a href="../reference/hetero_gnn_model.html">hetero_gnn_model()</a></code>.</li>
 <li>Event based temporal graphs, snapshots, strictly causal temporal neighbors, a graph GRU, spatiotemporal forecasting, and dynamic link prediction with baselines.</li>
+<li>
+<code><a href="../reference/tgn_model.html">tgn_model()</a></code> and <code><a href="../reference/tgn_model.html">train_tgn()</a></code>: temporal graph networks with node memory.</li>
+<li>
+<code><a href="../reference/graph_ode_block.html">graph_ode_block()</a></code> and <code><a href="../reference/graph_ode_block.html">graph_ode_model()</a></code>: GRAND style continuous depth diffusion with fixed step Runge-Kutta or Euler integration.</li>
 <li>Laplacian and random walk positional encodings, shortest path distances, and a Graphormer style graph transformer.</li>
 </ul></div>
 <div class="section level3">
@@ -114,6 +120,8 @@
 <h3 id="datasets-0-1-0">Datasets<a class="anchor" aria-label="anchor" href="#datasets-0-1-0"></a></h3>
 <ul><li>Built in: Zachary’s karate club, stochastic block models, and synthetic graph, heterogeneous, and temporal datasets.</li>
 <li>Downloaders with checksum verification for TU datasets and the LINQS citation graphs (Cora, CiteSeer); nothing third party is bundled.</li>
+<li>
+<code><a href="../reference/read_ogb_node.html">download_ogb()</a></code>, <code><a href="../reference/read_ogb_node.html">read_ogb_node()</a></code>, and <code><a href="../reference/read_ogb_node.html">read_ogb_graph()</a></code> for OGB node and graph property datasets in their CSV layout, with official splits.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="molecules-0-1-0">Molecules<a class="anchor" aria-label="anchor" href="#molecules-0-1-0"></a></h3>
@@ -126,6 +134,14 @@
 <code><a href="../reference/graph_diffusion.html">graph_diffusion()</a></code> simulates diffusion on a graph with the modelcompR ODE solvers.</li>
 <li>
 <code><a href="../reference/graph_operator_symbolic.html">graph_operator_symbolic()</a></code> returns exact adjacency, Laplacian, and GCN operators as symcompR matrices.</li>
+<li>
+<code><a href="../reference/consistent_labels.html">consistent_labels()</a></code> finds the most probable labeling that obeys edge rules with the z3r optimizer.</li>
+<li>
+<code><a href="../reference/select_links.html">select_links()</a></code> chooses links under a budget as a 0-1 program in optcompR.</li>
+<li>
+<code><a href="../reference/aggregate_jax.html">aggregate_jax()</a></code> performs neighborhood aggregation with jaxR arrays.</li>
+<li>
+<code><a href="../reference/luz_node_dataloader.html">luz_node_dataloader()</a></code> and <code>luz_node_module</code> train node models with luz; <code>augment()</code> and <code>glance()</code> methods summarize fits for tidymodels.</li>
 </ul></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

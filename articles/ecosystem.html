@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Working with modelcompR, symcompR and other sibling packages • graphlearnR</title>
+<title>Sibling packages and other frameworks • graphlearnR</title>
 <!-- katex math --><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script><script src="../katex-auto.js"></script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Working with modelcompR, symcompR and other sibling packages">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Sibling packages and other frameworks">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -54,7 +54,7 @@
     <li><a class="dropdown-item" href="../articles/evaluation-and-reproducibility.html">Evaluation, leakage, and reproducibility</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Ecosystem</h6></li>
-    <li><a class="dropdown-item" href="../articles/ecosystem.html">Working with modelcompR, symcompR and other sibling packages</a></li>
+    <li><a class="dropdown-item" href="../articles/ecosystem.html">Sibling packages and other frameworks</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -85,7 +85,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Working with modelcompR, symcompR and other sibling packages</h1>
+      <h1>Sibling packages and other frameworks</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/adamrsophie/graphlearnR/blob/main/vignettes/ecosystem.Rmd" class="external-link"><code>vignettes/ecosystem.Rmd</code></a></small>
@@ -101,8 +101,8 @@ graph learning engine depends only on <code>torch</code>,
 <code>igraph</code> and <code>Matrix</code>; every connection to a
 sibling package is optional, lives in <code>Suggests</code>, and fails
 with a clear message when the sibling is not installed. This article
-shows the two bridges that exist today and records what was investigated
-for the others and why it was deferred.</p>
+shows one bridge per package (modelcompR, symcompR, z3r, optcompR, jaxR)
+and the connections to luz and tidymodels.</p>
 <p>The code chunks below run only when the sibling package is installed.
 On the package website they ran if the build machine had it.</p>
 <div class="section level2">
@@ -181,54 +181,126 @@ its weight is the identity:</p>
 entry is a symbolic object.</p>
 </div>
 <div class="section level2">
-<h2 id="investigated-and-deferred">Investigated and deferred<a class="anchor" aria-label="anchor" href="#investigated-and-deferred"></a>
+<h2 id="rule-constrained-labels-with-z3r">Rule constrained labels with z3r<a class="anchor" aria-label="anchor" href="#rule-constrained-labels-with-z3r"></a>
 </h2>
-<p>The design brief asks to “investigate” connections with jaxR,
-optcompR and z3r, and to keep all of them “optional”. What follows is
-the outcome of that investigation for this release.</p>
-<ul>
-<li>
-<strong>jaxR.</strong> jaxR offers composable transformations
-(<code>grad</code>, <code>jit</code>, <code>vmap</code>) and segment
-reductions (<code>ops_segment_sum</code> and others) that could back the
-scatter kernels. A second backend needs a separation of tensor
-operations, model definition, differentiation and devices that
-graphlearnR does not have yet, and the brief warns against porting torch
-models mechanically to another backend. Deferred until both packages
-have a stable interface for exchanging arrays.</li>
-<li>
-<strong>optcompR.</strong> optcompR covers mathematical
-optimization, including mixed integer programs. Candidate uses are graph
-structure optimization and constrained prediction. Mixed integer layers
-are not differentiable, so any connection would sit outside the training
-loop (for example, choosing which edges to add under a budget after
-training). No concrete graph learning use was strong enough for this
-release.</li>
-<li>
-<strong>z3r.</strong> z3r gives access to the Z3 solver. A natural
-use is to prove properties of small split specifications, such as “no
-held out pair appears in the training graph”. z3r needs Z3 4.8.13 or
-later and the Ubuntu releases used by the continuous integration runners
-ship 4.8.12, so a bridge could not be tested there; the leakage
-properties are instead checked directly in the test suite.</li>
-</ul>
-<p>Two other integrations in the brief were also looked at:</p>
-<ul>
-<li>
-<strong>luz.</strong> luz drives a training loop over dataloaders of
-tensors. graphlearnR’s loops need graph specific steps that luz does not
-model: sampled batches whose loss covers only seed nodes, link splits
-that rebuild negatives each epoch, and auxiliary losses such as
-DiffPool’s. Wrapping these as luz callbacks is possible but would
-duplicate <code><a href="../reference/train_graph_model.html">train_graph_model()</a></code>; deferred until there is a
-concrete need.</li>
-<li>
-<strong>tidymodels.</strong> parsnip models expect one row per
-observation, while graph models need the whole graph at prediction time.
-<code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> already returns tidy data frames with
-<code>.pred_class</code> and <code>.prob_</code> columns, so yardstick
-metrics work on its output; a parsnip engine is deferred.</li>
-</ul>
+<p><a href="https://github.com/adamrsophie/z3r" class="external-link">z3r</a> gives access to
+the Z3 solver. <code><a href="../reference/consistent_labels.html">consistent_labels()</a></code> takes per node class
+probabilities and logical rules on edges, such as “two adjacent nodes
+cannot both be in class a”, and finds the most probable labeling that
+obeys every rule with Z3’s optimizer. Nodes with known labels can be
+fixed.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>a <span class="op">=</span> <span class="fl">0.9</span>, b <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>a <span class="op">=</span> <span class="fl">0.6</span>, b <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>a <span class="op">=</span> <span class="fl">0.7</span>, b <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>a <span class="op">=</span> <span class="fl">0.2</span>, b <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">ring</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">4</span>, <span class="fl">1</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">1</span>, <span class="fl">3</span>, <span class="fl">2</span>, <span class="fl">4</span>, <span class="fl">3</span>, <span class="fl">1</span>, <span class="fl">4</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/consistent_labels.html">consistent_labels</a></span><span class="op">(</span><span class="va">p</span>, <span class="va">ring</span>, forbidden <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="st">"a"</span>, <span class="st">"a"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">res</span><span class="op">$</span><span class="va">labels</span></span>
+<span><span class="va">res</span><span class="op">$</span><span class="va">changed</span></span></code></pre></div>
+<p>Independent predictions would label nodes 1, 2 and 3 as a; the rule
+allows no two neighbors in a, and the cheapest fix in log probability
+changes node 2. This runs after training on small graphs; it is a
+combinatorial search, not a differentiable layer. The continuous
+integration runners ship a Z3 release older than z3r needs, so this
+bridge is tested on machines with a newer Z3 only.</p>
+</div>
+<div class="section level2">
+<h2 id="budgeted-link-selection-with-optcompr">Budgeted link selection with optcompR<a class="anchor" aria-label="anchor" href="#budgeted-link-selection-with-optcompr"></a>
+</h2>
+<p><a href="https://github.com/adamrsophie/optcompR" class="external-link">optcompR</a> builds
+and solves optimization models. <code><a href="../reference/select_links.html">select_links()</a></code> chooses
+which predicted links to add under a budget and a cap on new links per
+node, maximizing the total score: a 0-1 integer program solved with
+HiGHS.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sbm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dataset_sbm.html">dataset_sbm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">30</span><span class="op">)</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">split</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/split_edges.html">split_edges</a></span><span class="op">(</span><span class="va">sbm</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="fu">torch</span><span class="fu">::</span><span class="fu"><a href="https://torch.mlverse.org/docs/reference/torch_manual_seed.html" class="external-link">torch_manual_seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">fit_link</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/train_graph_model.html">train_graph_model</a></span><span class="op">(</span><span class="fu"><a href="../reference/gnn_model.html">gnn_model</a></span><span class="op">(</span><span class="st">"gcn"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">sbm</span><span class="op">$</span><span class="va">x</span><span class="op">)</span>, <span class="fl">16</span><span class="op">)</span>, <span class="va">split</span>, <span class="st">"link_prediction"</span>,</span>
+<span>                              epochs <span class="op">=</span> <span class="fl">50</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">cand</span> <span class="op">&lt;-</span> <span class="va">split</span><span class="op">$</span><span class="va">test_pos</span></span>
+<span><span class="va">prob</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_link</span>, pairs <span class="op">=</span> <span class="va">cand</span>, type <span class="op">=</span> <span class="st">"prob"</span><span class="op">)</span></span>
+<span><span class="va">pick</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/select_links.html">select_links</a></span><span class="op">(</span><span class="va">cand</span>, <span class="va">prob</span>, budget <span class="op">=</span> <span class="fl">5</span>, max_new_degree <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">pick</span><span class="op">$</span><span class="va">pairs</span></span>
+<span><span class="co">#&gt;      [,1] [,2] [,3] [,4] [,5]</span></span>
+<span><span class="co">#&gt; [1,]   26   28   23   33   42</span></span>
+<span><span class="co">#&gt; [2,]   30   31   32   43   58</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">prob</span><span class="op">[</span><span class="va">pick</span><span class="op">$</span><span class="va">selected</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 0.500 0.500 0.500 0.579 0.650</span></span></code></pre></div>
+<p>Integer programs are not differentiable, so this is a decision step
+after training, as the design brief requires.</p>
+</div>
+<div class="section level2">
+<h2 id="a-second-array-backend-with-jaxr">A second array backend with jaxR<a class="anchor" aria-label="anchor" href="#a-second-array-backend-with-jaxr"></a>
+</h2>
+<p><a href="https://github.com/adamrsophie/jaxR" class="external-link">jaxR</a> brings JAX’s
+transformations to R. <code><a href="../reference/aggregate_jax.html">aggregate_jax()</a></code> is the neighborhood
+aggregation of <code><a href="../reference/message_passing.html">message_passing()</a></code> written in jaxR array
+operations, so it composes with <code>jaxR::grad()</code>,
+<code>jaxR::vmap()</code> and <code>jaxR::jit()</code>. The tests check
+its values and gradients against the torch version.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">g_small</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/graph_data.html">graph_data</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">8</span>, <span class="fl">4</span>, <span class="fl">2</span><span class="op">)</span>, edge_index <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>                      num_nodes <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="fu"><a href="../reference/aggregate_jax.html">aggregate_jax</a></span><span class="op">(</span><span class="va">g_small</span><span class="op">$</span><span class="va">x</span>, <span class="va">g_small</span><span class="op">$</span><span class="va">edge_index</span>, aggr <span class="op">=</span> <span class="st">"mean"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">f</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu">jaxR</span><span class="fu">::</span><span class="fu">jnp_sum</span><span class="op">(</span><span class="fu"><a href="../reference/aggregate_jax.html">aggregate_jax</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">g_small</span><span class="op">$</span><span class="va">edge_index</span>, num_nodes <span class="op">=</span> <span class="fl">4L</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="fu">jaxR</span><span class="fu">::</span><span class="fu">grad</span><span class="op">(</span><span class="va">f</span><span class="op">)</span><span class="op">(</span><span class="fu">jaxR</span><span class="fu">::</span><span class="fu">as_jax</span><span class="op">(</span><span class="va">g_small</span><span class="op">$</span><span class="va">x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Layers and training stay on torch; models are not converted between
+backends. jaxR needs its XLA runtime
+(<code>jaxR::install_pjrt()</code>).</p>
+</div>
+<div class="section level2">
+<h2 id="training-with-luz">Training with luz<a class="anchor" aria-label="anchor" href="#training-with-luz"></a>
+</h2>
+<p><a href="https://mlverse.github.io/luz/" class="external-link">luz</a> is the high level
+training library of the torch ecosystem.
+<code><a href="../reference/luz_node_dataloader.html">luz_node_dataloader()</a></code> and <code>luz_node_module</code>
+adapt a node classification problem to it: the dataloader yields the
+full graph with the indices of the masked nodes, and the module returns
+predictions for those nodes only.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mlverse.github.io/luz/" class="external-link">luz</a></span><span class="op">)</span></span>
+<span><span class="va">gk</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/split_nodes.html">split_nodes</a></span><span class="op">(</span><span class="fu"><a href="../reference/dataset_karate.html">dataset_karate</a></span><span class="op">(</span><span class="op">)</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="fu">torch</span><span class="fu">::</span><span class="fu"><a href="https://torch.mlverse.org/docs/reference/torch_manual_seed.html" class="external-link">torch_manual_seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">fitted</span> <span class="op">&lt;-</span> <span class="va">luz_node_module</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://mlverse.github.io/luz/reference/setup.html" class="external-link">setup</a></span><span class="op">(</span>loss <span class="op">=</span> <span class="fu">torch</span><span class="fu">::</span><span class="fu"><a href="https://torch.mlverse.org/docs/reference/nn_cross_entropy_loss.html" class="external-link">nn_cross_entropy_loss</a></span><span class="op">(</span><span class="op">)</span>, optimizer <span class="op">=</span> <span class="fu">torch</span><span class="fu">::</span><span class="va"><a href="https://torch.mlverse.org/docs/reference/optim_adam.html" class="external-link">optim_adam</a></span>,</span>
+<span>        metrics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://mlverse.github.io/luz/reference/luz_metric_accuracy.html" class="external-link">luz_metric_accuracy</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://mlverse.github.io/luz/reference/set_hparams.html" class="external-link">set_hparams</a></span><span class="op">(</span>model <span class="op">=</span> <span class="fu"><a href="../reference/gnn_model.html">gnn_model</a></span><span class="op">(</span><span class="st">"gcn"</span>, <span class="fl">34</span>, <span class="fl">16</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://mlverse.github.io/luz/reference/set_opt_hparams.html" class="external-link">set_opt_hparams</a></span><span class="op">(</span>lr <span class="op">=</span> <span class="fl">0.01</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://generics.r-lib.org/reference/fit.html" class="external-link">fit</a></span><span class="op">(</span><span class="fu"><a href="../reference/luz_node_dataloader.html">luz_node_dataloader</a></span><span class="op">(</span><span class="va">gk</span>, <span class="st">"train"</span><span class="op">)</span>, epochs <span class="op">=</span> <span class="fl">50</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>      valid_data <span class="op">=</span> <span class="fu"><a href="../reference/luz_node_dataloader.html">luz_node_dataloader</a></span><span class="op">(</span><span class="va">gk</span>, <span class="st">"val"</span><span class="op">)</span>,</span>
+<span>      accelerator <span class="op">=</span> <span class="fu"><a href="https://mlverse.github.io/luz/reference/accelerator.html" class="external-link">accelerator</a></span><span class="op">(</span>cpu <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">tail</a></span><span class="op">(</span><span class="va">fitted</span><span class="op">$</span><span class="va">records</span><span class="op">$</span><span class="va">metrics</span><span class="op">$</span><span class="va">valid</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;       loss        acc </span></span>
+<span><span class="co">#&gt; 0.05139435 1.00000000</span></span></code></pre></div>
+<p><code><a href="../reference/train_graph_model.html">train_graph_model()</a></code> remains the main trainer: it also
+covers sampled batches, link, edge and graph tasks, and records a
+reproducibility trail.</p>
+</div>
+<div class="section level2">
+<h2 id="tidy-summaries">Tidy summaries<a class="anchor" aria-label="anchor" href="#tidy-summaries"></a>
+</h2>
+<p><code>augment()</code> and <code>glance()</code> from the generics
+package, the verbs used across tidymodels, work on a
+<code>graph_fit</code>. <code>augment()</code> adds the true outcome and
+the split of each node to the predictions, ready for yardstick.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_k</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/train_graph_model.html">train_graph_model</a></span><span class="op">(</span><span class="fu"><a href="../reference/gnn_model.html">gnn_model</a></span><span class="op">(</span><span class="st">"gcn"</span>, <span class="fl">34</span>, <span class="fl">8</span>, <span class="fl">2</span><span class="op">)</span>, <span class="va">gk</span>, <span class="st">"node_classification"</span>,</span>
+<span>                           epochs <span class="op">=</span> <span class="fl">30</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">aug</span> <span class="op">&lt;-</span> <span class="fu">generics</span><span class="fu">::</span><span class="fu"><a href="https://generics.r-lib.org/reference/augment.html" class="external-link">augment</a></span><span class="op">(</span><span class="va">fit_k</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">aug</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   .row node_id .pred_class .prob_Mr. Hi .prob_Officer .truth .split</span></span>
+<span><span class="co">#&gt; 1    1       1      Mr. Hi    0.7682219     0.2317781 Mr. Hi  train</span></span>
+<span><span class="co">#&gt; 2    2       2      Mr. Hi    0.7086080     0.2913920 Mr. Hi  train</span></span>
+<span><span class="co">#&gt; 3    3       3      Mr. Hi    0.5500913     0.4499087 Mr. Hi  train</span></span>
+<span><span class="co">#&gt; 4    4       4      Mr. Hi    0.6728596     0.3271404 Mr. Hi  train</span></span>
+<span><span class="co">#&gt; 5    5       5      Mr. Hi    0.6685206     0.3314795 Mr. Hi    val</span></span>
+<span><span class="co">#&gt; 6    6       6      Mr. Hi    0.6909202     0.3090798 Mr. Hi    val</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">aug</span><span class="op">[</span><span class="va">aug</span><span class="op">$</span><span class="va">.split</span> <span class="op">==</span> <span class="st">"test"</span>, <span class="op">]</span>, <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">.pred_class</span> <span class="op">==</span> <span class="va">.truth</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 0.8333333</span></span>
+<span><span class="fu">generics</span><span class="fu">::</span><span class="fu"><a href="https://generics.r-lib.org/reference/glance.html" class="external-link">glance</a></span><span class="op">(</span><span class="va">fit_k</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                  task epochs best_epoch train_loss best_val_loss parameters</span></span>
+<span><span class="co">#&gt; 1 node_classification     30         30  0.5332918     0.4581232        370</span></span></code></pre></div>
+<p>Graph models need the whole graph at prediction time, so there is no
+parsnip engine.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

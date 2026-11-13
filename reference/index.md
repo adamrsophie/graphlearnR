@@ -118,6 +118,9 @@ Scatter aggregation and the general message passing operator.
 - [`link_decoder()`](https://adamrsophie.github.io/graphlearnR/reference/link_decoder.md)
   [`edge_decoder()`](https://adamrsophie.github.io/graphlearnR/reference/link_decoder.md)
   : Link and edge decoders
+- [`graph_ode_block()`](https://adamrsophie.github.io/graphlearnR/reference/graph_ode_block.md)
+  [`graph_ode_model()`](https://adamrsophie.github.io/graphlearnR/reference/graph_ode_block.md)
+  : Continuous depth graph diffusion (graph neural ODE)
 
 ## Sampling and loaders
 
@@ -129,6 +132,9 @@ Scatter aggregation and the general message passing operator.
   [`graph_loader()`](https://adamrsophie.github.io/graphlearnR/reference/node_loader.md)
   [`loader_batches()`](https://adamrsophie.github.io/graphlearnR/reference/node_loader.md)
   : Mini-batch loaders
+- [`cluster_loader()`](https://adamrsophie.github.io/graphlearnR/reference/cluster_loader.md)
+  [`saint_loader()`](https://adamrsophie.github.io/graphlearnR/reference/cluster_loader.md)
+  : Cluster and GraphSAINT subgraph loaders
 - [`negative_sampling()`](https://adamrsophie.github.io/graphlearnR/reference/negative_sampling.md)
   : Negative edge sampling
 - [`corrupt_tails()`](https://adamrsophie.github.io/graphlearnR/reference/corrupt_tails.md)
@@ -160,6 +166,12 @@ Leakage safe splits for every task.
 - [`save_graph_fit()`](https://adamrsophie.github.io/graphlearnR/reference/save_graph_fit.md)
   [`load_graph_fit()`](https://adamrsophie.github.io/graphlearnR/reference/save_graph_fit.md)
   : Save and load a trained model
+- [`augment(`*`<graph_fit>`*`)`](https://adamrsophie.github.io/graphlearnR/reference/graph_fit-tidy.md)
+  [`glance(`*`<graph_fit>`*`)`](https://adamrsophie.github.io/graphlearnR/reference/graph_fit-tidy.md)
+  : Tidy summaries of a fitted graph model
+- [`luz_node_dataloader()`](https://adamrsophie.github.io/graphlearnR/reference/luz_node_dataloader.md)
+  [`luz_node_module()`](https://adamrsophie.github.io/graphlearnR/reference/luz_node_dataloader.md)
+  : Training node models with luz
 - [`metric_accuracy()`](https://adamrsophie.github.io/graphlearnR/reference/metrics.md)
   [`metric_balanced_accuracy()`](https://adamrsophie.github.io/graphlearnR/reference/metrics.md)
   [`metric_precision()`](https://adamrsophie.github.io/graphlearnR/reference/metrics.md)
@@ -231,6 +243,9 @@ Leakage safe splits for every task.
   : Dynamic link prediction on snapshots
 - [`dynamic_link_baseline()`](https://adamrsophie.github.io/graphlearnR/reference/dynamic_link_baseline.md)
   : Heuristic baseline for dynamic link prediction
+- [`tgn_model()`](https://adamrsophie.github.io/graphlearnR/reference/tgn_model.md)
+  [`train_tgn()`](https://adamrsophie.github.io/graphlearnR/reference/tgn_model.md)
+  : Temporal graph network with node memory
 
 ## Graph transformers and encodings
 
@@ -283,6 +298,10 @@ Leakage safe splits for every task.
   [`download_planetoid_raw()`](https://adamrsophie.github.io/graphlearnR/reference/download-datasets.md)
   [`read_linqs_citation()`](https://adamrsophie.github.io/graphlearnR/reference/download-datasets.md)
   : Download and read public benchmark datasets
+- [`read_ogb_node()`](https://adamrsophie.github.io/graphlearnR/reference/read_ogb_node.md)
+  [`read_ogb_graph()`](https://adamrsophie.github.io/graphlearnR/reference/read_ogb_node.md)
+  [`download_ogb()`](https://adamrsophie.github.io/graphlearnR/reference/read_ogb_node.md)
+  : Open Graph Benchmark datasets
 
 ## Molecules
 
@@ -294,9 +313,15 @@ Molecular graphs from atoms and bonds.
 
 ## Sibling packages
 
-Optional bridges to modelcompR and symcompR.
+Optional bridges to modelcompR, symcompR, z3r, optcompR and jaxR.
 
 - [`graph_diffusion()`](https://adamrsophie.github.io/graphlearnR/reference/graph_diffusion.md)
   : Diffusion on a graph, solved with modelcompR
 - [`graph_operator_symbolic()`](https://adamrsophie.github.io/graphlearnR/reference/graph_operator_symbolic.md)
   : Exact graph operators with symcompR
+- [`consistent_labels()`](https://adamrsophie.github.io/graphlearnR/reference/consistent_labels.md)
+  : Rule constrained node labels with z3r
+- [`select_links()`](https://adamrsophie.github.io/graphlearnR/reference/select_links.md)
+  : Budgeted link selection with optcompR
+- [`aggregate_jax()`](https://adamrsophie.github.io/graphlearnR/reference/aggregate_jax.md)
+  : Neighborhood aggregation with jaxR

@@ -54,7 +54,7 @@
     <li><a class="dropdown-item" href="../articles/evaluation-and-reproducibility.html">Evaluation, leakage, and reproducibility</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Ecosystem</h6></li>
-    <li><a class="dropdown-item" href="../articles/ecosystem.html">Working with modelcompR, symcompR and other sibling packages</a></li>
+    <li><a class="dropdown-item" href="../articles/ecosystem.html">Sibling packages and other frameworks</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -266,12 +266,54 @@ reported next to the model.</p>
 <span><span class="co">#&gt; last_train  first_val first_test </span></span>
 <span><span class="co">#&gt;         56         57         68</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>model <span class="op">=</span> <span class="va">fst</span><span class="op">$</span><span class="va">test_metrics</span>, naive <span class="op">=</span> <span class="va">fst</span><span class="op">$</span><span class="va">baseline_metrics</span><span class="op">)</span></span>
-<span><span class="co">#&gt;              mse        mae</span></span>
-<span><span class="co">#&gt; model 0.00956420 0.07995598</span></span>
-<span><span class="co">#&gt; naive 0.01375186 0.09503502</span></span></code></pre></div>
+<span><span class="co">#&gt;               mse        mae</span></span>
+<span><span class="co">#&gt; model 0.009564201 0.07995599</span></span>
+<span><span class="co">#&gt; naive 0.013751859 0.09503502</span></span></code></pre></div>
 <p>To bring your own data, build the graph with any of the constructors
 and pass the array to <code><a href="../reference/spatiotemporal_signal.html">spatiotemporal_signal()</a></code>, which checks
 that the node dimension matches.</p>
+</div>
+<div class="section level2">
+<h2 id="memory-based-models-tgn">Memory based models: TGN<a class="anchor" aria-label="anchor" href="#memory-based-models-tgn"></a>
+</h2>
+<p>Snapshot models see the graph at a fixed resolution. A temporal graph
+network (Rossi et al. 2020) works on the event stream directly. Every
+node has a memory vector, a GRU updates it each time the node takes part
+in an event, and the embedding used for prediction combines the memory
+with the time since the last update and, optionally, the node’s most
+recent partners.</p>
+<p><code><a href="../reference/tgn_model.html">train_tgn()</a></code> processes the training events in
+chronological batches. Each batch is scored with the memory left by
+earlier batches only, and its own events update memory at the start of
+the next batch, so no event ever informs its own prediction. Validation
+and test continue the same memory in time order without gradient
+updates.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">stream</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dataset_synthetic_temporal.html">dataset_synthetic_temporal</a></span><span class="op">(</span>num_events <span class="op">=</span> <span class="fl">1500</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">sp_t</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/split_temporal.html">split_temporal</a></span><span class="op">(</span><span class="va">stream</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://torch.mlverse.org/docs/reference/torch_manual_seed.html" class="external-link">torch_manual_seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">tgn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tgn_model.html">tgn_model</a></span><span class="op">(</span><span class="va">stream</span><span class="op">$</span><span class="va">num_nodes</span>, memory_dim <span class="op">=</span> <span class="fl">32</span>, time_dim <span class="op">=</span> <span class="fl">8</span>, embedding_dim <span class="op">=</span> <span class="fl">32</span><span class="op">)</span></span>
+<span><span class="va">fit_tgn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tgn_model.html">train_tgn</a></span><span class="op">(</span><span class="va">tgn</span>, <span class="va">sp_t</span>, epochs <span class="op">=</span> <span class="fl">10</span>, batch_size <span class="op">=</span> <span class="fl">50</span>, lr <span class="op">=</span> <span class="fl">0.01</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">fit_tgn</span><span class="op">$</span><span class="va">history</span></span>
+<span><span class="co">#&gt;    epoch train_loss   val_auc</span></span>
+<span><span class="co">#&gt; 1      1  0.6618977 0.6479407</span></span>
+<span><span class="co">#&gt; 2      2  0.5858272 0.7286914</span></span>
+<span><span class="co">#&gt; 3      3  0.5076027 0.7755852</span></span>
+<span><span class="co">#&gt; 4      4  0.4515432 0.8122074</span></span>
+<span><span class="co">#&gt; 5      5  0.4006852 0.8403556</span></span>
+<span><span class="co">#&gt; 6      6  0.3538120 0.8536494</span></span>
+<span><span class="co">#&gt; 7      7  0.3602610 0.8689185</span></span>
+<span><span class="co">#&gt; 8      8  0.3477633 0.8672198</span></span>
+<span><span class="co">#&gt; 9      9  0.3363703 0.8594765</span></span>
+<span><span class="co">#&gt; 10    10  0.3270359 0.8700247</span></span>
+<span><span class="va">fit_tgn</span><span class="op">$</span><span class="va">test_metrics</span></span>
+<span><span class="co">#&gt;           roc_auc average_precision </span></span>
+<span><span class="co">#&gt;         0.8526803         0.8478486</span></span></code></pre></div>
+<p>Each event is scored against one random destination. The synthetic
+stream repeats earlier pairs often, so memory and the learned node
+embeddings (<code>node_embedding = TRUE</code>, the default) carry most
+of the signal. The graph attention embedding and the other message
+aggregators of the paper are not implemented.</p>
 </div>
 <div class="section level2">
 <h2 id="the-recurrent-cell">The recurrent cell<a class="anchor" aria-label="anchor" href="#the-recurrent-cell"></a>
@@ -283,7 +325,7 @@ of each node mixes with its neighbors at every step.
 output at step <span class="math inline">s</span> depends only on inputs
 up to step <span class="math inline">s</span>; the test suite checks
 this by changing later inputs and comparing.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">g</span> <span class="op">&lt;-</span> <span class="va">sig</span><span class="op">$</span><span class="va">graph</span></span>
 <span><span class="va">tt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/graph_tensors.html">graph_tensors</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://torch.mlverse.org/docs/reference/torch_manual_seed.html" class="external-link">torch_manual_seed</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span></span>

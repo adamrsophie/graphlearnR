@@ -36,5 +36,5 @@
 
 ### Ecosystem
 
-- [Working with modelcompR, symcompR and other sibling
-  packages](https://adamrsophie.github.io/graphlearnR/articles/ecosystem.md):
+- [Sibling packages and other
+  frameworks](https://adamrsophie.github.io/graphlearnR/articles/ecosystem.md):

@@ -29,6 +29,7 @@ train_graph_model(
   grad_clip = NULL,
   class_weights = NULL,
   target_type = NULL,
+  loader = NULL,
   verbose = FALSE
 )
 ```
@@ -133,6 +134,14 @@ train_graph_model(
 
   Node type to predict for heterogeneous graphs.
 
+- loader:
+
+  A
+  [`cluster_loader()`](https://adamrsophie.github.io/graphlearnR/reference/cluster_loader.md)
+  or
+  [`saint_loader()`](https://adamrsophie.github.io/graphlearnR/reference/cluster_loader.md)
+  for node tasks.
+
 - verbose:
 
   Print progress every `verbose` epochs (`FALSE` for none).
@@ -156,6 +165,13 @@ neighborhoods
 ([`node_loader()`](https://adamrsophie.github.io/graphlearnR/reference/node_loader.md));
 the loss uses only the seed nodes of each batch, never the sampled
 context nodes. Validation uses the full graph.
+
+**Subgraph batches.** With `loader` from
+[`cluster_loader()`](https://adamrsophie.github.io/graphlearnR/reference/cluster_loader.md)
+or
+[`saint_loader()`](https://adamrsophie.github.io/graphlearnR/reference/cluster_loader.md),
+node tasks are trained on induced subgraphs; the loss uses the training
+nodes in each batch, weighted by GraphSAINT's `node_norm` when present.
 
 **Link prediction.** Message passing uses `split$train_graph`, which
 holds training edges only. Fresh negative pairs are drawn every epoch,
@@ -186,10 +202,10 @@ if (torch::torch_is_installed()) {
   head(predict(fit, g))
 }
 #>   .row node_id .pred_class .prob_Mr. Hi .prob_Officer
-#> 1    1       1      Mr. Hi    0.9544085    0.04559154
-#> 2    2       2      Mr. Hi    0.9202641    0.07973581
-#> 3    3       3      Mr. Hi    0.8686622    0.13133772
-#> 4    4       4      Mr. Hi    0.9575266    0.04247343
-#> 5    5       5      Mr. Hi    0.9668903    0.03310970
-#> 6    6       6      Mr. Hi    0.9623488    0.03765118
+#> 1    1       1      Mr. Hi    0.9628773    0.03712269
+#> 2    2       2      Mr. Hi    0.9669216    0.03307841
+#> 3    3       3      Mr. Hi    0.9286499    0.07135003
+#> 4    4       4      Mr. Hi    0.9844617    0.01553830
+#> 5    5       5      Mr. Hi    0.9754194    0.02458063
+#> 6    6       6      Mr. Hi    0.9762313    0.02376873
 ```

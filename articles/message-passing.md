@@ -253,3 +253,41 @@ as.array(global_mean_pool(tb$x, b$batch))
 #> [3,]    1
 #> [4,]    1
 ```
+
+## Continuous depth: graph neural ODEs
+
+Stacking L diffusion layers discretizes a continuous process. GRAND
+(Chamberlain et al. 2021) makes this explicit: features evolve by
+\frac{dX}{dt} = (A - I) X, with A the GCN propagation matrix or an
+attention matrix computed from the input.
+[`graph_ode_block()`](https://adamrsophie.github.io/graphlearnR/reference/graph_ode_block.md)
+integrates this from 0 to `t_end` with a fixed number of Runge-Kutta or
+Euler steps inside the torch graph, so the block trains like any other
+layer.
+
+``` r
+
+g_ode <- split_nodes(dataset_sbm(c(50, 50), seed = 5), seed = 5)
+torch_manual_seed(1)
+ode <- graph_ode_model(ncol(g_ode$x), hidden_dim = 16, output_dim = 2,
+                       diffusion = "attention", t_end = 2, steps = 4)
+fit_ode <- train_graph_model(ode, g_ode, "node_classification", epochs = 60, seed = 1)
+evaluate_graph_model(fit_ode, g_ode)
+#>              metric        value
+#> 1          accuracy 1.000000e+00
+#> 2 balanced_accuracy 1.000000e+00
+#> 3   precision_macro 1.000000e+00
+#> 4      recall_macro 1.000000e+00
+#> 5          f1_macro 1.000000e+00
+#> 6               ece 1.756549e-05
+#> 7             brier 2.002353e-09
+#> 8           roc_auc 1.000000e+00
+```
+
+The tests compare the block with the closed form solution e^{t(A - I)}
+X_0 for the GCN operator, and check that constant features are a fixed
+point of the attention operator. This is a fixed step discretization,
+not an adaptive ODE solver; for simulating graph dynamics with error
+control, use
+[`graph_diffusion()`](https://adamrsophie.github.io/graphlearnR/reference/graph_diffusion.md),
+which calls modelcompR (see the ecosystem article).

@@ -1,4 +1,4 @@
-# Working with modelcompR, symcompR and other sibling packages
+# Sibling packages and other frameworks
 
 ``` r
 
@@ -9,8 +9,8 @@ graphlearnR is one of a series of R packages by the same author. The
 graph learning engine depends only on `torch`, `igraph` and `Matrix`;
 every connection to a sibling package is optional, lives in `Suggests`,
 and fails with a clear message when the sibling is not installed. This
-article shows the two bridges that exist today and records what was
-investigated for the others and why it was deferred.
+article shows one bridge per package (modelcompR, symcompR, z3r,
+optcompR, jaxR) and the connections to luz and tidymodels.
 
 The code chunks below run only when the sibling package is installed. On
 the package website they ran if the build machine had it.
@@ -107,44 +107,141 @@ all.equal(out, as.matrix(P), tolerance = 1e-6, check.attributes = FALSE)
 The bridge targets small graphs: exact arithmetic is slow and each entry
 is a symbolic object.
 
-## Investigated and deferred
+## Rule constrained labels with z3r
 
-The design brief asks to “investigate” connections with jaxR, optcompR
-and z3r, and to keep all of them “optional”. What follows is the outcome
-of that investigation for this release.
+[z3r](https://github.com/adamrsophie/z3r) gives access to the Z3 solver.
+[`consistent_labels()`](https://adamrsophie.github.io/graphlearnR/reference/consistent_labels.md)
+takes per node class probabilities and logical rules on edges, such as
+“two adjacent nodes cannot both be in class a”, and finds the most
+probable labeling that obeys every rule with Z3’s optimizer. Nodes with
+known labels can be fixed.
 
-- **jaxR.** jaxR offers composable transformations (`grad`, `jit`,
-  `vmap`) and segment reductions (`ops_segment_sum` and others) that
-  could back the scatter kernels. A second backend needs a separation of
-  tensor operations, model definition, differentiation and devices that
-  graphlearnR does not have yet, and the brief warns against porting
-  torch models mechanically to another backend. Deferred until both
-  packages have a stable interface for exchanging arrays.
-- **optcompR.** optcompR covers mathematical optimization, including
-  mixed integer programs. Candidate uses are graph structure
-  optimization and constrained prediction. Mixed integer layers are not
-  differentiable, so any connection would sit outside the training loop
-  (for example, choosing which edges to add under a budget after
-  training). No concrete graph learning use was strong enough for this
-  release.
-- **z3r.** z3r gives access to the Z3 solver. A natural use is to prove
-  properties of small split specifications, such as “no held out pair
-  appears in the training graph”. z3r needs Z3 4.8.13 or later and the
-  Ubuntu releases used by the continuous integration runners ship
-  4.8.12, so a bridge could not be tested there; the leakage properties
-  are instead checked directly in the test suite.
+``` r
 
-Two other integrations in the brief were also looked at:
+p <- rbind(c(a = 0.9, b = 0.1), c(a = 0.6, b = 0.4), c(a = 0.7, b = 0.3), c(a = 0.2, b = 0.8))
+ring <- rbind(c(1, 2, 2, 3, 3, 4, 4, 1), c(2, 1, 3, 2, 4, 3, 1, 4))
+res <- consistent_labels(p, ring, forbidden = cbind("a", "a"))
+res$labels
+res$changed
+```
 
-- **luz.** luz drives a training loop over dataloaders of tensors.
-  graphlearnR’s loops need graph specific steps that luz does not model:
-  sampled batches whose loss covers only seed nodes, link splits that
-  rebuild negatives each epoch, and auxiliary losses such as DiffPool’s.
-  Wrapping these as luz callbacks is possible but would duplicate
-  [`train_graph_model()`](https://adamrsophie.github.io/graphlearnR/reference/train_graph_model.md);
-  deferred until there is a concrete need.
-- **tidymodels.** parsnip models expect one row per observation, while
-  graph models need the whole graph at prediction time.
-  [`predict()`](https://rdrr.io/r/stats/predict.html) already returns
-  tidy data frames with `.pred_class` and `.prob_` columns, so yardstick
-  metrics work on its output; a parsnip engine is deferred.
+Independent predictions would label nodes 1, 2 and 3 as a; the rule
+allows no two neighbors in a, and the cheapest fix in log probability
+changes node 2. This runs after training on small graphs; it is a
+combinatorial search, not a differentiable layer. The continuous
+integration runners ship a Z3 release older than z3r needs, so this
+bridge is tested on machines with a newer Z3 only.
+
+## Budgeted link selection with optcompR
+
+[optcompR](https://github.com/adamrsophie/optcompR) builds and solves
+optimization models.
+[`select_links()`](https://adamrsophie.github.io/graphlearnR/reference/select_links.md)
+chooses which predicted links to add under a budget and a cap on new
+links per node, maximizing the total score: a 0-1 integer program solved
+with HiGHS.
+
+``` r
+
+sbm <- dataset_sbm(c(30, 30), seed = 1)
+split <- split_edges(sbm, seed = 1)
+torch::torch_manual_seed(1)
+fit_link <- train_graph_model(gnn_model("gcn", ncol(sbm$x), 16), split, "link_prediction",
+                              epochs = 50, seed = 1)
+cand <- split$test_pos
+prob <- predict(fit_link, pairs = cand, type = "prob")
+pick <- select_links(cand, prob, budget = 5, max_new_degree = 1)
+pick$pairs
+#>      [,1] [,2] [,3] [,4] [,5]
+#> [1,]   26   28   23   33   42
+#> [2,]   30   31   32   43   58
+round(prob[pick$selected], 3)
+#> [1] 0.500 0.500 0.500 0.579 0.650
+```
+
+Integer programs are not differentiable, so this is a decision step
+after training, as the design brief requires.
+
+## A second array backend with jaxR
+
+[jaxR](https://github.com/adamrsophie/jaxR) brings JAX’s transformations
+to R.
+[`aggregate_jax()`](https://adamrsophie.github.io/graphlearnR/reference/aggregate_jax.md)
+is the neighborhood aggregation of
+[`message_passing()`](https://adamrsophie.github.io/graphlearnR/reference/message_passing.md)
+written in jaxR array operations, so it composes with `jaxR::grad()`,
+`jaxR::vmap()` and `jaxR::jit()`. The tests check its values and
+gradients against the torch version.
+
+``` r
+
+g_small <- graph_data(x = matrix(1:8, 4, 2), edge_index = rbind(c(1, 2, 3, 4), c(2, 3, 4, 2)),
+                      num_nodes = 4)
+as.matrix(aggregate_jax(g_small$x, g_small$edge_index, aggr = "mean"))
+f <- function(x) jaxR::jnp_sum(aggregate_jax(x, g_small$edge_index, num_nodes = 4L)^2)
+as.matrix(jaxR::grad(f)(jaxR::as_jax(g_small$x)))
+```
+
+Layers and training stay on torch; models are not converted between
+backends. jaxR needs its XLA runtime (`jaxR::install_pjrt()`).
+
+## Training with luz
+
+[luz](https://mlverse.github.io/luz/) is the high level training library
+of the torch ecosystem.
+[`luz_node_dataloader()`](https://adamrsophie.github.io/graphlearnR/reference/luz_node_dataloader.md)
+and `luz_node_module` adapt a node classification problem to it: the
+dataloader yields the full graph with the indices of the masked nodes,
+and the module returns predictions for those nodes only.
+
+``` r
+
+library(luz)
+gk <- split_nodes(dataset_karate(), seed = 1)
+torch::torch_manual_seed(1)
+fitted <- luz_node_module |>
+  setup(loss = torch::nn_cross_entropy_loss(), optimizer = torch::optim_adam,
+        metrics = list(luz_metric_accuracy())) |>
+  set_hparams(model = gnn_model("gcn", 34, 16, 2)) |>
+  set_opt_hparams(lr = 0.01) |>
+  fit(luz_node_dataloader(gk, "train"), epochs = 50, verbose = FALSE,
+      valid_data = luz_node_dataloader(gk, "val"),
+      accelerator = accelerator(cpu = TRUE))
+unlist(tail(fitted$records$metrics$valid, 1))
+#>       loss        acc 
+#> 0.05139435 1.00000000
+```
+
+[`train_graph_model()`](https://adamrsophie.github.io/graphlearnR/reference/train_graph_model.md)
+remains the main trainer: it also covers sampled batches, link, edge and
+graph tasks, and records a reproducibility trail.
+
+## Tidy summaries
+
+`augment()` and `glance()` from the generics package, the verbs used
+across tidymodels, work on a `graph_fit`. `augment()` adds the true
+outcome and the split of each node to the predictions, ready for
+yardstick.
+
+``` r
+
+fit_k <- train_graph_model(gnn_model("gcn", 34, 8, 2), gk, "node_classification",
+                           epochs = 30, seed = 1)
+aug <- generics::augment(fit_k)
+head(aug)
+#>   .row node_id .pred_class .prob_Mr. Hi .prob_Officer .truth .split
+#> 1    1       1      Mr. Hi    0.7682219     0.2317781 Mr. Hi  train
+#> 2    2       2      Mr. Hi    0.7086080     0.2913920 Mr. Hi  train
+#> 3    3       3      Mr. Hi    0.5500913     0.4499087 Mr. Hi  train
+#> 4    4       4      Mr. Hi    0.6728596     0.3271404 Mr. Hi  train
+#> 5    5       5      Mr. Hi    0.6685206     0.3314795 Mr. Hi    val
+#> 6    6       6      Mr. Hi    0.6909202     0.3090798 Mr. Hi    val
+with(aug[aug$.split == "test", ], mean(.pred_class == .truth))
+#> [1] 0.8333333
+generics::glance(fit_k)
+#>                  task epochs best_epoch train_loss best_val_loss parameters
+#> 1 node_classification     30         30  0.5332918     0.4581232        370
+```
+
+Graph models need the whole graph at prediction time, so there is no
+parsnip engine.

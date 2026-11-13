@@ -190,12 +190,57 @@ several seeds or use cross validation and report the spread, not one
 number; see the evaluation article. MUTAG does not come with SMILES, so
 a scaffold split needs the structures from another source.
 
+## Open Graph Benchmark data
+
+The Open Graph Benchmark (Hu et al. 2020) distributes molecular data
+sets such as ogbg-molhiv with fixed scaffold splits.
+[`download_ogb()`](https://adamrsophie.github.io/graphlearnR/reference/read_ogb_node.md)
+fetches and unpacks a data set, checked against a recorded checksum
+where one is known (each OGB data set has its own license; check it
+before use), and
+[`read_ogb_graph()`](https://adamrsophie.github.io/graphlearnR/reference/read_ogb_node.md)
+reads its CSV files into a list of graphs with the official split in its
+metadata. The package ships a two graph toy copy of that layout, used
+here so that building this article downloads nothing.
+
+``` r
+
+toy <- read_ogb_graph(system.file("extdata", "ogbg-toy", package = "graphlearnR"))
+length(toy)
+#> [1] 2
+toy$metadata$split
+#> NULL
+toy[[1]]
+#> <graph_data> undirected graph: 3 nodes, 4 edges (2 undirected pairs)
+#>   node features [3 x 2]
+#>   edge features [4 x 2]
+#>   graph label: factor with 2 levels
+```
+
+For the real data:
+
+``` r
+
+dir <- download_ogb("ogbg-molhiv")
+hiv <- read_ogb_graph(dir)
+lengths(hiv$metadata$split)   # 32901 4113 4113
+```
+
+OGB atom and bond features are integer codes; embed them or one hot
+encode them before training.
+[`read_ogb_node()`](https://adamrsophie.github.io/graphlearnR/reference/read_ogb_node.md)
+reads node property data sets such as ogbn-arxiv in the same way.
+
 ## References
 
 Debnath, A. K., Lopez de Compadre, R. L., Debnath, G., Shusterman, A. J.
 and Hansch, C. (1991). Structure-activity relationship of mutagenic
 aromatic and heteroaromatic nitro compounds. *Journal of Medicinal
 Chemistry*, 34, 786 to 797.
+
+Hu, W., Fey, M., Zitnik, M. et al. (2020). Open Graph Benchmark:
+datasets for machine learning on graphs. *Advances in Neural Information
+Processing Systems*, 33.
 
 Morris, C., Kriege, N. M., Bause, F., Kersting, K., Mutzel, P. and
 Neumann, M. (2020). TUDataset: a collection of benchmark datasets for

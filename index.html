@@ -56,7 +56,7 @@
     <li><a class="dropdown-item" href="articles/evaluation-and-reproducibility.html">Evaluation, leakage, and reproducibility</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Ecosystem</h6></li>
-    <li><a class="dropdown-item" href="articles/ecosystem.html">Working with modelcompR, symcompR and other sibling packages</a></li>
+    <li><a class="dropdown-item" href="articles/ecosystem.html">Sibling packages and other frameworks</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -156,11 +156,11 @@
 </tr>
 <tr>
 <td>Layers</td>
-<td>GraphSAGE, GCN, GraphConv, GIN and GINE, GAT, GATv2, transformer convolution, NNConv, RGCN; global, top-k and DiffPool pooling</td>
+<td>GraphSAGE, GCN, GraphConv, GIN and GINE, GAT, GATv2, transformer convolution, NNConv, RGCN; GRAND style graph neural ODE blocks; global, top-k and DiffPool pooling</td>
 </tr>
 <tr>
 <td>Training</td>
-<td>node, edge, link and graph classification and regression; full batch or neighbor sampled; early stopping, schedulers, checkpoints, reproducibility record</td>
+<td>node, edge, link and graph classification and regression; full batch, neighbor sampled, Cluster-GCN or GraphSAINT batches; early stopping, schedulers, checkpoints, reproducibility record</td>
 </tr>
 <tr>
 <td>Splits</td>
@@ -172,7 +172,7 @@
 </tr>
 <tr>
 <td>Temporal graphs</td>
-<td>event streams, causal neighborhoods, snapshots, graph GRU, spatiotemporal forecasting, dynamic link prediction with baselines</td>
+<td>event streams, causal neighborhoods, snapshots, graph GRU, spatiotemporal forecasting, dynamic link prediction with baselines, temporal graph networks (TGN) with node memory</td>
 </tr>
 <tr>
 <td>Graph transformers</td>
@@ -187,12 +187,13 @@
 <td>saliency, integrated gradients, edge gradients, occlusion, GNNExplainer, attention weights, explanation subgraphs, fidelity and stability</td>
 </tr>
 <tr>
-<td>Sibling packages</td>
-<td>optional: graph diffusion solved by modelcompR, exact graph operators from symcompR</td>
+<td>Sibling packages and frameworks</td>
+<td>optional: graph diffusion solved by modelcompR, exact graph operators from symcompR, rule constrained labels with z3r, budgeted link selection with optcompR, jaxR aggregation, luz training, <code>augment()</code> and <code>glance()</code>
+</td>
 </tr>
 <tr>
 <td>Datasets</td>
-<td>karate club, stochastic block models, synthetic graph, heterogeneous and temporal data; checksum verified downloaders for TU and LINQS datasets</td>
+<td>karate club, stochastic block models, synthetic graph, heterogeneous and temporal data; checksum verified downloaders for TU and LINQS datasets; readers for OGB node and graph property datasets</td>
 </tr>
 </tbody>
 </table>
@@ -219,7 +220,7 @@
 <div class="section level2">
 <h2 id="how-it-is-tested">How it is tested<a class="anchor" aria-label="anchor" href="#how-it-is-tested"></a>
 </h2>
-<p>Every layer is checked for permutation equivariance, against a dense or reference formula, and with finite difference gradients in double precision. Pooled models are checked for permutation invariance and batched forward passes against separate ones. Splits, samplers and temporal code are checked for leakage. Continuous integration runs <code>R CMD check</code> on Linux, macOS and Windows.</p>
+<p>Every layer is checked for permutation equivariance, against a dense or reference formula, and with finite difference gradients in double precision. Pooled models are checked for permutation invariance and batched forward passes against separate ones. Splits, samplers and temporal code are checked for leakage. Continuous integration runs <code>R CMD check</code> on Linux, macOS and Windows. A benchmark workflow copies weights into PyTorch Geometric and checks that SAGEConv and GCNConv give the same outputs (largest difference 6e-8 in the last run); on one 2 thread CPU runner, single layer forward times were of the same order as PyG’s. Scripts are in <code>benchmarks/pyg</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="known-limitations">Known limitations<a class="anchor" aria-label="anchor" href="#known-limitations"></a>
@@ -233,7 +234,12 @@
 <li>graphlearnR does not parse SMILES or compute chemical scaffolds; use a chemistry toolkit and pass atoms, bonds and scaffold identifiers in.</li>
 <li>
 <code><a href="reference/graph_diffusion.html">graph_diffusion()</a></code> solves on R numerics through modelcompR, so it is a simulation tool, not a trainable neural ODE layer.</li>
-<li>Not yet included: luz and tidymodels integration, bridges to jaxR, optcompR and z3r (see the ecosystem article), Chebyshev, APPNP and PNA layers, cluster based samplers, memory based temporal models, HGT’s relative temporal encoding, and OGB loaders.</li>
+<li>
+<code><a href="reference/graph_ode_block.html">graph_ode_block()</a></code> integrates with a fixed number of steps; it is not an adaptive solver.</li>
+<li>TGN uses the time projection or graph sum embedding with last message aggregation; the graph attention embedding is not implemented.</li>
+<li>OGB link property datasets (ogbl) ship splits as PyTorch files and are not readable; node (ogbn) and graph (ogbg) datasets are.</li>
+<li>The sibling bridges are tested in continuous integration on Linux only; the z3r bridge is tested locally, because the Z3 on the runners is older than z3r needs.</li>
+<li>Not yet included: Chebyshev, APPNP and PNA layers, HGT’s relative temporal encoding, and a parsnip engine.</li>
 </ul>
 </div>
 <div class="section level2">

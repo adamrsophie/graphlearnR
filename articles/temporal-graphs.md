@@ -169,15 +169,61 @@ c(last_train = max(fst$windows$train), first_val = min(fst$windows$val),
 #> last_train  first_val first_test 
 #>         56         57         68
 rbind(model = fst$test_metrics, naive = fst$baseline_metrics)
-#>              mse        mae
-#> model 0.00956420 0.07995598
-#> naive 0.01375186 0.09503502
+#>               mse        mae
+#> model 0.009564201 0.07995599
+#> naive 0.013751859 0.09503502
 ```
 
 To bring your own data, build the graph with any of the constructors and
 pass the array to
 [`spatiotemporal_signal()`](https://adamrsophie.github.io/graphlearnR/reference/spatiotemporal_signal.md),
 which checks that the node dimension matches.
+
+## Memory based models: TGN
+
+Snapshot models see the graph at a fixed resolution. A temporal graph
+network (Rossi et al. 2020) works on the event stream directly. Every
+node has a memory vector, a GRU updates it each time the node takes part
+in an event, and the embedding used for prediction combines the memory
+with the time since the last update and, optionally, the node’s most
+recent partners.
+
+[`train_tgn()`](https://adamrsophie.github.io/graphlearnR/reference/tgn_model.md)
+processes the training events in chronological batches. Each batch is
+scored with the memory left by earlier batches only, and its own events
+update memory at the start of the next batch, so no event ever informs
+its own prediction. Validation and test continue the same memory in time
+order without gradient updates.
+
+``` r
+
+stream <- dataset_synthetic_temporal(num_events = 1500, seed = 1)
+sp_t <- split_temporal(stream)
+torch_manual_seed(1)
+tgn <- tgn_model(stream$num_nodes, memory_dim = 32, time_dim = 8, embedding_dim = 32)
+fit_tgn <- train_tgn(tgn, sp_t, epochs = 10, batch_size = 50, lr = 0.01, seed = 1)
+fit_tgn$history
+#>    epoch train_loss   val_auc
+#> 1      1  0.6618977 0.6479407
+#> 2      2  0.5858272 0.7286914
+#> 3      3  0.5076027 0.7755852
+#> 4      4  0.4515432 0.8122074
+#> 5      5  0.4006852 0.8403556
+#> 6      6  0.3538120 0.8536494
+#> 7      7  0.3602610 0.8689185
+#> 8      8  0.3477633 0.8672198
+#> 9      9  0.3363703 0.8594765
+#> 10    10  0.3270359 0.8700247
+fit_tgn$test_metrics
+#>           roc_auc average_precision 
+#>         0.8526803         0.8478486
+```
+
+Each event is scored against one random destination. The synthetic
+stream repeats earlier pairs often, so memory and the learned node
+embeddings (`node_embedding = TRUE`, the default) carry most of the
+signal. The graph attention embedding and the other message aggregators
+of the paper are not implemented.
 
 ## The recurrent cell
 

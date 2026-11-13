@@ -65,6 +65,11 @@ First release.
   [`k_hop_subgraph()`](https://adamrsophie.github.io/graphlearnR/reference/k_hop_subgraph.md),
   node and graph loaders, negative sampling, and corrupted tails for
   ranking evaluation.
+- [`cluster_loader()`](https://adamrsophie.github.io/graphlearnR/reference/cluster_loader.md)
+  (Cluster-GCN) and
+  [`saint_loader()`](https://adamrsophie.github.io/graphlearnR/reference/cluster_loader.md)
+  (GraphSAINT random walks with loss and edge normalization), used
+  through `train_graph_model(loader = )`.
 
 ### Heterogeneous, temporal, and transformer models
 
@@ -76,6 +81,15 @@ First release.
 - Event based temporal graphs, snapshots, strictly causal temporal
   neighbors, a graph GRU, spatiotemporal forecasting, and dynamic link
   prediction with baselines.
+- [`tgn_model()`](https://adamrsophie.github.io/graphlearnR/reference/tgn_model.md)
+  and
+  [`train_tgn()`](https://adamrsophie.github.io/graphlearnR/reference/tgn_model.md):
+  temporal graph networks with node memory.
+- [`graph_ode_block()`](https://adamrsophie.github.io/graphlearnR/reference/graph_ode_block.md)
+  and
+  [`graph_ode_model()`](https://adamrsophie.github.io/graphlearnR/reference/graph_ode_block.md):
+  GRAND style continuous depth diffusion with fixed step Runge-Kutta or
+  Euler integration.
 - Laplacian and random walk positional encodings, shortest path
   distances, and a Graphormer style graph transformer.
 
@@ -91,6 +105,12 @@ First release.
   synthetic graph, heterogeneous, and temporal datasets.
 - Downloaders with checksum verification for TU datasets and the LINQS
   citation graphs (Cora, CiteSeer); nothing third party is bundled.
+- [`download_ogb()`](https://adamrsophie.github.io/graphlearnR/reference/read_ogb_node.md),
+  [`read_ogb_node()`](https://adamrsophie.github.io/graphlearnR/reference/read_ogb_node.md),
+  and
+  [`read_ogb_graph()`](https://adamrsophie.github.io/graphlearnR/reference/read_ogb_node.md)
+  for OGB node and graph property datasets in their CSV layout, with
+  official splits.
 
 ### Molecules
 
@@ -108,3 +128,13 @@ First release.
 - [`graph_operator_symbolic()`](https://adamrsophie.github.io/graphlearnR/reference/graph_operator_symbolic.md)
   returns exact adjacency, Laplacian, and GCN operators as symcompR
   matrices.
+- [`consistent_labels()`](https://adamrsophie.github.io/graphlearnR/reference/consistent_labels.md)
+  finds the most probable labeling that obeys edge rules with the z3r
+  optimizer.
+- [`select_links()`](https://adamrsophie.github.io/graphlearnR/reference/select_links.md)
+  chooses links under a budget as a 0-1 program in optcompR.
+- [`aggregate_jax()`](https://adamrsophie.github.io/graphlearnR/reference/aggregate_jax.md)
+  performs neighborhood aggregation with jaxR arrays.
+- [`luz_node_dataloader()`](https://adamrsophie.github.io/graphlearnR/reference/luz_node_dataloader.md)
+  and `luz_node_module` train node models with luz; `augment()` and
+  `glance()` methods summarize fits for tidymodels.
