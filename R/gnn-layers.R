@@ -19,6 +19,7 @@
 #' | `transformer_conv` | \eqn{W_r x_i + \sum_j \alpha_{ij} (W_v x_j + W_e e_{ji})} | `edge_attr` | none added |
 #' | `nn_conv` | \eqn{W x_i + \mathrm{aggr}_j x_j \Theta(e_{ji})} | `edge_attr` (required) | none added |
 #' | `rgcn_conv` | \eqn{W_0 x_i + \sum_r \frac{1}{|N_r(i)|}\sum_{j \in N_r(i)} W_r x_j} | `edge_type` (required) | none added |
+#' | `edge_conv` | \eqn{\max_j h_\Theta([x_i \Vert x_j - x_i])} | none | none added |
 #'
 #' Normalization, attention and cost per forward pass (N nodes, E edges,
 #' input size F, output size F', H heads, R relations):
@@ -33,13 +34,14 @@
 #' | `transformer_conv` | scaled dot product softmax over incoming edges, per head | \eqn{O(EHF' + NFHF')} | \eqn{E H F'} and \eqn{E H} |
 #' | `nn_conv` | `aggr` (mean by default) | \eqn{O(E F F')} | \eqn{E F F'} edge specific weights, the largest |
 #' | `rgcn_conv` | mean per relation | \eqn{O(EF' + RNFF')} | \eqn{R F F'} weights (or bases) |
+#' | `edge_conv` | `aggr` (max by default) | \eqn{O(E)} calls of \eqn{h_\Theta} on 2F inputs | E rows of \eqn{h_\Theta} output |
 #'
 #' All layers are permutation equivariant: permuting node
 #' rows and relabeling `edge_index` permutes the output rows the same way.
 #'
 #' The formulas follow the PyTorch Geometric layers of the same names
 #' (`SAGEConv`, `GCNConv`, `GraphConv`, `GINConv`/`GINEConv`, `GATConv`,
-#' `GATv2Conv`, `TransformerConv`, `NNConv`, `RGCNConv`) for the options
+#' `GATv2Conv`, `TransformerConv`, `NNConv`, `RGCNConv`, `EdgeConv`) for the options
 #' exposed here; options not listed are not implemented.
 #'
 #' @param in_features Input feature size. `sage_conv`, `graph_conv`,
@@ -56,7 +58,8 @@
 #' al. (2021) Masked label prediction. Gilmer et al. (2017) Neural message
 #' passing for quantum chemistry. Schlichtkrull et al. (2018) Modeling
 #' relational data with graph convolutional networks. Morris et al. (2019)
-#' Weisfeiler and Leman go neural.
+#' Weisfeiler and Leman go neural. Wang et al. (2019) Dynamic graph CNN for
+#' learning on point clouds.
 #' @examples
 #' if (torch::torch_is_installed()) {
 #'   x <- torch::torch_randn(4, 3)
@@ -426,6 +429,23 @@ nn_conv <- nn_module(
     if (self$root_weight) out <- out + self$lin_root(x)
     if (!is.null(self$bias)) out <- out + self$bias
     out
+  }
+)
+
+#' @rdname gnn-layers
+#' @param edge_conv_nn For `edge_conv`, the module \eqn{h_\Theta} applied
+#'   to \eqn{[x_i \Vert x_j - x_i]} (input size twice the node feature
+#'   size).
+#' @export
+edge_conv <- nn_module(
+  "edge_conv",
+  initialize = function(edge_conv_nn, aggr = "max") {
+    self$nn <- edge_conv_nn
+    self$aggr <- aggr
+  },
+  forward = function(x, edge_index, ...) {
+    msg_fun <- function(x_i, x_j, ...) self$nn(torch_cat(list(x_i, x_j - x_i), dim = 2L))
+    message_passing(x, edge_index, message = msg_fun, aggr = self$aggr)
   }
 )
 

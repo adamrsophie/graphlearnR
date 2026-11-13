@@ -10,6 +10,7 @@
 \alias{gatv2_conv}
 \alias{transformer_conv}
 \alias{nn_conv}
+\alias{edge_conv}
 \alias{rgcn_conv}
 \title{Graph neural network layers}
 \usage{
@@ -80,6 +81,8 @@ nn_conv(
   bias = TRUE
 )
 
+edge_conv(edge_conv_nn, aggr = "max")
+
 rgcn_conv(
   in_features,
   out_features,
@@ -138,6 +141,10 @@ only).}
 E by \code{in_features * out_features} (\code{nn_conv}). When \code{NULL}, a two layer
 MLP with 32 hidden units is built from \code{edge_dim}.}
 
+\item{edge_conv_nn}{For \code{edge_conv}, the module \eqn{h_\Theta} applied
+to \eqn{[x_i \Vert x_j - x_i]} (input size twice the node feature
+size).}
+
 \item{num_relations}{Number of relation types; \code{edge_type} holds codes
 \code{1:num_relations}.}
 
@@ -168,6 +175,7 @@ the usual neighborhood.
    \code{transformer_conv} \tab \eqn{W_r x_i + \sum_j \alpha_{ij} (W_v x_j + W_e e_{ji})} \tab \code{edge_attr} \tab none added \cr
    \code{nn_conv} \tab \eqn{W x_i + \mathrm{aggr}_j x_j \Theta(e_{ji})} \tab \code{edge_attr} (required) \tab none added \cr
    \code{rgcn_conv} \tab \eqn{W_0 x_i + \sum_r \frac{1}{|N_r(i)|}\sum_{j \in N_r(i)} W_r x_j} \tab \code{edge_type} (required) \tab none added \cr
+   \code{edge_conv} \tab \eqn{\max_j h_\Theta([x_i \Vert x_j - x_i])} \tab none \tab none added \cr
 }
 
 
@@ -182,6 +190,7 @@ input size F, output size F', H heads, R relations):\tabular{llll}{
    \code{transformer_conv} \tab scaled dot product softmax over incoming edges, per head \tab \eqn{O(EHF' + NFHF')} \tab \eqn{E H F'} and \eqn{E H} \cr
    \code{nn_conv} \tab \code{aggr} (mean by default) \tab \eqn{O(E F F')} \tab \eqn{E F F'} edge specific weights, the largest \cr
    \code{rgcn_conv} \tab mean per relation \tab \eqn{O(EF' + RNFF')} \tab \eqn{R F F'} weights (or bases) \cr
+   \code{edge_conv} \tab \code{aggr} (max by default) \tab \eqn{O(E)} calls of \eqn{h_\Theta} on 2F inputs \tab E rows of \eqn{h_\Theta} output \cr
 }
 
 
@@ -190,7 +199,7 @@ rows and relabeling \code{edge_index} permutes the output rows the same way.
 
 The formulas follow the PyTorch Geometric layers of the same names
 (\code{SAGEConv}, \code{GCNConv}, \code{GraphConv}, \code{GINConv}/\code{GINEConv}, \code{GATConv},
-\code{GATv2Conv}, \code{TransformerConv}, \code{NNConv}, \code{RGCNConv}) for the options
+\code{GATv2Conv}, \code{TransformerConv}, \code{NNConv}, \code{RGCNConv}, \code{EdgeConv}) for the options
 exposed here; options not listed are not implemented.
 
 Attention layers keep the coefficients of their last forward pass
@@ -218,5 +227,6 @@ Alon and Yahav (2022) How attentive are graph attention networks? Shi et
 al. (2021) Masked label prediction. Gilmer et al. (2017) Neural message
 passing for quantum chemistry. Schlichtkrull et al. (2018) Modeling
 relational data with graph convolutional networks. Morris et al. (2019)
-Weisfeiler and Leman go neural.
+Weisfeiler and Leman go neural. Wang et al. (2019) Dynamic graph CNN for
+learning on point clouds.
 }

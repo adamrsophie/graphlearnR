@@ -89,6 +89,8 @@ First release.
 
 ## Models, evaluation and data (additions)
 
+- `edge_conv()` (EdgeConv of dynamic graph CNNs, max over
+  \[x_i, x_j - x_i\] messages).
 - `meta_layer()` composes edge, node and graph level updates (graph network
   block, as PyG's `MetaLayer`).
 - `predict()` for temporal fits: TGN continues from its stored memory and

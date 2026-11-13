@@ -238,3 +238,30 @@ test_that("rgcn_conv rejects relation codes outside its range", {
   ei <- torch::torch_tensor(rbind(c(1L, 2L), c(2L, 1L)), dtype = torch::torch_long())
   expect_error(conv(torch::torch_randn(2, 2), ei, edge_type = c(3, 3)), "1:2")
 })
+
+test_that("edge_conv matches an explicit max over edge features and is equivariant", {
+  skip_if_no_torch()
+  g <- random_graph(n = 7, m = 16, f = 3, seed = 21)
+  torch::torch_manual_seed(1)
+  h <- torch::nn_linear(6, 4)
+  layer <- edge_conv(h)
+  tt <- graph_tensors(g)
+  out <- as_mat(layer(tt$x, tt$edge_index))
+  W <- as_mat(h$weight)
+  b <- as.numeric(as.array(h$bias$detach()))
+  ref <- t(vapply(seq_len(7), function(i) {
+    inc <- which(g$edge_index[2, ] == i)
+    if (!length(inc)) return(numeric(4))
+    m <- vapply(inc, function(e) {
+      j <- g$edge_index[1, e]
+      as.numeric(W %*% c(g$x[i, ], g$x[j, ] - g$x[i, ]) + b)
+    }, numeric(4))
+    apply(matrix(m, nrow = 4), 1, max)
+  }, numeric(4)))
+  expect_equal(out, ref, tolerance = 1e-5)
+  perm <- c(3, 1, 7, 2, 6, 4, 5)
+  inv <- order(perm)
+  outp <- as_mat(layer(tt$x[perm, ], torch::torch_tensor(matrix(inv[g$edge_index], 2),
+                                                         dtype = torch::torch_long())))
+  expect_equal(outp, out[perm, ], tolerance = 1e-5)
+})
