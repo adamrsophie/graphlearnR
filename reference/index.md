@@ -256,6 +256,8 @@ Leakage safe splits for every task.
 - [`explanation_fidelity()`](https://adamrsophie.github.io/graphlearnR/reference/explanation_fidelity.md)
   [`explanation_stability()`](https://adamrsophie.github.io/graphlearnR/reference/explanation_fidelity.md)
   : Fidelity and stability of an explanation
+- [`explanation_subgraph()`](https://adamrsophie.github.io/graphlearnR/reference/explanation_subgraph.md)
+  : Explanation subgraph
 - [`attention_weights()`](https://adamrsophie.github.io/graphlearnR/reference/attention_weights.md)
   : Attention weights of attention layers
 

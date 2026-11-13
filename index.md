@@ -68,7 +68,7 @@ evaluate_graph_model(fit_l)                 # AUC, AP, MRR, Hits@k
 | Temporal graphs | event streams, causal neighborhoods, snapshots, graph GRU, spatiotemporal forecasting, dynamic link prediction with baselines |
 | Graph transformers | Laplacian and random walk encodings, shortest path distances, Graphormer style model |
 | Molecules | graphs from atoms and bonds with element and bond order features, scaffold splits, synthetic molecules; TU loaders for MUTAG and similar sets |
-| Explainability | saliency, integrated gradients, edge gradients, occlusion, GNNExplainer, attention weights, fidelity and stability |
+| Explainability | saliency, integrated gradients, edge gradients, occlusion, GNNExplainer, attention weights, explanation subgraphs, fidelity and stability |
 | Sibling packages | optional: graph diffusion solved by modelcompR, exact graph operators from symcompR |
 | Datasets | karate club, stochastic block models, synthetic graph, heterogeneous and temporal data; checksum verified downloaders for TU and LINQS datasets |
 

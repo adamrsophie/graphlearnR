@@ -212,9 +212,23 @@ later and the Ubuntu releases used by the continuous integration runners
 ship 4.8.12, so a bridge could not be tested there; the leakage
 properties are instead checked directly in the test suite.</li>
 </ul>
-<p>Other integrations mentioned in the brief, <code>luz</code> as a
-training backend and tidymodels interfaces, are also not part of this
-release.</p>
+<p>Two other integrations in the brief were also looked at:</p>
+<ul>
+<li>
+<strong>luz.</strong> luz drives a training loop over dataloaders of
+tensors. graphlearnR’s loops need graph specific steps that luz does not
+model: sampled batches whose loss covers only seed nodes, link splits
+that rebuild negatives each epoch, and auxiliary losses such as
+DiffPool’s. Wrapping these as luz callbacks is possible but would
+duplicate <code><a href="../reference/train_graph_model.html">train_graph_model()</a></code>; deferred until there is a
+concrete need.</li>
+<li>
+<strong>tidymodels.</strong> parsnip models expect one row per
+observation, while graph models need the whole graph at prediction time.
+<code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> already returns tidy data frames with
+<code>.pred_class</code> and <code>.prob_</code> columns, so yardstick
+metrics work on its output; a parsnip engine is deferred.</li>
+</ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

@@ -245,6 +245,16 @@ Sample when the full graph does not fit.</li>
 <li>The model runs on whichever device you pass as <code>device</code>.
 For very large graphs, keep the graph in memory once and let the loader
 slice it, rather than building many graph copies.</li>
+<li>Memory: in one run on a GitHub Ubuntu runner (CPU only), the peak
+resident memory of a fresh R process for one forward and backward pass
+on a random graph with 50,000 nodes, 500,000 edges and 32 features was
+about 560 MB for <code>sage_conv</code>, 580 MB for
+<code>gin_conv</code>, 1.1 GB for <code>gcn_conv</code> and 1.3 GB for
+<code>gat_conv</code>, against about 290 MB after loading torch. GPU
+memory has not been measured.</li>
+<li>Construction: building an undirected graph with 1,000,000 input
+edges took 2.6 s in the same run, against 0.05 s for a directed one, so
+build large graphs once and reuse them.</li>
 <li>The <code>benchmarks/</code> folder of the source repository has
 timing scripts for layers and for full batch against sampled training.
 Their results are produced on GitHub Actions runners and reported with

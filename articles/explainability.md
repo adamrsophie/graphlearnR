@@ -139,6 +139,26 @@ range(gx$edges$attribution)
 #> [1] 0.3414106 0.9116459
 ```
 
+### Explanation subgraphs
+
+[`explanation_subgraph()`](https://adamrsophie.github.io/graphlearnR/reference/explanation_subgraph.md)
+turns any edge attribution into a small graph: the `k` most important
+edges (both directions of an undirected pair count as one), the nodes
+they touch, and the target. Its `node_ids` map back to the original
+graph, so it can be plotted or passed to the model again.
+
+``` r
+
+sub <- explanation_subgraph(g, gx, k = 5)
+sub
+#> <graph_data> undirected graph: 8 nodes, 10 edges (5 undirected pairs)
+#>   node features [8 x 34]
+#>   node labels: factor with 2 levels
+#>   masks: train=6, val=0, test=2
+sub$node_ids
+#> [1]  1  2  3 15 22 24 29 34
+```
+
 ## Attention
 
 For attention models,

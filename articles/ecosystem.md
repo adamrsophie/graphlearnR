@@ -134,5 +134,17 @@ of that investigation for this release.
   4.8.12, so a bridge could not be tested there; the leakage properties
   are instead checked directly in the test suite.
 
-Other integrations mentioned in the brief, `luz` as a training backend
-and tidymodels interfaces, are also not part of this release.
+Two other integrations in the brief were also looked at:
+
+- **luz.** luz drives a training loop over dataloaders of tensors.
+  graphlearnR’s loops need graph specific steps that luz does not model:
+  sampled batches whose loss covers only seed nodes, link splits that
+  rebuild negatives each epoch, and auxiliary losses such as DiffPool’s.
+  Wrapping these as luz callbacks is possible but would duplicate
+  [`train_graph_model()`](https://adamrsophie.github.io/graphlearnR/reference/train_graph_model.md);
+  deferred until there is a concrete need.
+- **tidymodels.** parsnip models expect one row per observation, while
+  graph models need the whole graph at prediction time.
+  [`predict()`](https://rdrr.io/r/stats/predict.html) already returns
+  tidy data frames with `.pred_class` and `.prob_` columns, so yardstick
+  metrics work on its output; a parsnip engine is deferred.
