@@ -275,3 +275,15 @@ test_that("write_graph_dataset refuses to mix with an existing dataset", {
   write_graph_dataset(gs[1], dir, overwrite = TRUE)
   expect_length(graph_dataset_disk(dir), 1L)
 })
+
+test_that("fits with a named mlp decoder survive save and load", {
+  skip_if_no_torch()
+  sp <- split_edges(dataset_karate(), seed = 1)
+  fit <- train_graph_model(gnn_model("gcn", 34, 8), sp, "link_prediction", epochs = 3,
+                           decoder = "mlp", early_stopping = 2, seed = 1)
+  path <- withr::local_tempfile(fileext = ".rds")
+  save_graph_fit(fit, path)
+  back <- load_graph_fit(path)
+  expect_equal(predict(back, sp$train_graph, pairs = sp$test_pos, type = "score"),
+               predict(fit, pairs = sp$test_pos, type = "score"), tolerance = 1e-5)
+})

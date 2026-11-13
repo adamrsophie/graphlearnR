@@ -186,10 +186,16 @@ test_that("parameter gradients of gcn_conv match the analytic formula", {
   tt <- graph_tensors(g, dtype = torch::torch_double())
   R <- torch::torch_randn(6, 3, dtype = torch::torch_double())
   (layer(tt$x, tt$edge_index) * R)$sum()$backward()
-  nrm <- gcn_norm(tt$edge_index, 6, dtype = torch::torch_double())
-  ei <- as_mat(nrm$edge_index)
-  M <- matrix(0, 6, 6)
-  for (j in seq_len(ncol(ei))) M[ei[2, j], ei[1, j]] <- M[ei[2, j], ei[1, j]] + as.numeric(as.array(nrm$edge_weight))[j]
+  # Dense reference: M = D^-1/2 (A + I) D^-1/2 with A[i, j] counting edges
+  # j -> i and D the row sums of A + I (existing self loops are replaced).
+  A <- matrix(0, 6, 6)
+  for (j in seq_len(ncol(g$edge_index))) {
+    s <- g$edge_index[1, j]; d <- g$edge_index[2, j]
+    if (s != d) A[d, s] <- A[d, s] + 1
+  }
+  A <- A + diag(6)
+  dinv <- 1 / sqrt(rowSums(A))
+  M <- diag(dinv) %*% A %*% diag(dinv)
   # out = M X W^T + b, so dL/dW = R^T M X and dL/db = colSums(R)
   expect_equal(as_mat(layer$lin$weight$grad), t(as_mat(R)) %*% M %*% g$x, tolerance = 1e-8)
   expect_equal(as.numeric(as.array(layer$bias$grad)), colSums(as_mat(R)), tolerance = 1e-10)

@@ -408,7 +408,10 @@ subgraph_epoch <- function(model, loader, epoch, dev, opt, loss_fn, grad_clip) {
     } else {
       loss_fn(out, target)
     }
-    k <- sum(sg$train_mask)
+    # A weighted (GraphSAINT) loss is already a sum estimating the mean over
+    # all nodes, so it is averaged over batches; a plain loss is a mean over
+    # the batch's training nodes and is weighted by their number.
+    k <- if (!is.null(w)) 1 else sum(sg$train_mask)
     tot <- tot + step_optimizer(opt, loss, grad_clip, all_params(opt)) * k
     cnt <- cnt + k
   }

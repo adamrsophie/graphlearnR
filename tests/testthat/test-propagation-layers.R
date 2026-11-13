@@ -134,3 +134,8 @@ test_that("sag_pool keeps the top scored nodes per graph using neighborhood scor
   r$x$sum()$backward()
   expect_true(!is.null(pool$gnn$lin_rel$weight$grad))
 })
+
+test_that("pna_conv rejects a degree histogram without edges", {
+  skip_if_no_torch()
+  expect_error(pna_conv(2, 3, deg = c(5, 0, 0)), "degree zero")
+})

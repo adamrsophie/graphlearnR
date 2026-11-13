@@ -151,8 +151,8 @@ appnp_model <- nn_module(
 #'    \eqn{d} over the training degree histogram `deg`;
 #' 3. \eqn{x_i' = W_2 \, M [x_i \Vert \text{scaled aggregates}]}.
 #'
-#' The std aggregator is \eqn{\sqrt{\max(\mathrm{var}, 0) + 10^{-5}}}, as in
-#' the authors' reference code, so nodes without incoming edges, or with
+#' The std aggregator is \eqn{\sqrt{\max(\mathrm{var}, 0) + 10^{-5}}}, so
+#' nodes without incoming edges, or with
 #' identical incoming messages, get \eqn{\sqrt{10^{-5}}} from it and zeros
 #' from every other aggregator. Other implementations may treat zero
 #' variance differently.

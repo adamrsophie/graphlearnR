@@ -38,3 +38,8 @@ test_that("an edge aware GIN learns ring versus chain", {
   ev <- evaluate_graph_model(fit, m[sp$test])
   expect_gt(ev$value[ev$metric == "accuracy"], 0.75)
 })
+
+test_that("an unnamed bond matrix reads its third column as the bond order", {
+  g <- molecule_graph(c("C", "C", "O"), rbind(c(1, 2, 2), c(2, 3, 1)))
+  expect_equal(unname(g$edge_attr[g$edge_index[1, ] == 1 & g$edge_index[2, ] == 2, "bond_2"]), 1)
+})

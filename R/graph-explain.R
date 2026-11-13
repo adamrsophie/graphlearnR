@@ -178,7 +178,11 @@ gnn_explainer <- function(model, g, target = NULL, output = NULL, epochs = 100L,
   # The edge mask acts through `edge_weight`; a model that ignores edge
   # weights (attention layers, for example) can not be explained this way.
   if (tt$edge_index$size(2L) > 0L) {
-    half <- with_no_grad(forward_with(model, tt, edge_weight = w0 * 0.5))
+    # Halve every other edge: a uniform scale would miss layers that
+    # normalize edge weights.
+    ne <- tt$edge_index$size(2L)
+    scale <- torch_tensor(rep_len(c(1, 0.5), ne), dtype = w0$dtype, device = dev)
+    half <- with_no_grad(forward_with(model, tt, edge_weight = w0 * scale))
     if (as.logical(torch_allclose(full, half))) {
       stopf("The model's output does not depend on `edge_weight`, so an edge mask can not explain it.")
     }

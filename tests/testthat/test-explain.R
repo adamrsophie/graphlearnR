@@ -110,3 +110,17 @@ test_that("gnn_explainer rejects models that ignore edge weights", {
                            epochs = 2, seed = 1)
   expect_error(gnn_explainer(fit, g, target = 1, epochs = 2), "edge_weight")
 })
+
+test_that("gnn_explainer explains regression outputs and attention_weights skips HGT", {
+  skip_if_no_torch()
+  g <- dataset_karate()
+  g$y <- as.numeric(degree(g))
+  g <- split_nodes(g, seed = 1)
+  fit <- train_graph_model(gnn_model("gcn", 34, 8, 1), g, "node_regression", epochs = 3, seed = 1)
+  gx <- gnn_explainer(fit, g, target = 1, epochs = 3, seed = 1)
+  expect_true(all(gx$edges$attribution >= 0 & gx$edges$attribution <= 1))
+  hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
+  m <- hetero_gnn_model(hg, hidden_dim = 8, output_dim = 3, target_type = "drug", conv = "hgt")
+  invisible(m(hetero_tensors(hg)))
+  expect_equal(attention_weights(m), list())
+})
