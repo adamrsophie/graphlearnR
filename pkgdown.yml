@@ -1,0 +1,18 @@
+pandoc: 3.8.3
+pkgdown: 2.2.1
+pkgdown_sha: ~
+articles:
+  evaluation-and-reproducibility: evaluation-and-reproducibility.html
+  explainability: explainability.html
+  graph-data: graph-data.html
+  graph-transformers: graph-transformers.html
+  graphlearnR: graphlearnR.html
+  heterogeneous-graphs: heterogeneous-graphs.html
+  message-passing: message-passing.html
+  node-graph-link-tasks: node-graph-link-tasks.html
+  sampling-and-scale: sampling-and-scale.html
+  temporal-graphs: temporal-graphs.html
+last_built: 2026-11-13T05:17Z
+urls:
+  reference: https://adamrsophie.github.io/graphlearnR/reference
+  article: https://adamrsophie.github.io/graphlearnR/articles
