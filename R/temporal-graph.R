@@ -464,7 +464,7 @@ train_spatiotemporal_model <- function(signal, lags = 4L, horizon = 1L, hidden_d
   structure(list(model = model, history = history, windows = sets, lags = lags,
                  horizon = horizon, test_metrics = if (length(pred)) mets(pred),
                  baseline_metrics = if (length(pred)) mets(naive), device = dev,
-                 seed = seed), class = "temporal_fit")
+                 seed = seed, task = "spatiotemporal forecasting"), class = "temporal_fit")
 }
 
 #' @export
@@ -584,7 +584,8 @@ train_dynamic_link_model <- function(snapshots, train_steps = NULL, hidden_dim =
                  eval_steps = eval_steps, step_metrics = step_metrics,
                  test_metrics = if (!is.null(step_metrics)) colMeans(step_metrics[, -1L, drop = FALSE]),
                  baseline_metrics = if (length(eval_steps)) dynamic_link_baseline(snapshots, eval_steps, neg_ratio, seed),
-                 task = "dynamic link prediction", device = dev, seed = seed),
+                 task = "dynamic link prediction", device = dev, seed = seed,
+                 num_nodes = n, identity_features = is.null(feats[[1L]])),
             class = "temporal_fit")
 }
 

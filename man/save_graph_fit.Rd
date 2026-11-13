@@ -10,7 +10,7 @@ save_graph_fit(fit, path)
 load_graph_fit(path, device = NULL)
 }
 \arguments{
-\item{fit}{A \code{graph_fit}.}
+\item{fit}{A \code{graph_fit} or \code{temporal_fit}.}
 
 \item{path}{File path.}
 
@@ -18,7 +18,8 @@ load_graph_fit(path, device = NULL)
 }
 \value{
 \code{save_graph_fit()} returns \code{path} invisibly; \code{load_graph_fit()}
-returns a \code{graph_fit} (without \code{data} and \code{optimizer}).
+returns a \code{graph_fit} (without \code{data} and \code{optimizer}) or a
+\code{temporal_fit}.
 }
 \description{
 \code{save_graph_fit()} writes the model and decoder with \code{torch}'s own
@@ -26,6 +27,10 @@ serialization (\code{\link[torch:torch_serialize]{torch::torch_serialize()}}) to
 class levels, training history and reproducibility record into one
 \code{.rds} file. Training data and optimizer state are not saved.
 \code{load_graph_fit()} restores a fit that \code{\link[=predict]{predict()}} can use.
+Temporal fits (\code{\link[=train_tgn]{train_tgn()}}, \code{\link[=train_dynamic_link_model]{train_dynamic_link_model()}},
+\code{\link[=train_spatiotemporal_model]{train_spatiotemporal_model()}}) are saved the same way, including a TGN's
+memory and neighbor store, so \code{\link[=predict.temporal_fit]{predict.temporal_fit()}} can continue after
+loading.
 }
 \examples{
 if (torch::torch_is_installed()) {

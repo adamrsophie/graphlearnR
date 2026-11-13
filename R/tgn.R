@@ -315,9 +315,14 @@ train_tgn <- function(model, split, epochs = 10L, batch_size = 200L, lr = 1e-3, 
     history[ep, ] <- list(ep, tr$loss, metrics(va$scores)[["roc_auc"]])
   }
   te <- run(split$test, va$state, FALSE, if (is.null(seed)) NULL else seed + 130363L)
+  seen <- c(split$train$t, split$val$t, split$test$t)
   structure(list(model = model, history = history, val_metrics = metrics(va$scores),
                  test_metrics = metrics(te$scores), task = "continuous time link prediction",
-                 device = dev, seed = seed),
+                 device = dev, seed = seed, batch_size = batch_size,
+                 # Memory, last update times, the pending batch and the
+                 # neighbor store after every training, validation and test
+                 # event, so predict() can continue from the end of the data.
+                 state = te$state, last_time = if (length(seen)) max(seen) else -Inf),
             class = "temporal_fit")
 }
 
@@ -352,4 +357,21 @@ tgn_negatives <- function(n, src, dst, seed) {
     }
     neg
   })
+}
+
+# Feed observed events into a TGN state without scoring or training, in
+# batches that never split a timestamp, exactly as during evaluation.
+tgn_absorb <- function(model, state, tg, batch_size) {
+  for (idx in tgn_batches(tg$t, batch_size)) {
+    ev <- list(src = tg$src[idx], dst = tg$dst[idx], t = tg$t[idx],
+               edge_attr = if (model$edge_dim > 0L) tg$edge_attr[idx, , drop = FALSE])
+    if (!is.null(state$pending)) {
+      cur <- with_no_grad(model$update_memory(state$mem, state$last_t, state$pending))
+      state$mem <- cur$mem$detach()
+      state$last_t <- cur$last_t
+    }
+    state$pending <- ev
+    if (model$embedding != "time") state$store <- tgn_store_add(state$store, ev$src, ev$dst, ev$t, ev$edge_attr)
+  }
+  state
 }

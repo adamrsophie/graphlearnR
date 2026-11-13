@@ -658,12 +658,17 @@ print.graph_fit <- function(x, ...) {
 #' class levels, training history and reproducibility record into one
 #' `.rds` file. Training data and optimizer state are not saved.
 #' `load_graph_fit()` restores a fit that [predict()] can use.
+#' Temporal fits ([train_tgn()], [train_dynamic_link_model()],
+#' [train_spatiotemporal_model()]) are saved the same way, including a TGN's
+#' memory and neighbor store, so [predict.temporal_fit()] can continue after
+#' loading.
 #'
-#' @param fit A `graph_fit`.
+#' @param fit A `graph_fit` or `temporal_fit`.
 #' @param path File path.
 #' @param device Device to load onto.
 #' @return `save_graph_fit()` returns `path` invisibly; `load_graph_fit()`
-#'   returns a `graph_fit` (without `data` and `optimizer`).
+#'   returns a `graph_fit` (without `data` and `optimizer`) or a
+#'   `temporal_fit`.
 #' @examples
 #' if (torch::torch_is_installed()) {
 #'   g <- split_nodes(dataset_karate(), seed = 1)
@@ -676,6 +681,17 @@ print.graph_fit <- function(x, ...) {
 #' }
 #' @export
 save_graph_fit <- function(fit, path) {
+  if (inherits(fit, "temporal_fit")) {
+    # Temporal fits: the module is serialized and a TGN memory tensor is
+    # kept as an R array, so the state survives the round trip.
+    obj <- unclass(fit)
+    obj$model <- torch_serialize(fit$model)
+    if (!is.null(obj$state$mem)) obj$state$mem <- as_r_array(fit$state$mem)
+    obj$device <- NULL
+    obj$format <- "graphlearnR_temporal_fit_v1"
+    saveRDS(obj, path)
+    return(invisible(path))
+  }
   obj <- list(
     link_schema = fit$link_schema %||% link_schema(fit$data),
     model = torch_serialize(fit$model),
@@ -693,8 +709,18 @@ save_graph_fit <- function(fit, path) {
 #' @export
 load_graph_fit <- function(path, device = NULL) {
   obj <- readRDS(path)
-  if (!is.list(obj) || !identical(obj$format, "graphlearnR_fit_v1")) stopf("`%s` is not a saved graph_fit.", path)
   dev <- resolve_device(device)
+  if (is.list(obj) && identical(obj$format, "graphlearnR_temporal_fit_v1")) {
+    obj$model <- torch_load(obj$model, device = dev)
+    obj$model$eval()
+    if (!is.null(obj$state$mem)) {
+      obj$state$mem <- torch_tensor(obj$state$mem, dtype = torch_float(), device = dev)
+    }
+    obj$device <- dev
+    obj$format <- NULL
+    return(structure(obj, class = "temporal_fit"))
+  }
+  if (!is.list(obj) || !identical(obj$format, "graphlearnR_fit_v1")) stopf("`%s` is not a saved graph_fit.", path)
   model <- torch_load(obj$model, device = dev)
   model$eval()
   decoder <- if (!is.null(obj$decoder)) torch_load(obj$decoder, device = dev)
