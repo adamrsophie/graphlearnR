@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="140 85 240 240" role="img" aria-label="graphlearnR">
+  <title>graphlearnR</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4.2" markerHeight="4.2" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#F2A93B"/>
+    </marker>
+  </defs>
+  <rect x="140" y="85" width="240" height="240" rx="52" fill="#12233F"/>
+  <polygon points="260,117 336.2,161 336.2,249 260,293 183.8,249 183.8,161" fill="none" stroke="#3B5478" stroke-width="6" stroke-linejoin="round"/>
+  <g stroke="#F2A93B" stroke-width="8" stroke-linecap="round" fill="none" marker-end="url(#arrow)">
+    <line x1="260" y1="136" x2="260" y2="164"/>
+    <line x1="319.8" y1="170.5" x2="295.5" y2="184.5"/>
+    <line x1="319.8" y1="239.5" x2="295.5" y2="225.5"/>
+    <line x1="260" y1="274" x2="260" y2="246"/>
+    <line x1="200.2" y1="239.5" x2="224.5" y2="225.5"/>
+    <line x1="200.2" y1="170.5" x2="224.5" y2="184.5"/>
+  </g>
+  <g fill="#12233F" stroke="#8FA2FF" stroke-width="7">
+    <circle cx="260" cy="117" r="16"/>
+    <circle cx="336.2" cy="161" r="16"/>
+    <circle cx="336.2" cy="249" r="16"/>
+    <circle cx="260" cy="293" r="16"/>
+    <circle cx="183.8" cy="249" r="16"/>
+    <circle cx="183.8" cy="161" r="16"/>
+  </g>
+  <circle cx="260" cy="205" r="24" fill="#F2A93B"/>
+  <circle cx="260" cy="205" r="8" fill="#12233F"/>
+</svg>

@@ -1,4 +1,4 @@
-# graphlearnR
+# graphlearnR <img src="man/figures/logo.png" align="right" height="139" alt="graphlearnR logo" />
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/adamrsophie/graphlearnR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/adamrsophie/graphlearnR/actions/workflows/R-CMD-check.yaml)
