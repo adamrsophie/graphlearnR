@@ -228,8 +228,7 @@ For the real data:
 
 ``` r
 
-dir <- download_ogb("ogbg-molhiv")
-hiv <- read_ogb_graph(dir)
+hiv <- download_ogb("ogbg-molhiv")   # downloads, extracts and reads
 lengths(hiv$metadata$split)   # 32901 4113 4113
 ```
 

@@ -28,3 +28,14 @@ global_attention_pool(in_features, gate_nn = NULL, nn = NULL)
 ## Value
 
 An `nn_module` called as `module(x, batch, num_graphs)`.
+
+## Examples
+
+``` r
+if (torch::torch_is_installed()) {
+  pool <- global_attention_pool(4)
+  x <- torch::torch_randn(5, 4)
+  pool(x, batch = c(1, 1, 2, 2, 2), num_graphs = 2)$shape
+}
+#> [1] 2 4
+```

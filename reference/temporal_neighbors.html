@@ -130,6 +130,17 @@ the query time is ever returned with the default <code>strict = TRUE</code>.</p>
 used unless <code>direction = "both"</code>.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">tg</span> <span class="op">&lt;-</span> <span class="fu"><a href="dataset_synthetic_temporal.html">dataset_synthetic_temporal</a></span><span class="op">(</span>seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">nb</span> <span class="op">&lt;-</span> <span class="fu">temporal_neighbors</span><span class="op">(</span><span class="va">tg</span>, nodes <span class="op">=</span> <span class="va">tg</span><span class="op">$</span><span class="va">dst</span><span class="op">[</span><span class="fl">50</span><span class="op">]</span>, times <span class="op">=</span> <span class="va">tg</span><span class="op">$</span><span class="va">t</span><span class="op">[</span><span class="fl">50</span><span class="op">]</span>, k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">nb</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   query node neighbor         t event</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1     1   12       29 2.5367459    26</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2     1   12       29 1.8193165    20</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3     1   12       11 0.7279515     9</span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

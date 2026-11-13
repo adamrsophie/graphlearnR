@@ -114,6 +114,17 @@ families. The data are simulated and carry no biological meaning.</p>
 <code>protein__interacts__protein</code>, drug labels and drug masks.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">hg</span> <span class="op">&lt;-</span> <span class="fu">dataset_synthetic_hetero</span><span class="op">(</span>seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">hg</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;hetero_graph_data&gt; 2 node types, 2 relations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   node drug               60 nodes, 4 features, labeled</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   node protein            80 nodes, 6 features</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   edge drug__targets__protein: 300</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   edge protein__interacts__protein: 234</span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

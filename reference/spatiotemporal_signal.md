@@ -30,3 +30,12 @@ spatiotemporal_signal(graph, features, targets = NULL, times = NULL)
 ## Value
 
 An object of class `spatiotemporal_signal`.
+
+## Examples
+
+``` r
+g <- dataset_karate()
+sig <- spatiotemporal_signal(g, matrix(rnorm(10 * 34), 10, 34))
+sig
+#> <spatiotemporal_signal> 10 steps, 34 nodes, 1 features
+```

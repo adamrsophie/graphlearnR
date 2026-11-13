@@ -25,3 +25,18 @@ hetero_conv(convs, aggr = c("sum", "mean"))
 ## Value
 
 An `nn_module` called as `module(x_dict, edge_index_dict)`.
+
+## Examples
+
+``` r
+if (torch::torch_is_installed()) {
+  hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
+  convs <- lapply(stats::setNames(nm = edge_types(hg)), function(r) sage_conv(16, 8))
+  conv <- hetero_conv(convs)
+  conv
+}
+#> An `nn_module` containing 1,584 parameters.
+#> 
+#> ── Modules ─────────────────────────────────────────────────────────────────────
+#> • convs: <nn_module> #1,584 parameters
+```

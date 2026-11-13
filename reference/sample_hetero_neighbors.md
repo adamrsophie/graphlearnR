@@ -40,3 +40,12 @@ A `hetero_graph_data` of class `sampled_hetero_graph`.
 The result is a `hetero_graph_data` with local indices; `n_id[[type]]`
 holds the original indices (seeds first) and `num_seeds[[type]]` the
 seed counts.
+
+## Examples
+
+``` r
+hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
+sg <- sample_hetero_neighbors(hg, seeds = list(drug = c(1, 2)), fanouts = c(3, 2), seed = 1)
+sg$num_nodes
+#> NULL
+```

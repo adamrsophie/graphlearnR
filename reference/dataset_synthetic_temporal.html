@@ -111,6 +111,16 @@ mean of its neighbors plus noise.</p>
     <p>A <code>temporal_graph_data</code> or a <code>spatiotemporal_signal</code>.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">tg</span> <span class="op">&lt;-</span> <span class="fu">dataset_synthetic_temporal</span><span class="op">(</span>seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">tg</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;temporal_graph_data&gt; 40 nodes, 800 events, t in [0.1478096, 99.91947]</span>
+<span class="r-in"><span><span class="va">sig</span> <span class="op">&lt;-</span> <span class="fu">dataset_synthetic_signal</span><span class="op">(</span>seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">sig</span><span class="op">$</span><span class="va">features</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 60 20  1</span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

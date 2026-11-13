@@ -98,8 +98,10 @@ node indices.
   each batch carries `node_norm` (loss weight \\\propto 1 / p_v\\) and
   edge weights multiplied by \\p_v / p\_{uv}\\ (aggregator
   normalization), where \\p\\ are empirical inclusion frequencies. The
-  trainer weights the per node loss by `node_norm` for the built in
-  losses and for loss functions with a `reduction` argument.
+  trainer sums the per node loss of the training nodes in a batch,
+  weighted by `node_norm`, for the built in losses and for loss
+  functions with a `reduction` argument; in expectation this is the mean
+  loss over all nodes of the graph.
 
 Batches are drawn in R on the CPU.
 

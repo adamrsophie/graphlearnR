@@ -26,7 +26,8 @@ gcn_norm(
   num_nodes,
   edge_weight = NULL,
   add_self_loops = TRUE,
-  improved = FALSE
+  improved = FALSE,
+  dtype = NULL
 )
 ```
 
@@ -66,6 +67,29 @@ gcn_norm(
   Use fill value 2 for self loops (Kipf and Welling's "improved"
   variant).
 
+- dtype:
+
+  Floating point type of the weights (default float32); layers pass the
+  dtype of their input so double precision models normalize in double
+  precision.
+
 ## Value
 
 A list with `edge_index`, `edge_weight` and `edge_attr`.
+
+## Examples
+
+``` r
+if (torch::torch_is_installed()) {
+  ei <- torch::torch_tensor(rbind(c(1, 2), c(2, 3)), dtype = torch::torch_long())
+  add_self_loops_tensor(ei, 3)$edge_index
+  gcn_norm(ei, 3)$edge_weight
+}
+#> torch_tensor
+#>  0.7071
+#>  0.5000
+#>  1.0000
+#>  0.5000
+#>  0.5000
+#> [ CPUFloatType{5} ]
+```

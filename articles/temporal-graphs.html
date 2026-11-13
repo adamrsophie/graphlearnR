@@ -221,7 +221,7 @@ appeared before.</p>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/train_dynamic_link_model.html">train_dynamic_link_model</a></span><span class="op">(</span><span class="va">snaps</span>, hidden_dim <span class="op">=</span> <span class="fl">16</span>, epochs <span class="op">=</span> <span class="fl">30</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">fit</span></span>
 <span><span class="co">#&gt; &lt;temporal_fit&gt; dynamic link prediction, 30 epochs</span></span>
-<span><span class="co">#&gt;   test:      roc_auc = 0.8668, average_precision = 0.8378 </span></span>
+<span><span class="co">#&gt;   test:      roc_auc = 0.8705, average_precision = 0.8432 </span></span>
 <span><span class="co">#&gt;   baseline:  roc_auc = 0.8823, average_precision = 0.8624</span></span>
 <span><span class="va">fit</span><span class="op">$</span><span class="va">train_steps</span></span>
 <span><span class="co">#&gt; [1] 2 3 4 5</span></span>
@@ -229,12 +229,12 @@ appeared before.</p>
 <span><span class="co">#&gt; [1] 6 7 8</span></span>
 <span><span class="va">fit</span><span class="op">$</span><span class="va">step_metrics</span></span>
 <span><span class="co">#&gt;   step   roc_auc average_precision</span></span>
-<span><span class="co">#&gt; 1    6 0.8358986         0.8012241</span></span>
-<span><span class="co">#&gt; 2    7 0.8899174         0.8639584</span></span>
-<span><span class="co">#&gt; 3    8 0.8746636         0.8482256</span></span>
+<span><span class="co">#&gt; 1    6 0.8458579         0.8098603</span></span>
+<span><span class="co">#&gt; 2    7 0.8882645         0.8633798</span></span>
+<span><span class="co">#&gt; 3    8 0.8773549         0.8562412</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>model <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">test_metrics</span>, history_baseline <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">baseline_metrics</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                    roc_auc average_precision</span></span>
-<span><span class="co">#&gt; model            0.8668265         0.8378027</span></span>
+<span><span class="co">#&gt; model            0.8704924         0.8431605</span></span>
 <span><span class="co">#&gt; history_baseline 0.8823424         0.8624293</span></span></code></pre></div>
 <p>Report the model next to the baseline. On many real dynamic graphs,
 simply predicting that past edges repeat is hard to beat, and a model
@@ -270,9 +270,9 @@ reported next to the model.</p>
 <span><span class="co">#&gt; last_train  first_val first_test </span></span>
 <span><span class="co">#&gt;         56         57         68</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>model <span class="op">=</span> <span class="va">fst</span><span class="op">$</span><span class="va">test_metrics</span>, naive <span class="op">=</span> <span class="va">fst</span><span class="op">$</span><span class="va">baseline_metrics</span><span class="op">)</span></span>
-<span><span class="co">#&gt;              mse        mae</span></span>
-<span><span class="co">#&gt; model 0.00956420 0.07995598</span></span>
-<span><span class="co">#&gt; naive 0.01375186 0.09503502</span></span></code></pre></div>
+<span><span class="co">#&gt;               mse        mae</span></span>
+<span><span class="co">#&gt; model 0.009564201 0.07995599</span></span>
+<span><span class="co">#&gt; naive 0.013751859 0.09503502</span></span></code></pre></div>
 <p>To bring your own data, build the graph with any of the constructors
 and pass the array to <code><a href="../reference/spatiotemporal_signal.html">spatiotemporal_signal()</a></code>, which checks
 that the node dimension matches.</p>
@@ -300,19 +300,19 @@ updates.</p>
 <span><span class="va">fit_tgn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tgn_model.html">train_tgn</a></span><span class="op">(</span><span class="va">tgn</span>, <span class="va">sp_t</span>, epochs <span class="op">=</span> <span class="fl">10</span>, batch_size <span class="op">=</span> <span class="fl">50</span>, lr <span class="op">=</span> <span class="fl">0.01</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">fit_tgn</span><span class="op">$</span><span class="va">history</span></span>
 <span><span class="co">#&gt;    epoch train_loss   val_auc</span></span>
-<span><span class="co">#&gt; 1      1  0.6618977 0.6479407</span></span>
-<span><span class="co">#&gt; 2      2  0.5858272 0.7286914</span></span>
-<span><span class="co">#&gt; 3      3  0.5076027 0.7755852</span></span>
-<span><span class="co">#&gt; 4      4  0.4515432 0.8122074</span></span>
-<span><span class="co">#&gt; 5      5  0.4006852 0.8403556</span></span>
-<span><span class="co">#&gt; 6      6  0.3538120 0.8536494</span></span>
-<span><span class="co">#&gt; 7      7  0.3602610 0.8689185</span></span>
-<span><span class="co">#&gt; 8      8  0.3477633 0.8672198</span></span>
-<span><span class="co">#&gt; 9      9  0.3363703 0.8594765</span></span>
-<span><span class="co">#&gt; 10    10  0.3270359 0.8700247</span></span>
+<span><span class="co">#&gt; 1      1  0.6624339 0.6485333</span></span>
+<span><span class="co">#&gt; 2      2  0.5714008 0.7299160</span></span>
+<span><span class="co">#&gt; 3      3  0.4855788 0.8057086</span></span>
+<span><span class="co">#&gt; 4      4  0.4264535 0.8403753</span></span>
+<span><span class="co">#&gt; 5      5  0.3848646 0.8578963</span></span>
+<span><span class="co">#&gt; 6      6  0.3400036 0.8775309</span></span>
+<span><span class="co">#&gt; 7      7  0.3274034 0.8930765</span></span>
+<span><span class="co">#&gt; 8      8  0.3020271 0.8911210</span></span>
+<span><span class="co">#&gt; 9      9  0.2973747 0.8774914</span></span>
+<span><span class="co">#&gt; 10    10  0.2969318 0.8906667</span></span>
 <span><span class="va">fit_tgn</span><span class="op">$</span><span class="va">test_metrics</span></span>
 <span><span class="co">#&gt;           roc_auc average_precision </span></span>
-<span><span class="co">#&gt;         0.8526803         0.8478486</span></span></code></pre></div>
+<span><span class="co">#&gt;         0.8712898         0.8767697</span></span></code></pre></div>
 <p>Each event is scored against one random destination. The synthetic
 stream repeats earlier pairs often, so memory and the learned node
 embeddings (<code>node_embedding = TRUE</code>, the default) carry most
@@ -331,7 +331,7 @@ from earlier batches are visible, for the same reason as above.</p>
 <span><span class="va">fit_att</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tgn_model.html">train_tgn</a></span><span class="op">(</span><span class="va">tgn_att</span>, <span class="va">sp_t</span>, epochs <span class="op">=</span> <span class="fl">10</span>, batch_size <span class="op">=</span> <span class="fl">50</span>, lr <span class="op">=</span> <span class="fl">0.01</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">fit_att</span><span class="op">$</span><span class="va">test_metrics</span></span>
 <span><span class="co">#&gt;           roc_auc average_precision </span></span>
-<span><span class="co">#&gt;         0.8542172         0.8504464</span></span></code></pre></div>
+<span><span class="co">#&gt;         0.8633801         0.8615132</span></span></code></pre></div>
 <p>The implementation has one embedding layer (one hop) and keeps the
 most recent message per node; the paper’s other message aggregators are
 not included.</p>

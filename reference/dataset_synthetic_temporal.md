@@ -35,3 +35,14 @@ dataset_synthetic_signal(num_nodes = 20L, num_steps = 60L, seed = NULL)
 ## Value
 
 A `temporal_graph_data` or a `spatiotemporal_signal`.
+
+## Examples
+
+``` r
+tg <- dataset_synthetic_temporal(seed = 1)
+tg
+#> <temporal_graph_data> 40 nodes, 800 events, t in [0.1478096, 99.91947]
+sig <- dataset_synthetic_signal(seed = 1)
+dim(sig$features)
+#> [1] 60 20  1
+```

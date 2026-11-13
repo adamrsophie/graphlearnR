@@ -46,3 +46,21 @@ graphs use the sparse
 
 The layer is permutation equivariant: distances and attention are
 functions of node pairs, not of node order.
+
+## Examples
+
+``` r
+if (torch::torch_is_installed()) {
+  layer <- graph_transformer_layer(8, heads = 2)
+  layer
+}
+#> An `nn_module` containing 616 parameters.
+#> 
+#> ── Modules ─────────────────────────────────────────────────────────────────────
+#> • ln1: <nn_layer_norm> #16 parameters
+#> • ln2: <nn_layer_norm> #16 parameters
+#> • qkv: <nn_linear> #216 parameters
+#> • proj: <nn_linear> #72 parameters
+#> • ffn: <nn_sequential> #280 parameters
+#> • dist_bias: <nn_embedding> #16 parameters
+```

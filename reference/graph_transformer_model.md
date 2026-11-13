@@ -77,3 +77,20 @@ so the model works with
 
 Ying et al. (2021) Do transformers really perform badly for graph
 representation? NeurIPS.
+
+## Examples
+
+``` r
+if (torch::torch_is_installed()) {
+  m <- graph_transformer_model(input_dim = 34, hidden_dim = 16, output_dim = 2, heads = 2)
+  m
+}
+#> An `nn_module` containing 5,554 parameters.
+#> 
+#> ── Modules ─────────────────────────────────────────────────────────────────────
+#> • input: <nn_linear> #560 parameters
+#> • degree_emb: <nn_embedding> #176 parameters
+#> • layers: <nn_module_list> #4,480 parameters
+#> • ln: <nn_layer_norm> #32 parameters
+#> • head: <nn_sequential> #306 parameters
+```

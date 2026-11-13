@@ -20,3 +20,12 @@ hetero_batch(graphs)
 ## Value
 
 A `hetero_graph_data` of class `hetero_graph_batch`.
+
+## Examples
+
+``` r
+hg <- dataset_synthetic_hetero(seed = 1)
+hb <- hetero_batch(list(hg, hg))
+hb$num_nodes
+#> NULL
+```

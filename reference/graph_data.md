@@ -43,7 +43,9 @@ graph_data(
 
   Edges as a 2 by E matrix (row 1 source, row 2 target), an E by 2
   matrix, or a data frame with columns `from` and `to`. Values are one
-  based node indices. `NULL` means no edges.
+  based node indices. `NULL` means no edges. A 2 by 2 matrix is read as
+  2 by E (two edges, one per column) unless its column names are `from`
+  and `to`.
 
 - y:
 

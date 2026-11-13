@@ -167,8 +167,10 @@ pre-sampled subgraphs, as in PyTorch Geometric's <code>GraphSAINTSampler</code>:
 each batch carries <code>node_norm</code> (loss weight \(\propto 1 / p_v\)) and
 edge weights multiplied by \(p_v / p_{uv}\) (aggregator
 normalization), where \(p\) are empirical inclusion frequencies.
-The trainer weights the per node loss by <code>node_norm</code> for the built in
-losses and for loss functions with a <code>reduction</code> argument.</p></li>
+The trainer sums the per node loss of the training nodes in a batch,
+weighted by <code>node_norm</code>, for the built in losses and for loss functions
+with a <code>reduction</code> argument; in expectation this is the mean loss over
+all nodes of the graph.</p></li>
 </ul><p>Batches are drawn in R on the CPU.</p>
     </div>
     <div class="section level2">

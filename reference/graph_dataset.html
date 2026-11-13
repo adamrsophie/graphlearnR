@@ -85,7 +85,7 @@ so large collections need not fit in memory.</p>
 <span></span>
 <span><span class="fu">graph_dataset_disk</span><span class="op">(</span><span class="va">dir</span>, transform <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">write_graph_dataset</span><span class="op">(</span><span class="va">graphs</span>, <span class="va">dir</span>, metadata <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">write_graph_dataset</span><span class="op">(</span><span class="va">graphs</span>, <span class="va">dir</span>, metadata <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>, overwrite <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -106,6 +106,11 @@ so large collections need not fit in memory.</p>
 
 <dt id="arg-dir">dir<a class="anchor" aria-label="anchor" href="#arg-dir"></a></dt>
 <dd><p>Directory holding <code>graph_000001.rds</code>, ... and <code>metadata.rds</code>.</p></dd>
+
+
+<dt id="arg-overwrite">overwrite<a class="anchor" aria-label="anchor" href="#arg-overwrite"></a></dt>
+<dd><p>Replace the graph files of an existing dataset in <code>dir</code>;
+without it, writing into such a directory is an error.</p></dd>
 
 </dl></div>
     <div class="section level2">

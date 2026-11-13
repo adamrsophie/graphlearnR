@@ -93,7 +93,10 @@ held out.</p>
 
 
 <dt id="arg-train-val-test">train, val, test<a class="anchor" aria-label="anchor" href="#arg-train-val-test"></a></dt>
-<dd><p>Proportions (summing to at most 1) or counts.</p></dd>
+<dd><p>Proportions (each at most 1, summing to at most 1)
+or whole counts. Values that are all at most 1 are read as proportions,
+so <code>train = 1, val = 0, test = 0</code> puts every labeled node in training.
+With <code>stratify</code>, sizes apply within each class.</p></dd>
 
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
@@ -106,6 +109,17 @@ changed.</p></dd>
     <p><code>g</code> with the edge masks set.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="dataset_karate.html">dataset_karate</a></span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">g</span><span class="op">$</span><span class="va">edge_y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">g</span><span class="op">$</span><span class="va">edge_index</span><span class="op">[</span><span class="fl">1</span>, <span class="op">]</span> <span class="op">&lt;</span> <span class="va">g</span><span class="op">$</span><span class="va">edge_index</span><span class="op">[</span><span class="fl">2</span>, <span class="op">]</span>, <span class="st">"up"</span>, <span class="st">"down"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu">split_edge_labels</span><span class="op">(</span><span class="va">g</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">g</span><span class="op">$</span><span class="va">edge_train_mask</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> FALSE  TRUE </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    62    94 </span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

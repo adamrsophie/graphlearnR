@@ -132,6 +132,19 @@
 <code><a href="../reference/molecule_graph.html">molecule_graph()</a></code> builds graphs from atoms and bonds with element and bond order features; <code><a href="../reference/molecule_graph.html">dataset_synthetic_molecules()</a></code> generates small synthetic molecules with scaffold identifiers for scaffold splits.</li>
 </ul></div>
 <div class="section level3">
+<h3 id="correctness-and-safety-behavior-0-1-0">Correctness and safety behavior<a class="anchor" aria-label="anchor" href="#correctness-and-safety-behavior-0-1-0"></a></h3>
+<ul><li>
+<code><a href="../reference/split_edges.html">split_edges()</a></code> and <code><a href="../reference/split_edges_hetero.html">split_edges_hetero()</a></code> treat parallel duplicates (and, for undirected or same type relations, both orientations) as one unit, so a held out pair never stays in the training graph.</li>
+<li>Masks are checked for pairwise overlap, including edge masks; <code><a href="../reference/train_spatiotemporal_model.html">train_spatiotemporal_model()</a></code> purges windows that cross split boundaries.</li>
+<li>Class labels share one level set across batches, splits and predictions; metrics check that truth and prediction lengths match.</li>
+<li>TGN updates memory in event order, never draws the positive pair as a negative, keeps events with one timestamp in one batch, and checks that train, validation and test periods do not overlap.</li>
+<li>Saved fits keep link decoders and heterogeneous link schemas; edge predictions for given pairs use the features of the matching edges.</li>
+<li>Explainers restore the model’s training mode and parameter gradient flags; <code><a href="../reference/explain.html">gnn_explainer()</a></code> supports regression and rejects models that ignore edge weights.</li>
+<li>Sub seeds are drawn with <code><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int()</a></code>, so seed arithmetic never overflows.</li>
+<li>Training errors on mini batch options a task would ignore (<code>fanouts</code>, <code>batch_size</code>, <code>loader</code>), and <code><a href="../reference/graph_dataset.html">write_graph_dataset()</a></code> will not mix files with an existing dataset unless <code>overwrite = TRUE</code>.</li>
+<li>Downloads without a recorded checksum warn; OGB archives use https.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="sibling-packages-optional-0-1-0">Sibling packages (optional)<a class="anchor" aria-label="anchor" href="#sibling-packages-optional-0-1-0"></a></h3>
 <ul><li>
 <code><a href="../reference/graph_diffusion.html">graph_diffusion()</a></code> simulates diffusion on a graph with the modelcompR ODE solvers.</li>

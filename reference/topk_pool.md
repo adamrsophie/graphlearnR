@@ -40,3 +40,16 @@ An `nn_module` returning a list with `x`, `edge_index`, `batch`, `perm`
 2019): the scores come from a graph convolution, \\y = \mathrm{GNN}(X,
 A)\\, so they depend on the neighborhood; the rest is as in
 `topk_pool()`.
+
+## Examples
+
+``` r
+if (torch::torch_is_installed()) {
+  pool <- topk_pool(2, ratio = 0.5)
+  pool
+}
+#> An `nn_module` containing 2 parameters.
+#> 
+#> ── Parameters ──────────────────────────────────────────────────────────────────
+#> • weight: Float [1:2]
+```

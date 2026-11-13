@@ -120,6 +120,23 @@ sparse <code><a href="gnn-layers.html">transformer_conv()</a></code>.</p>
 functions of node pairs, not of node order.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu">torch</span><span class="fu">::</span><span class="fu"><a href="https://torch.mlverse.org/docs/reference/torch_is_installed.html" class="external-link">torch_is_installed</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="va">layer</span> <span class="op">&lt;-</span> <span class="fu">graph_transformer_layer</span><span class="op">(</span><span class="fl">8</span>, heads <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">layer</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> An `nn_module` containing 616 parameters.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ── Modules ─────────────────────────────────────────────────────────────────────</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> • ln1: &lt;nn_layer_norm&gt; #16 parameters</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> • ln2: &lt;nn_layer_norm&gt; #16 parameters</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> • qkv: &lt;nn_linear&gt; #216 parameters</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> • proj: &lt;nn_linear&gt; #72 parameters</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> • ffn: &lt;nn_sequential&gt; #280 parameters</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> • dist_bias: &lt;nn_embedding&gt; #16 parameters</span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

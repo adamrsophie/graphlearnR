@@ -5,7 +5,7 @@ Functions that return a modified copy of a `graph_data` object.
 ## Usage
 
 ``` r
-add_self_loops(g, fill_weight = 1)
+add_self_loops(g, fill_weight = 1, loop_type = NA)
 
 remove_self_loops(g)
 
@@ -31,6 +31,13 @@ compose_transforms(...)
 - fill_weight:
 
   Weight of new self loops.
+
+- loop_type:
+
+  Relation code of new self loops in a graph with `edge_type` (for
+  example a dedicated code for
+  [`rgcn_conv()`](https://adamrsophie.github.io/graphlearnR/reference/gnn-layers.md)).
+  The default `NA` marks them as untyped, which typed layers reject.
 
 - nodes:
 

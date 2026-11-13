@@ -156,7 +156,8 @@ tasks with <code>fanouts</code>).</p></dd>
 
 
 <dt id="arg-decoder">decoder<a class="anchor" aria-label="anchor" href="#arg-decoder"></a></dt>
-<dd><p>Decoder module for link and edge tasks; defaults to
+<dd><p>Decoder module for link and edge tasks, or for link
+prediction the name of a <code><a href="link_decoder.html">link_decoder()</a></code> type; defaults to
 <code><a href="link_decoder.html">link_decoder()</a></code> <code>"dot"</code> and an <code><a href="link_decoder.html">edge_decoder()</a></code>.</p></dd>
 
 
@@ -168,12 +169,17 @@ returning a <code>torch</code> scheduler.</p></dd>
 
 <dt id="arg-early-stopping">early_stopping<a class="anchor" aria-label="anchor" href="#arg-early-stopping"></a></dt>
 <dd><p>Patience in epochs, or <code>NULL</code> to train all epochs.
-Monitors validation loss; the best weights are restored at the end.</p></dd>
+Monitors validation loss (training loss when there is no validation
+set); the best weights are restored at the end.</p></dd>
 
 
 <dt id="arg-checkpoint-path">checkpoint_path<a class="anchor" aria-label="anchor" href="#arg-checkpoint-path"></a></dt>
-<dd><p>Optional file; the model state is saved there with
-<code><a href="https://torch.mlverse.org/docs/reference/torch_save.html" class="external-link">torch::torch_save()</a></code> whenever validation loss improves.</p></dd>
+<dd><p>Optional file; the model state of the best epoch so
+far is saved there with <code><a href="https://torch.mlverse.org/docs/reference/torch_save.html" class="external-link">torch::torch_save()</a></code> whenever the monitored
+loss improves. For link and edge tasks the decoder state is saved next
+to it, in <code>paste0(checkpoint_path, ".decoder")</code>. Without
+<code>early_stopping</code> the returned model holds the last epoch, not the
+checkpointed one.</p></dd>
 
 
 <dt id="arg-device">device<a class="anchor" aria-label="anchor" href="#arg-device"></a></dt>
@@ -189,7 +195,8 @@ Monitors validation loss; the best weights are restored at the end.</p></dd>
 
 
 <dt id="arg-class-weights">class_weights<a class="anchor" aria-label="anchor" href="#arg-class-weights"></a></dt>
-<dd><p>Optional class weights for cross entropy.</p></dd>
+<dd><p>Optional class weights for the cross entropy loss
+(other losses do not use them, and a warning says so).</p></dd>
 
 
 <dt id="arg-target-type">target_type<a class="anchor" aria-label="anchor" href="#arg-target-type"></a></dt>
@@ -201,7 +208,8 @@ Monitors validation loss; the best weights are restored at the end.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
-<dd><p>Print progress every <code>verbose</code> epochs (<code>FALSE</code> for none).</p></dd>
+<dd><p>Print progress every <code>verbose</code> epochs (<code>FALSE</code> or <code>0</code> for
+none, <code>TRUE</code> for every epoch).</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -223,8 +231,11 @@ training edges only. Fresh negative pairs are drawn every epoch, excluding
 training positives; validation and test pairs are never used for
 training.</p>
 <p><strong>Reproducibility.</strong> With <code>seed</code>, <code>torch</code>'s global generator is seeded
-with <code>torch_manual_seed(seed)</code> (needed for weight initialization done
-before the call, and for dropout), and every R side random draw (batching,
+with <code>torch_manual_seed(seed)</code> for dropout and other torch draws during
+training; this changes the global torch random state for the rest of the
+session. Weights are initialized when the model is built, before this
+call, so seed torch yourself before building the model for identical
+weights. Every R side random draw (batching,
 neighbor and negative sampling) uses a seed derived from <code>seed</code> inside
 <code><a href="https://withr.r-lib.org/reference/with_seed.html" class="external-link">withr::with_seed()</a></code>, so the caller's R random state is not changed. The
 fit records seeds, settings, package versions and the device in
@@ -245,12 +256,12 @@ fixed.</p>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">g</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   .row node_id .pred_class .prob_Mr. Hi .prob_Officer</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1    1       1      Mr. Hi    0.9628773    0.03712269</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2    2       2      Mr. Hi    0.9669216    0.03307841</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3    3       3      Mr. Hi    0.9286499    0.07135003</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4    4       4      Mr. Hi    0.9844617    0.01553830</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5    5       5      Mr. Hi    0.9754194    0.02458063</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6    6       6      Mr. Hi    0.9762313    0.02376873</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    1       1      Mr. Hi    0.9745257    0.02547433</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2    2       2      Mr. Hi    0.9680582    0.03194176</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    3       3      Mr. Hi    0.8855029    0.11449708</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4    4       4      Mr. Hi    0.9868816    0.01311841</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5    5       5      Mr. Hi    0.9835723    0.01642764</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6    6       6      Mr. Hi    0.9881732    0.01182682</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

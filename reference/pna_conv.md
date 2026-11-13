@@ -1,8 +1,8 @@
 # Principal neighborhood aggregation (PNA)
 
 The PNA layer of Corso, Cavalleri, Beaini, Liò and Veličković (2020), in
-the single tower form of PyTorch Geometric's `PNAConv`. For node \\i\\
-with in degree \\d_i\\:
+a single tower form modeled on PyTorch Geometric's `PNAConv` (not
+numerically compared with it). For node \\i\\ with in degree \\d_i\\:
 
 ## Usage
 
@@ -67,8 +67,10 @@ vector.
 
 3.  \\x_i' = W_2 \\ M \[x_i \Vert \text{scaled aggregates}\]\\.
 
-Nodes without incoming edges get zeros from every aggregator except std,
-which gives \\\sqrt{10^{-5}}\\.
+The std aggregator is \\\sqrt{\max(\mathrm{var}, 0) + 10^{-5}}\\, so
+nodes without incoming edges, or with identical incoming messages, get
+\\\sqrt{10^{-5}}\\ from it and zeros from every other aggregator. Other
+implementations may treat zero variance differently.
 
 `pna_degree()` computes the in degree histogram `deg` from training
 graphs: element \\d + 1\\ counts nodes with in degree \\d\\.

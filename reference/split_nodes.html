@@ -97,7 +97,10 @@ missing label are never assigned.</p>
 
 
 <dt id="arg-train-val-test">train, val, test<a class="anchor" aria-label="anchor" href="#arg-train-val-test"></a></dt>
-<dd><p>Proportions (summing to at most 1) or counts.</p></dd>
+<dd><p>Proportions (each at most 1, summing to at most 1)
+or whole counts. Values that are all at most 1 are read as proportions,
+so <code>train = 1, val = 0, test = 0</code> puts every labeled node in training.
+With <code>stratify</code>, sizes apply within each class.</p></dd>
 
 
 <dt id="arg-stratify">stratify<a class="anchor" aria-label="anchor" href="#arg-stratify"></a></dt>

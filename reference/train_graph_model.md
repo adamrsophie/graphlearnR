@@ -89,7 +89,10 @@ train_graph_model(
 
 - decoder:
 
-  Decoder module for link and edge tasks; defaults to
+  Decoder module for link and edge tasks, or for link prediction the
+  name of a
+  [`link_decoder()`](https://adamrsophie.github.io/graphlearnR/reference/link_decoder.md)
+  type; defaults to
   [`link_decoder()`](https://adamrsophie.github.io/graphlearnR/reference/link_decoder.md)
   `"dot"` and an
   [`edge_decoder()`](https://adamrsophie.github.io/graphlearnR/reference/link_decoder.md).
@@ -105,13 +108,18 @@ train_graph_model(
 - early_stopping:
 
   Patience in epochs, or `NULL` to train all epochs. Monitors validation
-  loss; the best weights are restored at the end.
+  loss (training loss when there is no validation set); the best weights
+  are restored at the end.
 
 - checkpoint_path:
 
-  Optional file; the model state is saved there with
+  Optional file; the model state of the best epoch so far is saved there
+  with
   [`torch::torch_save()`](https://torch.mlverse.org/docs/reference/torch_save.html)
-  whenever validation loss improves.
+  whenever the monitored loss improves. For link and edge tasks the
+  decoder state is saved next to it, in
+  `paste0(checkpoint_path, ".decoder")`. Without `early_stopping` the
+  returned model holds the last epoch, not the checkpointed one.
 
 - device:
 
@@ -128,7 +136,8 @@ train_graph_model(
 
 - class_weights:
 
-  Optional class weights for cross entropy.
+  Optional class weights for the cross entropy loss (other losses do not
+  use them, and a warning says so).
 
 - target_type:
 
@@ -144,7 +153,8 @@ train_graph_model(
 
 - verbose:
 
-  Print progress every `verbose` epochs (`FALSE` for none).
+  Print progress every `verbose` epochs (`FALSE` or `0` for none, `TRUE`
+  for every epoch).
 
 ## Value
 
@@ -179,10 +189,12 @@ excluding training positives; validation and test pairs are never used
 for training.
 
 **Reproducibility.** With `seed`, `torch`'s global generator is seeded
-with `torch_manual_seed(seed)` (needed for weight initialization done
-before the call, and for dropout), and every R side random draw
-(batching, neighbor and negative sampling) uses a seed derived from
-`seed` inside
+with `torch_manual_seed(seed)` for dropout and other torch draws during
+training; this changes the global torch random state for the rest of the
+session. Weights are initialized when the model is built, before this
+call, so seed torch yourself before building the model for identical
+weights. Every R side random draw (batching, neighbor and negative
+sampling) uses a seed derived from `seed` inside
 [`withr::with_seed()`](https://withr.r-lib.org/reference/with_seed.html),
 so the caller's R random state is not changed. The fit records seeds,
 settings, package versions and the device in `fit$reproducibility`.
@@ -202,10 +214,10 @@ if (torch::torch_is_installed()) {
   head(predict(fit, g))
 }
 #>   .row node_id .pred_class .prob_Mr. Hi .prob_Officer
-#> 1    1       1      Mr. Hi    0.9628773    0.03712269
-#> 2    2       2      Mr. Hi    0.9669216    0.03307841
-#> 3    3       3      Mr. Hi    0.9286499    0.07135003
-#> 4    4       4      Mr. Hi    0.9844617    0.01553830
-#> 5    5       5      Mr. Hi    0.9754194    0.02458063
-#> 6    6       6      Mr. Hi    0.9762313    0.02376873
+#> 1    1       1      Mr. Hi    0.9745257    0.02547433
+#> 2    2       2      Mr. Hi    0.9680582    0.03194176
+#> 3    3       3      Mr. Hi    0.8855029    0.11449708
+#> 4    4       4      Mr. Hi    0.9868816    0.01311841
+#> 5    5       5      Mr. Hi    0.9835723    0.01642764
+#> 6    6       6      Mr. Hi    0.9881732    0.01182682
 ```

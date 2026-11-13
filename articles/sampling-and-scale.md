@@ -87,7 +87,7 @@ batches <- loader_batches(ld, epoch = 1)
 vapply(batches, function(b) c(seeds = b$num_seeds, nodes = num_nodes(b)), numeric(2))
 #>       [,1] [,2] [,3]
 #> seeds    8    8    4
-#> nodes   26   30   26
+#> nodes   31   30   27
 ```
 
 [`graph_loader()`](https://adamrsophie.github.io/graphlearnR/reference/node_loader.md)
@@ -111,18 +111,18 @@ fit <- train_graph_model(gnn_model("sage", 8, 32, 3), big, "node_classification"
                          seed = 2)
 fit
 #> <graph_fit> node_classification, 15 epochs on cpu
-#>   final train loss 0.0594, val loss 0.0169, val accuracy 0.9944
-#>   best epoch 13
+#>   final train loss 0.0402, val loss 0.0059, val accuracy 1.0000
+#>   best epoch 15
 evaluate_graph_model(fit, big)
-#>              metric      value
-#> 1          accuracy 0.99444444
-#> 2 balanced_accuracy 0.99444444
-#> 3   precision_macro 0.99453552
-#> 4      recall_macro 0.99444444
-#> 5          f1_macro 0.99444406
-#> 6               ece 0.00684045
-#> 7             brier 0.01246696
-#> 8           roc_auc 0.99703704
+#>              metric       value
+#> 1          accuracy 0.994444444
+#> 2 balanced_accuracy 0.994444444
+#> 3   precision_macro 0.994535519
+#> 4      recall_macro 0.994444444
+#> 5          f1_macro 0.994444059
+#> 6               ece 0.004808865
+#> 7             brier 0.012243922
+#> 8           roc_auc 0.997314815
 ```
 
 Prediction and evaluation run on the full graph, so the reported numbers
@@ -192,8 +192,8 @@ evaluate_graph_model(fit_sl, big)
 #> 3   precision_macro 0.9629630
 #> 4      recall_macro 0.9611111
 #> 5          f1_macro 0.9607759
-#> 6               ece 0.1814339
-#> 7             brier 0.1283164
+#> 6               ece 0.1829428
+#> 7             brier 0.1303652
 #> 8           roc_auc 0.9972685
 ```
 

@@ -97,7 +97,8 @@ that makes sense.</p></dd>
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
 <dd><p><code>"frame"</code> (a <code>graph_predictions</code> data frame), <code>"class"</code>,
 <code>"prob"</code>, <code>"response"</code> (raw model output), <code>"embedding"</code> (node
-embeddings) or <code>"score"</code> (link logits).</p></dd>
+embeddings; for graph tasks one pooled row per graph, using the model's
+readout or the mean) or <code>"score"</code> (link logits).</p></dd>
 
 
 <dt id="arg-pairs">pairs<a class="anchor" aria-label="anchor" href="#arg-pairs"></a></dt>
@@ -132,9 +133,30 @@ and <code>.prob_&lt;level&gt;</code> columns (classification), <code>.pred</code
 <code>graph_dataset</code>).</p></li>
 <li><p>Link prediction: one row per pair in <code>pairs</code>; message passing uses
 <code>new_data</code>, by default the training graph of the split.</p></li>
-<li><p>Edge tasks: one row per pair in <code>pairs</code> (default every stored edge).</p></li>
+<li><p>Edge tasks: one row per pair in <code>pairs</code> (default every stored edge).
+When the model uses edge features, each requested pair takes the
+features of its stored edge in <code>new_data</code>; pairs that are not edges
+are an error.</p></li>
 </ul></div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu">torch</span><span class="fu">::</span><span class="fu"><a href="https://torch.mlverse.org/docs/reference/torch_is_installed.html" class="external-link">torch_is_installed</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="split_nodes.html">split_nodes</a></span><span class="op">(</span><span class="fu"><a href="dataset_karate.html">dataset_karate</a></span><span class="op">(</span><span class="op">)</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="train_graph_model.html">train_graph_model</a></span><span class="op">(</span><span class="fu"><a href="gnn_model.html">gnn_model</a></span><span class="op">(</span><span class="st">"gcn"</span>, <span class="fl">34</span>, <span class="fl">8</span>, <span class="fl">2</span><span class="op">)</span>, <span class="va">g</span>, <span class="st">"node_classification"</span>,</span></span>
+<span class="r-in"><span>                           epochs <span class="op">=</span> <span class="fl">20</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">g</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">g</span>, type <span class="op">=</span> <span class="st">"prob"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Mr. Hi   Officer</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1,] 0.5901923 0.4098077</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] 0.5661643 0.4338357</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [3,] 0.4643112 0.5356889</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [4,] 0.5628192 0.4371808</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [5,] 0.5735875 0.4264125</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [6,] 0.5763327 0.4236672</span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

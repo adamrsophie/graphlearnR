@@ -31,8 +31,9 @@ predict(
 - type:
 
   `"frame"` (a `graph_predictions` data frame), `"class"`, `"prob"`,
-  `"response"` (raw model output), `"embedding"` (node embeddings) or
-  `"score"` (link logits).
+  `"response"` (raw model output), `"embedding"` (node embeddings; for
+  graph tasks one pooled row per graph, using the model's readout or the
+  mean) or `"score"` (link logits).
 
 - pairs:
 
@@ -69,3 +70,25 @@ Depending on `type`; the default is a data frame of class
   `new_data`, by default the training graph of the split.
 
 - Edge tasks: one row per pair in `pairs` (default every stored edge).
+  When the model uses edge features, each requested pair takes the
+  features of its stored edge in `new_data`; pairs that are not edges
+  are an error.
+
+## Examples
+
+``` r
+if (torch::torch_is_installed()) {
+  g <- split_nodes(dataset_karate(), seed = 1)
+  fit <- train_graph_model(gnn_model("gcn", 34, 8, 2), g, "node_classification",
+                           epochs = 20, seed = 1)
+  head(predict(fit, g))
+  head(predict(fit, g, type = "prob"))
+}
+#>         Mr. Hi   Officer
+#> [1,] 0.5901923 0.4098077
+#> [2,] 0.5661643 0.4338357
+#> [3,] 0.4643112 0.5356889
+#> [4,] 0.5628192 0.4371808
+#> [5,] 0.5735875 0.4264125
+#> [6,] 0.5763327 0.4236672
+```

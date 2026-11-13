@@ -250,7 +250,7 @@ neg_s <- matrix(predict(fit_l, pairs = rbind(rep(ls$test_pos[1, ], each = 20), a
                         type = "score"), ncol = 20, byrow = TRUE)
 c(mrr = metric_mrr(pos_s, neg_s), hits10 = metric_hits_at_k(pos_s, neg_s, 10))
 #>       mrr    hits10 
-#> 0.2736963 0.8867925
+#> 0.2596351 0.8867925
 ```
 
 ## Edge classification

@@ -43,3 +43,12 @@ dynamic_link_baseline(
 ## Value
 
 Named vector of mean ROC-AUC and average precision.
+
+## Examples
+
+``` r
+snaps <- temporal_snapshots(dataset_synthetic_temporal(seed = 1), breaks = 8)
+dynamic_link_baseline(snaps, steps = 7:8, seed = 1)
+#>           roc_auc average_precision 
+#>         0.8330262         0.8213880 
+```

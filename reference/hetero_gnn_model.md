@@ -102,3 +102,19 @@ it returns a named list of per type outputs.
 
 Embedding tables make the model transductive for featureless types: it
 can only predict for nodes seen during training.
+
+## Examples
+
+``` r
+if (torch::torch_is_installed()) {
+  hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
+  m <- hetero_gnn_model(hg, hidden_dim = 16, output_dim = 3, target_type = "drug")
+  m
+}
+#> An `nn_module` containing 4,467 parameters.
+#> 
+#> ── Modules ─────────────────────────────────────────────────────────────────────
+#> • input: <nn_module> #192 parameters
+#> • layers: <nn_module_list> #4,224 parameters
+#> • head: <nn_linear> #51 parameters
+```

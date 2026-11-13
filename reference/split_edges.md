@@ -17,7 +17,7 @@ split_edges(g, val = 0.1, test = 0.1, neg_ratio = 1, seed = NULL)
 
 - val, test:
 
-  Proportions (or counts) of pairs held out.
+  Proportions (both below 1) or whole counts of pairs held out.
 
 - neg_ratio:
 
@@ -36,7 +36,9 @@ An object of class `link_split` with `train_graph`, `train_pos`,
 ## Details
 
 1.  Undirected pairs are split as units, so `(u, v)` and `(v, u)` always
-    land in the same set.
+    land in the same set. Parallel copies of a pair (multigraphs) are
+    also one unit, so a held out link never stays in training as a
+    duplicate.
 
 2.  `train_graph` keeps all nodes and features but only training edges;
     use it for message passing during training **and** evaluation.
@@ -49,7 +51,8 @@ An object of class `link_split` with `train_graph`, `train_pos`,
     [`train_graph_model()`](https://adamrsophie.github.io/graphlearnR/reference/train_graph_model.md)
     does.
 
-Positive pairs are returned in one direction (as given in the input).
+Positive pairs are returned once each, in one direction (as first given
+in the input).
 
 ## Examples
 

@@ -114,7 +114,7 @@ torch_manual_seed(1)
 fit <- train_dynamic_link_model(snaps, hidden_dim = 16, epochs = 30, seed = 1)
 fit
 #> <temporal_fit> dynamic link prediction, 30 epochs
-#>   test:      roc_auc = 0.8668, average_precision = 0.8378 
+#>   test:      roc_auc = 0.8705, average_precision = 0.8432 
 #>   baseline:  roc_auc = 0.8823, average_precision = 0.8624
 fit$train_steps
 #> [1] 2 3 4 5
@@ -122,12 +122,12 @@ fit$eval_steps
 #> [1] 6 7 8
 fit$step_metrics
 #>   step   roc_auc average_precision
-#> 1    6 0.8358986         0.8012241
-#> 2    7 0.8899174         0.8639584
-#> 3    8 0.8746636         0.8482256
+#> 1    6 0.8458579         0.8098603
+#> 2    7 0.8882645         0.8633798
+#> 3    8 0.8773549         0.8562412
 rbind(model = fit$test_metrics, history_baseline = fit$baseline_metrics)
 #>                    roc_auc average_precision
-#> model            0.8668265         0.8378027
+#> model            0.8704924         0.8431605
 #> history_baseline 0.8823424         0.8624293
 ```
 
@@ -169,9 +169,9 @@ c(last_train = max(fst$windows$train), first_val = min(fst$windows$val),
 #> last_train  first_val first_test 
 #>         56         57         68
 rbind(model = fst$test_metrics, naive = fst$baseline_metrics)
-#>              mse        mae
-#> model 0.00956420 0.07995598
-#> naive 0.01375186 0.09503502
+#>               mse        mae
+#> model 0.009564201 0.07995599
+#> naive 0.013751859 0.09503502
 ```
 
 To bring your own data, build the graph with any of the constructors and
@@ -204,19 +204,19 @@ tgn <- tgn_model(stream$num_nodes, memory_dim = 32, time_dim = 8, embedding_dim 
 fit_tgn <- train_tgn(tgn, sp_t, epochs = 10, batch_size = 50, lr = 0.01, seed = 1)
 fit_tgn$history
 #>    epoch train_loss   val_auc
-#> 1      1  0.6618977 0.6479407
-#> 2      2  0.5858272 0.7286914
-#> 3      3  0.5076027 0.7755852
-#> 4      4  0.4515432 0.8122074
-#> 5      5  0.4006852 0.8403556
-#> 6      6  0.3538120 0.8536494
-#> 7      7  0.3602610 0.8689185
-#> 8      8  0.3477633 0.8672198
-#> 9      9  0.3363703 0.8594765
-#> 10    10  0.3270359 0.8700247
+#> 1      1  0.6624339 0.6485333
+#> 2      2  0.5714008 0.7299160
+#> 3      3  0.4855788 0.8057086
+#> 4      4  0.4264535 0.8403753
+#> 5      5  0.3848646 0.8578963
+#> 6      6  0.3400036 0.8775309
+#> 7      7  0.3274034 0.8930765
+#> 8      8  0.3020271 0.8911210
+#> 9      9  0.2973747 0.8774914
+#> 10    10  0.2969318 0.8906667
 fit_tgn$test_metrics
 #>           roc_auc average_precision 
-#>         0.8526803         0.8478486
+#>         0.8712898         0.8767697
 ```
 
 Each event is scored against one random destination. The synthetic
@@ -240,7 +240,7 @@ tgn_att <- tgn_model(stream$num_nodes, memory_dim = 32, time_dim = 8, embedding_
 fit_att <- train_tgn(tgn_att, sp_t, epochs = 10, batch_size = 50, lr = 0.01, seed = 1)
 fit_att$test_metrics
 #>           roc_auc average_precision 
-#>         0.8542172         0.8504464
+#>         0.8633801         0.8615132
 ```
 
 The implementation has one embedding layer (one hop) and keeps the most

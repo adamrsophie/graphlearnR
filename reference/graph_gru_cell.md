@@ -27,3 +27,16 @@ graph_gru_cell(in_features, hidden_features)
 ## Value
 
 An `nn_module` called as `cell(x, edge_index, h, edge_weight)`.
+
+## Examples
+
+``` r
+if (torch::torch_is_installed()) {
+  cell <- graph_gru_cell(3, 8)
+  g <- dataset_karate()
+  x <- torch::torch_randn(34, 3)
+  ei <- graph_tensors(g)$edge_index
+  cell(x, ei)$shape
+}
+#> [1] 34  8
+```

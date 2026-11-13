@@ -43,3 +43,12 @@ temporal_snapshots(tg, breaks = 10L, cumulative = FALSE)
 ## Value
 
 An object of class `snapshot_sequence`.
+
+## Examples
+
+``` r
+tg <- dataset_synthetic_temporal(seed = 1)
+snaps <- temporal_snapshots(tg, breaks = 5)
+length(snaps$graphs)
+#> [1] 5
+```

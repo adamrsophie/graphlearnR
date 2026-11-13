@@ -55,3 +55,15 @@ in the sorted event list).
 
 For directed graphs only events with `dst == node` (incoming messages)
 are used unless `direction = "both"`.
+
+## Examples
+
+``` r
+tg <- dataset_synthetic_temporal(seed = 1)
+nb <- temporal_neighbors(tg, nodes = tg$dst[50], times = tg$t[50], k = 5)
+nb
+#>   query node neighbor         t event
+#> 1     1   12       29 2.5367459    26
+#> 2     1   12       29 1.8193165    20
+#> 3     1   12       11 0.7279515     9
+```

@@ -60,3 +60,16 @@ explanation_stability(
 ## Value
 
 A named numeric vector.
+
+## Examples
+
+``` r
+if (torch::torch_is_installed()) {
+  g <- split_nodes(dataset_karate(), seed = 1)
+  fit <- train_graph_model(gnn_model("gcn", 34, 8, 2), g, "node_classification",
+                           epochs = 20, seed = 1)
+  explanation_fidelity(fit, g, explain_edges(fit, g, target = 1), k = 3)
+}
+#>  fidelity_plus fidelity_minus 
+#>     0.03711864     0.02479586 
+```

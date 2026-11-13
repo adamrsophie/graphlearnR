@@ -87,7 +87,9 @@ train_tgn(
 
 - batch_size:
 
-  Events per batch.
+  Events per batch. A batch is extended so it never splits events that
+  share a timestamp; those are scored together before any of them
+  updates the memory.
 
 - lr:
 
@@ -95,7 +97,10 @@ train_tgn(
 
 - seed:
 
-  Optional seed for weights, negatives and the epoch order.
+  Optional seed for weights, negatives and the epoch order. Each event
+  gets one random negative destination that differs from its own source
+  and destination. The three periods of `split` must follow each other
+  in time.
 
 - device:
 
@@ -158,5 +163,5 @@ if (torch::torch_is_installed()) {
   fit$test_metrics
 }
 #>           roc_auc average_precision 
-#>         0.4942285         0.4849707 
+#>         0.4997609         0.5301846 
 ```

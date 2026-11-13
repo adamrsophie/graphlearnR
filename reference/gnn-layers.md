@@ -123,7 +123,8 @@ rgcn_conv(
 
 - add_self_loops:
 
-  Add self loops before propagation.
+  Add self loops before propagation (never for a pair of source and
+  target feature sets, whose index spaces differ).
 
 - improved:
 

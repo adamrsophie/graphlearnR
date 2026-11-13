@@ -26,7 +26,10 @@ split_nodes(
 
 - train, val, test:
 
-  Proportions (summing to at most 1) or counts.
+  Proportions (each at most 1, summing to at most 1) or whole counts.
+  Values that are all at most 1 are read as proportions, so
+  `train = 1, val = 0, test = 0` puts every labeled node in training.
+  With `stratify`, sizes apply within each class.
 
 - stratify:
 

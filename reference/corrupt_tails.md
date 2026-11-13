@@ -8,7 +8,15 @@ per-query Hits@K.
 ## Usage
 
 ``` r
-corrupt_tails(pos, num_nodes, k, known = pos, filtered = TRUE, seed = NULL)
+corrupt_tails(
+  pos,
+  num_nodes,
+  k,
+  known = pos,
+  filtered = TRUE,
+  directed = TRUE,
+  seed = NULL
+)
 ```
 
 ## Arguments
@@ -33,10 +41,25 @@ corrupt_tails(pos, num_nodes, k, known = pos, filtered = TRUE, seed = NULL)
 
   Exclude known positives.
 
+- directed:
+
+  With `FALSE`, a known pair excludes both orientations.
+
 - seed:
 
   Optional integer seed.
 
 ## Value
 
-A K by `k` integer matrix of negative targets.
+A K by `k` integer matrix of negative targets. The head of a pair is
+never drawn as its own corrupted tail.
+
+## Examples
+
+``` r
+pos <- rbind(c(1, 2), c(2, 3))
+corrupt_tails(pos, num_nodes = 10, k = 3, seed = 1)
+#>      [,1] [,2] [,3]
+#> [1,]    3    6   10
+#> [2,]    4    7    5
+```

@@ -59,7 +59,8 @@ gnn_model(
 
 - activation:
 
-  Activation module constructor.
+  Activation name: `"relu"`, `"elu"`, `"gelu"`, `"tanh"` or
+  `"leaky_relu"` (slope 0.2).
 
 - heads:
 

@@ -34,3 +34,18 @@ load_graph_fit(path, device = NULL)
 
 `save_graph_fit()` returns `path` invisibly; `load_graph_fit()` returns
 a `graph_fit` (without `data` and `optimizer`).
+
+## Examples
+
+``` r
+if (torch::torch_is_installed()) {
+  g <- split_nodes(dataset_karate(), seed = 1)
+  fit <- train_graph_model(gnn_model("gcn", 34, 8, 2), g, "node_classification",
+                           epochs = 5, seed = 1)
+  path <- tempfile(fileext = ".rds")
+  save_graph_fit(fit, path)
+  back <- load_graph_fit(path)
+  all.equal(predict(fit, g, type = "prob"), predict(back, g, type = "prob"))
+}
+#> [1] TRUE
+```

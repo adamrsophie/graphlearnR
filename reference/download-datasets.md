@@ -62,8 +62,8 @@ read_linqs_citation(dir, name = basename(dir))
   These are the raw citation graphs. They are **not** the Planetoid
   splits used by Kipf and Welling (2017) and PyG's `Planetoid` class
   (which also drop and reorder nodes), so results are not comparable to
-  published leaderboards. Open Graph Benchmark datasets are not yet
-  supported.
+  published leaderboards. Open Graph Benchmark datasets are read by
+  [`download_ogb()`](https://adamrsophie.github.io/graphlearnR/reference/read_ogb_node.md).
 
 `read_tu_dataset()` and `read_linqs_citation()` parse already downloaded
 files.
@@ -72,3 +72,12 @@ In the LINQS `.cites` files each line is `cited citing`. The returned
 graph is directed from the citing paper to the cited paper. Citations to
 papers missing from `.content` are dropped and counted in
 `metadata$dropped_edges`.
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+mutag <- download_tu_dataset("MUTAG")
+cora <- download_planetoid_raw("cora")
+} # }
+```

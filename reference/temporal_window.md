@@ -21,3 +21,11 @@ temporal_window(tg, start = NULL, end = NULL)
 ## Value
 
 A `temporal_graph_data` with the selected events.
+
+## Examples
+
+``` r
+tg <- dataset_synthetic_temporal(seed = 1)
+temporal_window(tg, start = 10, end = 20)
+#> <temporal_graph_data> 40 nodes, 70 events, t in [10.18985, 19.73235]
+```

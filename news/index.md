@@ -136,6 +136,37 @@ First release.
   generates small synthetic molecules with scaffold identifiers for
   scaffold splits.
 
+### Correctness and safety behavior
+
+- [`split_edges()`](https://adamrsophie.github.io/graphlearnR/reference/split_edges.md)
+  and
+  [`split_edges_hetero()`](https://adamrsophie.github.io/graphlearnR/reference/split_edges_hetero.md)
+  treat parallel duplicates (and, for undirected or same type relations,
+  both orientations) as one unit, so a held out pair never stays in the
+  training graph.
+- Masks are checked for pairwise overlap, including edge masks;
+  [`train_spatiotemporal_model()`](https://adamrsophie.github.io/graphlearnR/reference/train_spatiotemporal_model.md)
+  purges windows that cross split boundaries.
+- Class labels share one level set across batches, splits and
+  predictions; metrics check that truth and prediction lengths match.
+- TGN updates memory in event order, never draws the positive pair as a
+  negative, keeps events with one timestamp in one batch, and checks
+  that train, validation and test periods do not overlap.
+- Saved fits keep link decoders and heterogeneous link schemas; edge
+  predictions for given pairs use the features of the matching edges.
+- Explainers restore the model’s training mode and parameter gradient
+  flags;
+  [`gnn_explainer()`](https://adamrsophie.github.io/graphlearnR/reference/explain.md)
+  supports regression and rejects models that ignore edge weights.
+- Sub seeds are drawn with
+  [`sample.int()`](https://rdrr.io/r/base/sample.html), so seed
+  arithmetic never overflows.
+- Training errors on mini batch options a task would ignore (`fanouts`,
+  `batch_size`, `loader`), and
+  [`write_graph_dataset()`](https://adamrsophie.github.io/graphlearnR/reference/graph_dataset.md)
+  will not mix files with an existing dataset unless `overwrite = TRUE`.
+- Downloads without a recorded checksum warn; OGB archives use https.
+
 ### Sibling packages (optional)
 
 - [`graph_diffusion()`](https://adamrsophie.github.io/graphlearnR/reference/graph_diffusion.md)

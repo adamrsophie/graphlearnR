@@ -84,7 +84,8 @@ training:</p>
 
 
 <dt id="arg-val-test">val, test<a class="anchor" aria-label="anchor" href="#arg-val-test"></a></dt>
-<dd><p>Proportions (or counts) of pairs held out.</p></dd>
+<dd><p>Proportions (both below 1) or whole counts of pairs held
+out.</p></dd>
 
 
 <dt id="arg-neg-ratio">neg_ratio<a class="anchor" aria-label="anchor" href="#arg-neg-ratio"></a></dt>
@@ -105,14 +106,16 @@ training:</p>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
 
 <ol><li><p>Undirected pairs are split as units, so <code>(u, v)</code> and <code>(v, u)</code> always
-land in the same set.</p></li>
+land in the same set. Parallel copies of a pair (multigraphs) are also
+one unit, so a held out link never stays in training as a duplicate.</p></li>
 <li><p><code>train_graph</code> keeps all nodes and features but only training edges;
 use it for message passing during training <strong>and</strong> evaluation.</p></li>
 <li><p>Validation and test negatives are drawn once with
 <code><a href="negative_sampling.html">negative_sampling()</a></code>, excluding every positive edge of the full graph.
 Training negatives should be redrawn each epoch, excluding training
 positives only, which <code><a href="train_graph_model.html">train_graph_model()</a></code> does.</p></li>
-</ol><p>Positive pairs are returned in one direction (as given in the input).</p>
+</ol><p>Positive pairs are returned once each, in one direction (as first given in
+the input).</p>
     </div>
 
     <div class="section level2">

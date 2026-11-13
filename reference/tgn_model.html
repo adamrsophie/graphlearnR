@@ -157,7 +157,9 @@ must be divisible by it.</p></dd>
 
 
 <dt id="arg-batch-size">batch_size<a class="anchor" aria-label="anchor" href="#arg-batch-size"></a></dt>
-<dd><p>Events per batch.</p></dd>
+<dd><p>Events per batch. A batch is extended so it never splits
+events that share a timestamp; those are scored together before any of
+them updates the memory.</p></dd>
 
 
 <dt id="arg-lr">lr<a class="anchor" aria-label="anchor" href="#arg-lr"></a></dt>
@@ -165,7 +167,10 @@ must be divisible by it.</p></dd>
 
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
-<dd><p>Optional seed for weights, negatives and the epoch order.</p></dd>
+<dd><p>Optional seed for weights, negatives and the epoch order.
+Each event gets one random negative destination that differs from its
+own source and destination. The three periods of <code>split</code> must follow
+each other in time.</p></dd>
 
 
 <dt id="arg-device">device<a class="anchor" aria-label="anchor" href="#arg-device"></a></dt>
@@ -226,7 +231,7 @@ temporal graphs.</p>
 <span class="r-in"><span>  <span class="va">fit</span><span class="op">$</span><span class="va">test_metrics</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>           roc_auc average_precision </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         0.4942285         0.4849707 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         0.4997609         0.5301846 </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

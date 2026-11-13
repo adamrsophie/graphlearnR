@@ -32,3 +32,15 @@ from_dense_batch(dense)
 ## Value
 
 A list with `x`, `mask` and `index` (the flat positions).
+
+## Examples
+
+``` r
+if (torch::torch_is_installed()) {
+  x <- torch::torch_randn(5, 2)
+  d <- to_dense_batch(x, batch = c(1, 1, 2, 2, 2))
+  d$x$shape
+  from_dense_batch(d)$shape
+}
+#> [1] 5 2
+```

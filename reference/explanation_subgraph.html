@@ -3,13 +3,17 @@
 the largest absolute attribution (and, for undirected graphs, their
 reverse directions), the nodes they touch, and the target node. The
 result is a graph_data object with local 1-based indices; its
-node_ids hold the original node indices so the subgraph can be mapped
-back, and edge_original the original edge positions."><meta property="og:description" content="Turns an edge attribution into a subgraph explanation: the k edges with
+node_ids hold the original node identifiers (g$node_ids, which are
+the node indices unless the graph has external identifiers) so the
+subgraph can be mapped back, and edge_original the original edge
+positions."><meta property="og:description" content="Turns an edge attribution into a subgraph explanation: the k edges with
 the largest absolute attribution (and, for undirected graphs, their
 reverse directions), the nodes they touch, and the target node. The
 result is a graph_data object with local 1-based indices; its
-node_ids hold the original node indices so the subgraph can be mapped
-back, and edge_original the original edge positions."><meta property="og:image" content="https://adamrsophie.github.io/graphlearnR/logo.svg"></head><body>
+node_ids hold the original node identifiers (g$node_ids, which are
+the node indices unless the graph has external identifiers) so the
+subgraph can be mapped back, and edge_original the original edge
+positions."><meta property="og:image" content="https://adamrsophie.github.io/graphlearnR/logo.svg"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -78,8 +82,10 @@ back, and edge_original the original edge positions."><meta property="og:image" 
 the largest absolute attribution (and, for undirected graphs, their
 reverse directions), the nodes they touch, and the target node. The
 result is a <code>graph_data</code> object with local 1-based indices; its
-<code>node_ids</code> hold the original node indices so the subgraph can be mapped
-back, and <code>edge_original</code> the original edge positions.</p>
+<code>node_ids</code> hold the original node identifiers (<code>g$node_ids</code>, which are
+the node indices unless the graph has external identifiers) so the
+subgraph can be mapped back, and <code>edge_original</code> the original edge
+positions.</p>
     </div>
 
     <div class="section level2">

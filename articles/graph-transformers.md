@@ -130,7 +130,7 @@ evaluate_graph_model(fit, graphs[sp$test])
 #> 4      recall_macro 1.000000e+00
 #> 5          f1_macro 1.000000e+00
 #> 6               ece 1.609325e-06
-#> 7             brier 5.983530e-12
+#> 7             brier 5.983525e-12
 #> 8           roc_auc 1.000000e+00
 ```
 

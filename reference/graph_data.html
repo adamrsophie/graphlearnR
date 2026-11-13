@@ -115,7 +115,9 @@ vector (one feature), a numeric data frame, or <code>NULL</code>.</p></dd>
 <dt id="arg-edge-index">edge_index<a class="anchor" aria-label="anchor" href="#arg-edge-index"></a></dt>
 <dd><p>Edges as a 2 by E matrix (row 1 source, row 2 target), an
 E by 2 matrix, or a data frame with columns <code>from</code> and <code>to</code>. Values are
-one based node indices. <code>NULL</code> means no edges.</p></dd>
+one based node indices. <code>NULL</code> means no edges. A 2 by 2 matrix is read
+as 2 by E (two edges, one per column) unless its column names are
+<code>from</code> and <code>to</code>.</p></dd>
 
 
 <dt id="arg-y">y<a class="anchor" aria-label="anchor" href="#arg-y"></a></dt>

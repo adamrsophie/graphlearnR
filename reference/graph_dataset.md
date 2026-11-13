@@ -13,7 +13,7 @@ graph_dataset(graphs, transform = NULL, metadata = list())
 
 graph_dataset_disk(dir, transform = NULL)
 
-write_graph_dataset(graphs, dir, metadata = list())
+write_graph_dataset(graphs, dir, metadata = list(), overwrite = FALSE)
 ```
 
 ## Arguments
@@ -33,6 +33,11 @@ write_graph_dataset(graphs, dir, metadata = list())
 - dir:
 
   Directory holding `graph_000001.rds`, ... and `metadata.rds`.
+
+- overwrite:
+
+  Replace the graph files of an existing dataset in `dir`; without it,
+  writing into such a directory is an error.
 
 ## Value
 

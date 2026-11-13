@@ -28,3 +28,14 @@ to_homogeneous(hg, target_type = NULL)
 ## Value
 
 A directed `graph_data` object.
+
+## Examples
+
+``` r
+g <- to_homogeneous(dataset_synthetic_hetero(seed = 1), target_type = "drug")
+g
+#> <graph_data> directed graph: 140 nodes, 534 edges
+#>   node features [140 x 6]
+#>   node labels: factor with 3 levels
+#>   masks: train=20, val=20, test=20
+```

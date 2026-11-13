@@ -4,8 +4,10 @@ Turns an edge attribution into a subgraph explanation: the `k` edges
 with the largest absolute attribution (and, for undirected graphs, their
 reverse directions), the nodes they touch, and the target node. The
 result is a `graph_data` object with local 1-based indices; its
-`node_ids` hold the original node indices so the subgraph can be mapped
-back, and `edge_original` the original edge positions.
+`node_ids` hold the original node identifiers (`g$node_ids`, which are
+the node indices unless the graph has external identifiers) so the
+subgraph can be mapped back, and `edge_original` the original edge
+positions.
 
 ## Usage
 

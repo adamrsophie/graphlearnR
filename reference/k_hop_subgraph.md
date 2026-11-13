@@ -28,3 +28,11 @@ k_hop_subgraph(g, nodes, k)
 ## Value
 
 A `sampled_graph`.
+
+## Examples
+
+``` r
+sub <- k_hop_subgraph(dataset_karate(), nodes = 1, k = 1)
+sub$num_nodes
+#> [1] 17
+```

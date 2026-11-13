@@ -116,6 +116,14 @@ the same negative sampling as <code><a href="train_dynamic_link_model.html">trai
     <p>Named vector of mean ROC-AUC and average precision.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">snaps</span> <span class="op">&lt;-</span> <span class="fu"><a href="snapshot_sequence.html">temporal_snapshots</a></span><span class="op">(</span><span class="fu"><a href="dataset_synthetic_temporal.html">dataset_synthetic_temporal</a></span><span class="op">(</span>seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>, breaks <span class="op">=</span> <span class="fl">8</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">dynamic_link_baseline</span><span class="op">(</span><span class="va">snaps</span>, steps <span class="op">=</span> <span class="fl">7</span><span class="op">:</span><span class="fl">8</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>           roc_auc average_precision </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         0.8330262         0.8213880 </span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

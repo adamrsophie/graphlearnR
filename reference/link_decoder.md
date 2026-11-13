@@ -62,3 +62,18 @@ links pass `z = list(z_src, z_dst)`.
 Scores are logits; apply a sigmoid for probabilities. `edge_decoder()`
 is an MLP on \\\[z_u \Vert z_v \Vert e\_{uv}\]\\ for edge classification
 or regression.
+
+## Examples
+
+``` r
+if (torch::torch_is_installed()) {
+  dec <- link_decoder("distmult", dim = 8)
+  z <- torch::torch_randn(5, 8)
+  pairs <- torch::torch_tensor(rbind(c(1, 2), c(3, 4)), dtype = torch::torch_long())
+  dec(z, pairs)
+}
+#> torch_tensor
+#> -0.2736
+#>  3.1483
+#> [ CPUFloatType{2} ][ grad_fn = <SumBackward1> ]
+```

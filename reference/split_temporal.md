@@ -30,3 +30,13 @@ split_temporal(tg, val_time = NULL, test_time = NULL, val = 0.15, test = 0.15)
 
 A list with `train`, `val`, `test` (each a `temporal_graph_data`) and
 the cut points.
+
+## Examples
+
+``` r
+tg <- dataset_synthetic_temporal(seed = 1)
+sp <- split_temporal(tg)
+lengths(sp[c("train", "val", "test")])
+#> train   val  test 
+#>    10    10    10 
+```

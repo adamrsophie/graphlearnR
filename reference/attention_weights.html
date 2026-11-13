@@ -95,6 +95,24 @@ how a layer weighted neighbors; it is not a feature importance measure.</p>
 one column per head.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu">torch</span><span class="fu">::</span><span class="fu"><a href="https://torch.mlverse.org/docs/reference/torch_is_installed.html" class="external-link">torch_is_installed</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="split_nodes.html">split_nodes</a></span><span class="op">(</span><span class="fu"><a href="dataset_karate.html">dataset_karate</a></span><span class="op">(</span><span class="op">)</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="train_graph_model.html">train_graph_model</a></span><span class="op">(</span><span class="fu"><a href="gnn_model.html">gnn_model</a></span><span class="op">(</span><span class="st">"gat"</span>, <span class="fl">34</span>, <span class="fl">8</span>, <span class="fl">2</span>, heads <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, <span class="va">g</span>,</span></span>
+<span class="r-in"><span>                           <span class="st">"node_classification"</span>, epochs <span class="op">=</span> <span class="fl">5</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">g</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu">attention_weights</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   from to      head1      head2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    1  2 0.12065870 0.09890987</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2    2  1 0.04900805 0.05869930</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    1  3 0.12101147 0.09048011</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4    3  1 0.04941681 0.05875746</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5    1  4 0.21639322 0.14588362</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6    4  1 0.05306524 0.05890427</span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

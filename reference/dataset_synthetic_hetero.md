@@ -36,3 +36,15 @@ dataset_synthetic_hetero(
 
 A `hetero_graph_data` with relations `drug__targets__protein` and
 `protein__interacts__protein`, drug labels and drug masks.
+
+## Examples
+
+``` r
+hg <- dataset_synthetic_hetero(seed = 1)
+hg
+#> <hetero_graph_data> 2 node types, 2 relations
+#>   node drug               60 nodes, 4 features, labeled
+#>   node protein            80 nodes, 6 features
+#>   edge drug__targets__protein: 300
+#>   edge protein__interacts__protein: 234
+```

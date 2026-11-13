@@ -100,7 +100,8 @@ adding self loops, as in Kipf and Welling (2017).</p>
 <span>  <span class="va">num_nodes</span>,</span>
 <span>  edge_weight <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  add_self_loops <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  improved <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  improved <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  dtype <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -141,12 +142,34 @@ edge feature of their incoming edges (zero if none).</p></dd>
 <dd><p>Use fill value 2 for self loops (Kipf and Welling's
 "improved" variant).</p></dd>
 
+
+<dt id="arg-dtype">dtype<a class="anchor" aria-label="anchor" href="#arg-dtype"></a></dt>
+<dd><p>Floating point type of the weights (default float32); layers
+pass the dtype of their input so double precision models normalize in
+double precision.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list with <code>edge_index</code>, <code>edge_weight</code> and <code>edge_attr</code>.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu">torch</span><span class="fu">::</span><span class="fu"><a href="https://torch.mlverse.org/docs/reference/torch_is_installed.html" class="external-link">torch_is_installed</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="va">ei</span> <span class="op">&lt;-</span> <span class="fu">torch</span><span class="fu">::</span><span class="fu"><a href="https://torch.mlverse.org/docs/reference/torch_tensor.html" class="external-link">torch_tensor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span>, dtype <span class="op">=</span> <span class="fu">torch</span><span class="fu">::</span><span class="fu"><a href="https://torch.mlverse.org/docs/reference/torch_dtype.html" class="external-link">torch_long</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu">add_self_loops_tensor</span><span class="op">(</span><span class="va">ei</span>, <span class="fl">3</span><span class="op">)</span><span class="op">$</span><span class="va">edge_index</span></span></span>
+<span class="r-in"><span>  <span class="fu">gcn_norm</span><span class="op">(</span><span class="va">ei</span>, <span class="fl">3</span><span class="op">)</span><span class="op">$</span><span class="va">edge_weight</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> torch_tensor</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  0.7071</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  0.5000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  1.0000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  0.5000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  0.5000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [ CPUFloatType{5} ]</span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 
