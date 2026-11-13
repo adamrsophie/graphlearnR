@@ -67,7 +67,7 @@ test_that("loaders split seeds and graphs into batches", {
   expect_false(identical(loader_batches(ld, 2)[[1]]$n_id, bs[[1]]$n_id))
   gl <- graph_loader(dataset_synthetic_graphs(10, seed = 1), batch_size = 4, shuffle = FALSE)
   gb <- loader_batches(gl)
-  expect_equal(vapply(gb, function(b) b$num_graphs, integer(1)), c(4L, 4L, 2L))
+  expect_equal(unname(vapply(gb, function(b) b$num_graphs, integer(1))), c(4L, 4L, 2L))
 })
 
 test_that("negative sampling avoids positives, loops and duplicates", {

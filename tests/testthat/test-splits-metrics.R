@@ -64,9 +64,11 @@ test_that("graph splits support stratified, group and scaffold modes", {
   }
   sc <- split_graphs(10, 0.6, 0.2, 0.2, method = "scaffold",
                      groups = c(rep("A", 5), rep("B", 2), "C", "D", "E"))
-  expect_equal(sc$train, c(1:5))
-  expect_equal(sc$val, 6:7)
-  expect_equal(sort(sc$test), 8:10)
+  # Largest groups first; a group that does not fit the train quota goes to
+  # validation, then test (the DeepChem rule), so the single "C" fills train.
+  expect_equal(sort(sc$train), c(1:5, 8L))
+  expect_equal(sort(sc$val), 6:7)
+  expect_equal(sort(sc$test), 9:10)
   expect_identical(sc, split_graphs(10, 0.6, 0.2, 0.2, method = "scaffold",
                                     groups = c(rep("A", 5), rep("B", 2), "C", "D", "E")))
   expect_error(split_graphs(5, method = "group"), "groups")

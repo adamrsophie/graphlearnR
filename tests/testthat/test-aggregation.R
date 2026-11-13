@@ -30,7 +30,7 @@ test_that("scatter_softmax normalizes within groups", {
   s <- torch::torch_tensor(matrix(c(1, 2, 3, 100, 101, 0), 6, 1))
   index <- c(1L, 1L, 1L, 2L, 2L, 3L)
   p <- as_mat(scatter_softmax(s, index, 3))[, 1]
-  expect_equal(tapply(p, index, sum), c(`1` = 1, `2` = 1, `3` = 1), tolerance = 1e-6)
+  expect_equal(as.vector(tapply(p, index, sum)), c(1, 1, 1), tolerance = 1e-6)
   expect_equal(p[1:3], exp(1:3) / sum(exp(1:3)), tolerance = 1e-6)
   expect_equal(p[4:5], exp(c(0, 1)) / sum(exp(c(0, 1))), tolerance = 1e-6)
 })

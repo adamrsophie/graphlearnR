@@ -128,6 +128,7 @@ test_that("relation specific link prediction trains", {
   skip_if_no_torch()
   hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 3))
   sp <- split_edges_hetero(hg, "drug__targets__protein", seed = 3)
+  torch::torch_manual_seed(1)
   m <- hetero_gnn_model(hg, hidden_dim = 16, conv = "sage", dropout = 0)
   fit <- train_graph_model(m, sp, "link_prediction", epochs = 40, seed = 3)
   ev <- evaluate_graph_model(fit)

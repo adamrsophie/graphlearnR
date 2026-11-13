@@ -650,8 +650,12 @@ hetero_gnn <- nn_module(
       } else {
         h <- conv(h, ht$edge_index)
       }
-      h <- lapply(h, function(v) nnf_dropout(nnf_relu(v), p = self$config$dropout,
-                                              training = self$training))
+      # The last layer stays linear when it gives the embedding, as in gnn_model().
+      last <- layer == length(self$layers)
+      if (!last || (!return_embedding && !is.null(self$head))) {
+        h <- lapply(h, function(v) nnf_dropout(nnf_relu(v), p = self$config$dropout,
+                                                training = self$training))
+      }
     }
     if (!return_embedding && !is.null(self$head)) {
       tt <- self$config$target_type

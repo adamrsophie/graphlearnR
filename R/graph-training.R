@@ -515,7 +515,7 @@ save_graph_fit <- function(fit, path) {
 #' @export
 load_graph_fit <- function(path, device = NULL) {
   obj <- readRDS(path)
-  if (!identical(obj$format, "graphlearnR_fit_v1")) stopf("`%s` is not a saved graph_fit.", path)
+  if (!is.list(obj) || !identical(obj$format, "graphlearnR_fit_v1")) stopf("`%s` is not a saved graph_fit.", path)
   dev <- resolve_device(device)
   model <- torch_load(obj$model, device = dev)
   model$eval()

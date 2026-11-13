@@ -60,5 +60,5 @@ test_that("attention weights are collected from attention layers", {
   aw <- attention_weights(fit)
   expect_length(aw, 2)
   expect_true(all(c("from", "to", "head1", "head2") %in% names(aw[[1]])))
-  expect_equal(unname(tapply(aw[[1]]$head1, aw[[1]]$to, sum)), rep(1, 34), tolerance = 1e-5)
+  expect_equal(as.vector(tapply(aw[[1]]$head1, aw[[1]]$to, sum)), rep(1, 34), tolerance = 1e-5)
 })

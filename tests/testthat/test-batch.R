@@ -26,8 +26,9 @@ test_that("no edge connects two graphs of a batch", {
 })
 
 test_that("unbatch reconstructs the input graphs", {
-  gs <- c(make_three(), list(dataset_karate()))
+  gs <- c(make_three(), list(random_graph(n = 6, m = 10, f = 1, seed = 3)))
   gs[[4]]$graph_y <- 3
+  gs[[4]]$edge_weight <- NULL
   b <- graph_batch(gs)
   back <- unbatch(b)
   expect_length(back, 4)
@@ -37,6 +38,14 @@ test_that("unbatch reconstructs the input graphs", {
     }
     expect_equal(back[[k]]$graph_y, gs[[k]]$graph_y)
   }
+})
+
+test_that("unbatch keeps undirected pair structure", {
+  k <- dataset_karate()
+  back <- unbatch(graph_batch(list(k, k)))
+  expect_equal(back[[2]]$edge_index, k$edge_index)
+  expect_equal(back[[2]]$edge_pair, k$edge_pair)
+  expect_false(back[[2]]$directed)
 })
 
 test_that("batching checks compatibility", {
