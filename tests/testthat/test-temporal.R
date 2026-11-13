@@ -106,3 +106,40 @@ test_that("spatiotemporal_signal validates its array", {
   s <- spatiotemporal_signal(g, matrix(0, 3, 34))
   expect_equal(dim(s$features), c(3, 34, 1))
 })
+
+test_that("evolve_gcn_cell evolves the weight with a GRU and propagates with GCN", {
+  skip_if_no_torch()
+  torch::torch_manual_seed(1)
+  g <- random_graph(n = 6, m = 10, f = 3, seed = 4)
+  g$edge_weight <- NULL
+  tt <- graph_tensors(g)
+  cell <- evolve_gcn_cell(3, 4)
+  h1 <- cell(tt$x, tt$edge_index)
+  W0 <- cell$W0
+  W1 <- cell$gru(W0, W0)
+  # dense GCN reference with self loops added where missing
+  A <- matrix(0, 6, 6)
+  for (e in seq_len(ncol(g$edge_index))) {
+    A[g$edge_index[2, e], g$edge_index[1, e]] <- A[g$edge_index[2, e], g$edge_index[1, e]] + 1
+  }
+  diag(A)[diag(A) == 0] <- 1
+  d <- rowSums(A)
+  M <- diag(1 / sqrt(d)) %*% A %*% diag(1 / sqrt(d))
+  ref <- pmax(M %*% g$x %*% as_mat(W1), 0)
+  expect_equal(as_mat(h1), ref, tolerance = 1e-5)
+  # h = NULL restarts; a previous output continues from W1
+  expect_equal(as_mat(cell(tt$x, tt$edge_index)), as_mat(h1), tolerance = 1e-6)
+  h2 <- cell(tt$x, tt$edge_index, h1)
+  W2 <- cell$gru(W1, W1)
+  expect_equal(as_mat(h2), pmax(M %*% g$x %*% as_mat(W2), 0), tolerance = 1e-5)
+})
+
+test_that("dynamic link prediction trains with the evolving GCN cell", {
+  skip_if_no_torch()
+  snaps <- temporal_snapshots(dataset_synthetic_temporal(seed = 1), breaks = 8)
+  fit <- train_dynamic_link_model(snaps, hidden_dim = 8, epochs = 3, seed = 1, cell = "evolve")
+  expect_s3_class(fit$model, "evolve_gcn_cell")
+  expect_true(all(is.finite(fit$test_metrics)))
+  p <- predict(fit, snaps, pairs = snaps$graphs[[8]]$edge_index[, 1:5, drop = FALSE], step = 8)
+  expect_true(all(p >= 0 & p <= 1))
+})

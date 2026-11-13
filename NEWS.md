@@ -91,10 +91,15 @@ First release.
 
 - `edge_conv()` (EdgeConv of dynamic graph CNNs, max over
   \[x_i, x_j - x_i\] messages).
+- HAN: `hetero_gnn_model(conv = "han")` with semantic attention across
+  relations (`hetero_conv(aggr = "semantic")`), and `add_metapath()` to
+  compose relations into metapaths.
 - `gps_layer()`: GPS graph transformer layer (local message passing plus
   masked global attention per graph).
 - `meta_layer()` composes edge, node and graph level updates (graph network
   block, as PyG's `MetaLayer`).
+- `evolve_gcn_cell()` (EvolveGCN-O: GCN weights evolve with a GRU across
+  snapshots), usable in `train_dynamic_link_model(cell = "evolve")`.
 - `predict()` for temporal fits: TGN continues from its stored memory and
   neighbor store, dynamic link models score from earlier snapshots, and
   spatiotemporal models forecast from given origins; temporal fits can be

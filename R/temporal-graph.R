@@ -338,6 +338,68 @@ graph_gru_cell <- nn_module(
   }
 )
 
+#' Evolving GCN cell (EvolveGCN-O)
+#'
+#' The EvolveGCN-O cell of Pareja et al. (2020): the GCN weight matrix, not a
+#' node state, is the recurrent state. At each snapshot
+#' \deqn{W_t = \mathrm{GRU}(W_{t-1}, W_{t-1}),\quad
+#'       H_t = \mathrm{ReLU}(\hat A_t X_t W_t),}
+#' with the rows of \eqn{W} as the GRU batch and \eqn{\hat A_t} the GCN
+#' propagation matrix of snapshot \eqn{t} (self loops, symmetric
+#' normalization). Because only weights evolve, nodes that appear late are
+#' handled like any other node.
+#'
+#' The call signature matches [graph_gru_cell()] so the cell can replace it
+#' in [train_dynamic_link_model()]. The evolving weight is kept inside the
+#' module between calls: a call with `h = NULL` restarts from the learned
+#' initial weight \eqn{W_0}; any other `h` (the previous output) means
+#' "continue", and its value is not used.
+#'
+#' @param in_features Input feature size.
+#' @param hidden_features Output size.
+#' @return An `nn_module` called as `cell(x, edge_index, h, edge_weight)`.
+#' @references Pareja et al. (2020) EvolveGCN: evolving graph convolutional
+#'   networks for dynamic graphs. AAAI.
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   cell <- evolve_gcn_cell(3, 8)
+#'   ei <- graph_tensors(dataset_karate())$edge_index
+#'   x <- torch::torch_randn(34, 3)
+#'   h1 <- cell(x, ei)
+#'   h2 <- cell(x, ei, h1)
+#'   h2$shape
+#' }
+#' @export
+evolve_gcn_cell <- nn_module(
+  "evolve_gcn_cell",
+  initialize = function(in_features, hidden_features) {
+    self$hidden <- hidden_features
+    self$W0 <- glorot_param(in_features, hidden_features)
+    self$gru_x <- nn_linear(hidden_features, 3L * hidden_features)
+    self$gru_h <- nn_linear(hidden_features, 3L * hidden_features)
+    self$state <- new.env(parent = emptyenv())
+  },
+  gru = function(x, h) {
+    # Standard GRU cell (Cho et al. 2014), gates in the order reset, update, new.
+    gx <- self$gru_x(x)$chunk(3L, dim = 2L)
+    gh <- self$gru_h(h)$chunk(3L, dim = 2L)
+    r <- torch_sigmoid(gx[[1L]] + gh[[1L]])
+    z <- torch_sigmoid(gx[[2L]] + gh[[2L]])
+    n <- torch_tanh(gx[[3L]] + r * gh[[3L]])
+    (1 - z) * n + z * h
+  },
+  forward = function(x, edge_index, h = NULL, edge_weight = NULL) {
+    # ponytail: state kept in an environment, one sequence at a time; pass
+    # W explicitly if several sequences must interleave.
+    prev <- if (is.null(h) || is.null(self$state$W)) self$W0 else self$state$W
+    W <- self$gru(prev, prev)
+    self$state$W <- W
+    nrm <- gcn_norm(edge_index, x$size(1L), edge_weight, dtype = x$dtype)
+    nnf_relu(message_passing(x$matmul(W), nrm$edge_index, edge_weight = nrm$edge_weight,
+                             num_nodes = x$size(1L)))
+  }
+)
+
 #' Recurrent temporal GNN
 #'
 #' A [graph_gru_cell()] followed by a linear readout per node and step.
@@ -498,6 +560,8 @@ print.temporal_fit <- function(x, ...) {
 #' @param neg_ratio Negatives per positive.
 #' @param seed Optional integer seed.
 #' @param device Device.
+#' @param cell `"gru"` for a [graph_gru_cell()] (node states evolve) or
+#'   `"evolve"` for an [evolve_gcn_cell()] (GCN weights evolve, EvolveGCN-O).
 #' @return An object of class `temporal_fit` with per step test metrics
 #'   (`step_metrics`) and averages (`test_metrics`).
 #' @examples
@@ -509,7 +573,8 @@ print.temporal_fit <- function(x, ...) {
 #' @export
 train_dynamic_link_model <- function(snapshots, train_steps = NULL, hidden_dim = 32L,
                                      epochs = 50L, lr = 0.01, neg_ratio = 1, seed = NULL,
-                                     device = NULL) {
+                                     device = NULL, cell = c("gru", "evolve")) {
+  cell_type <- match.arg(cell)
   dev <- resolve_device(device)
   if (!is.null(seed)) torch_manual_seed(seed)
   K <- length(snapshots$graphs)
@@ -527,7 +592,8 @@ train_dynamic_link_model <- function(snapshots, train_steps = NULL, hidden_dim =
   xt <- lapply(seq_len(K), function(k) {
     if (!is.null(tts[[k]]$x)) tts[[k]]$x else torch_tensor(x0, dtype = torch_float(), device = dev)
   })
-  cell <- graph_gru_cell(ncol(x0), hidden_dim)
+  cell <- if (cell_type == "gru") graph_gru_cell(ncol(x0), hidden_dim)
+          else evolve_gcn_cell(ncol(x0), hidden_dim)
   cell$to(device = dev)
   opt <- optim_adam(cell$parameters, lr = lr)
   pairs <- function(k, s) {

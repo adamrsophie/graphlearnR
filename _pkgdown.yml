@@ -122,6 +122,7 @@ reference:
   - hetero_graph_data
   - edge_types
   - add_reverse_relations
+  - add_metapath
   - to_homogeneous
   - hetero_tensors
   - hetero_batch
@@ -139,6 +140,7 @@ reference:
   - snapshot_sequence
   - spatiotemporal_signal
   - graph_gru_cell
+  - evolve_gcn_cell
   - temporal_gnn_model
   - train_spatiotemporal_model
   - train_dynamic_link_model

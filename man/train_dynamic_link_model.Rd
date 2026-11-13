@@ -12,7 +12,8 @@ train_dynamic_link_model(
   lr = 0.01,
   neg_ratio = 1,
   seed = NULL,
-  device = NULL
+  device = NULL,
+  cell = c("gru", "evolve")
 )
 }
 \arguments{
@@ -32,6 +33,9 @@ first 70 percent of transitions).}
 \item{seed}{Optional integer seed.}
 
 \item{device}{Device.}
+
+\item{cell}{\code{"gru"} for a \code{\link[=graph_gru_cell]{graph_gru_cell()}} (node states evolve) or
+\code{"evolve"} for an \code{\link[=evolve_gcn_cell]{evolve_gcn_cell()}} (GCN weights evolve, EvolveGCN-O).}
 }
 \value{
 An object of class \code{temporal_fit} with per step test metrics
