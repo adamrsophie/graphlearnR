@@ -4,7 +4,13 @@
 \alias{graph_transformer_layer}
 \title{Graph transformer layer with structural attention bias}
 \usage{
-graph_transformer_layer(dim, heads = 4L, max_dist = 5L, dropout = 0.1)
+graph_transformer_layer(
+  dim,
+  heads = 4L,
+  max_dist = 5L,
+  dropout = 0.1,
+  edge_dim = NULL
+)
 }
 \arguments{
 \item{dim}{Feature size.}
@@ -14,11 +20,15 @@ graph_transformer_layer(dim, heads = 4L, max_dist = 5L, dropout = 0.1)
 \item{max_dist}{Largest distinguished distance.}
 
 \item{dropout}{Dropout probability.}
+
+\item{edge_dim}{Edge feature size for the edge bias, or \code{NULL}.}
 }
 \value{
-An \code{nn_module} called as \code{layer(x, batch, dist)} where \code{dist} is a
-\code{B} by \code{L} by \code{L} long tensor of clipped distances (padding uses
-\code{max_dist + 2}).
+An \code{nn_module} called as
+\code{layer(x, batch, dist, edge_index = NULL, edge_attr = NULL)} where \code{dist}
+is a \code{B} by \code{L} by \code{L} long tensor of clipped distances (padding uses
+\code{max_dist + 2}); \code{edge_index} and \code{edge_attr} are needed with
+\code{edge_dim}.
 }
 \description{
 Full multi head self attention among the nodes of each graph (never across
@@ -28,7 +38,12 @@ pre-layer-norm arrangement: \eqn{h = h + \mathrm{MHA}(\mathrm{LN}(h))},
 then \eqn{h = h + \mathrm{FFN}(\mathrm{LN}(h))}.
 }
 \details{
-Graphormer's edge encoding along shortest paths is not implemented. Memory
+With \code{edge_dim}, edge features enter the attention as a learned bias per
+head: for an edge \eqn{j \to i} with features \eqn{e_{ji}}, the score of
+query \eqn{i} and key \eqn{j} gets \eqn{w_h^\top e_{ji}} (summed over
+parallel edges). This is Graphormer's edge encoding for paths of length
+one; its averaging of edge features along longer shortest paths is not
+implemented. Memory
 is \eqn{O(B L^2 H)} for \code{B} graphs of at most \code{L} nodes and \code{H} heads, so
 this layer suits small graphs such as molecules; for large graphs use the
 sparse \code{\link[=transformer_conv]{transformer_conv()}}.

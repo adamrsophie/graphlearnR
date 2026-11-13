@@ -13,7 +13,8 @@ graph_transformer_model(
   max_dist = 5L,
   max_degree = 10L,
   dropout = 0.1,
-  pool = "mean"
+  pool = "mean",
+  edge_dim = NULL
 )
 }
 \arguments{
@@ -34,6 +35,9 @@ graph_transformer_model(
 \item{dropout}{Dropout probability.}
 
 \item{pool}{\code{NULL} for node level output, or \code{"mean"}, \code{"sum"}, \code{"max"}.}
+
+\item{edge_dim}{Edge feature size for edge biased attention, or \code{NULL}
+to ignore edge features.}
 }
 \value{
 An \code{nn_module} of class \code{graph_transformer}.
@@ -46,10 +50,10 @@ layer norm, and either a node level linear head or global pooling and an
 MLP head. Shortest path distances are computed in R for each new batch,
 which costs \eqn{O(\sum_g n_g (n_g + e_g))}; the distances of the 64 most
 recent distinct batches are cached in the model, so repeated batches (for
-example full batch training) reuse them. Edge features are not used by
-this model; for edge aware attention use \code{\link[=transformer_conv]{transformer_conv()}} with
-\code{edge_dim}, which also gives a sparse, neighborhood local alternative to
-dense attention.
+example full batch training) reuse them. With \code{edge_dim}, every layer adds
+a learned per head bias from the features of direct edges (see
+\code{\link[=graph_transformer_layer]{graph_transformer_layer()}}); \code{\link[=transformer_conv]{transformer_conv()}} with \code{edge_dim} is a
+sparse, neighborhood local alternative to this dense attention.
 }
 \details{
 The forward signature matches \code{\link[=gnn_model]{gnn_model()}}, so the model works with

@@ -181,7 +181,12 @@ from_dense_batch <- function(dense) {
 #' pre-layer-norm arrangement: \eqn{h = h + \mathrm{MHA}(\mathrm{LN}(h))},
 #' then \eqn{h = h + \mathrm{FFN}(\mathrm{LN}(h))}.
 #'
-#' Graphormer's edge encoding along shortest paths is not implemented. Memory
+#' With `edge_dim`, edge features enter the attention as a learned bias per
+#' head: for an edge \eqn{j \to i} with features \eqn{e_{ji}}, the score of
+#' query \eqn{i} and key \eqn{j} gets \eqn{w_h^\top e_{ji}} (summed over
+#' parallel edges). This is Graphormer's edge encoding for paths of length
+#' one; its averaging of edge features along longer shortest paths is not
+#' implemented. Memory
 #' is \eqn{O(B L^2 H)} for `B` graphs of at most `L` nodes and `H` heads, so
 #' this layer suits small graphs such as molecules; for large graphs use the
 #' sparse [transformer_conv()].
@@ -193,9 +198,12 @@ from_dense_batch <- function(dense) {
 #' @param heads Attention heads (`dim` must be divisible by `heads`).
 #' @param max_dist Largest distinguished distance.
 #' @param dropout Dropout probability.
-#' @return An `nn_module` called as `layer(x, batch, dist)` where `dist` is a
-#'   `B` by `L` by `L` long tensor of clipped distances (padding uses
-#'   `max_dist + 2`).
+#' @param edge_dim Edge feature size for the edge bias, or `NULL`.
+#' @return An `nn_module` called as
+#'   `layer(x, batch, dist, edge_index = NULL, edge_attr = NULL)` where `dist`
+#'   is a `B` by `L` by `L` long tensor of clipped distances (padding uses
+#'   `max_dist + 2`); `edge_index` and `edge_attr` are needed with
+#'   `edge_dim`.
 #' @examples
 #' if (torch::torch_is_installed()) {
 #'   layer <- graph_transformer_layer(8, heads = 2)
@@ -204,7 +212,7 @@ from_dense_batch <- function(dense) {
 #' @export
 graph_transformer_layer <- nn_module(
   "graph_transformer_layer",
-  initialize = function(dim, heads = 4L, max_dist = 5L, dropout = 0.1) {
+  initialize = function(dim, heads = 4L, max_dist = 5L, dropout = 0.1, edge_dim = NULL) {
     if (dim %% heads != 0L) stopf("`dim` must be divisible by `heads`.")
     self$heads <- heads
     self$dk <- dim %/% heads
@@ -215,8 +223,9 @@ graph_transformer_layer <- nn_module(
     self$proj <- nn_linear(dim, dim)
     self$ffn <- nn_sequential(nn_linear(dim, 2L * dim), nn_gelu(), nn_linear(2L * dim, dim))
     self$dist_bias <- nn_embedding(max_dist + 3L, heads)
+    if (!is.null(edge_dim)) self$edge_bias <- nn_linear(edge_dim, heads, bias = FALSE)
   },
-  forward = function(x, batch, dist) {
+  forward = function(x, batch, dist, edge_index = NULL, edge_attr = NULL) {
     dense <- to_dense_batch(self$ln1(x), batch)
     B <- dense$B
     L <- dense$L
@@ -233,6 +242,19 @@ graph_transformer_layer <- nn_module(
     scores <- torch_matmul(q, k$transpose(3L, 4L)) / sqrt(self$dk)
     bias <- self$dist_bias(dist + 1L)$permute(c(1L, 4L, 2L, 3L))
     scores <- scores + bias
+    if (!is.null(self$edge_bias)) {
+      if (is.null(edge_attr) || is.null(edge_index)) {
+        stopf("This layer was built with `edge_dim`; give `edge_index` and `edge_attr`.")
+      }
+      # Position of each edge (query = target i, key = source j) in the
+      # flattened B x L x L score grid, from the dense node positions.
+      fi <- dense$index$index_select(1L, edge_index[2L, ])
+      fj <- dense$index$index_select(1L, edge_index[1L, ])
+      flat <- (fi - 1L) * L + torch_remainder(fj - 1L, L) + 1L
+      eb <- torch_zeros(B * L * L, H, dtype = scores$dtype, device = scores$device)
+      eb <- eb$index_add(1L, flat, self$edge_bias(edge_attr)$to(dtype = scores$dtype))
+      scores <- scores + eb$view(c(B, L, L, H))$permute(c(1L, 4L, 2L, 3L))
+    }
     key_mask <- dense$mask$view(c(B, 1L, 1L, L))
     scores <- scores$masked_fill(key_mask$logical_not(), -1e9)
     att <- nnf_softmax(scores, dim = -1L)
@@ -273,10 +295,10 @@ batch_distances <- function(edge_index, batch, max_dist, device) {
 #' MLP head. Shortest path distances are computed in R for each new batch,
 #' which costs \eqn{O(\sum_g n_g (n_g + e_g))}; the distances of the 64 most
 #' recent distinct batches are cached in the model, so repeated batches (for
-#' example full batch training) reuse them. Edge features are not used by
-#' this model; for edge aware attention use [transformer_conv()] with
-#' `edge_dim`, which also gives a sparse, neighborhood local alternative to
-#' dense attention.
+#' example full batch training) reuse them. With `edge_dim`, every layer adds
+#' a learned per head bias from the features of direct edges (see
+#' [graph_transformer_layer()]); [transformer_conv()] with `edge_dim` is a
+#' sparse, neighborhood local alternative to this dense attention.
 #'
 #' The forward signature matches [gnn_model()], so the model works with
 #' [train_graph_model()].
@@ -290,6 +312,8 @@ batch_distances <- function(edge_index, batch, max_dist, device) {
 #' @param max_degree Degrees above this share one embedding.
 #' @param dropout Dropout probability.
 #' @param pool `NULL` for node level output, or `"mean"`, `"sum"`, `"max"`.
+#' @param edge_dim Edge feature size for edge biased attention, or `NULL`
+#'   to ignore edge features.
 #' @return An `nn_module` of class `graph_transformer`.
 #' @references Ying et al. (2021) Do transformers really perform badly for
 #'   graph representation? NeurIPS.
@@ -303,10 +327,11 @@ graph_transformer_model <- nn_module(
   "graph_transformer",
   initialize = function(input_dim, hidden_dim = 64L, output_dim = 1L, num_layers = 2L,
                         heads = 4L, max_dist = 5L, max_degree = 10L, dropout = 0.1,
-                        pool = "mean") {
+                        pool = "mean", edge_dim = NULL) {
     self$config <- list(input_dim = input_dim, hidden_dim = hidden_dim, output_dim = output_dim,
                         num_layers = num_layers, heads = heads, max_dist = max_dist,
-                        max_degree = max_degree, dropout = dropout, pool = pool)
+                        max_degree = max_degree, dropout = dropout, pool = pool,
+                        edge_dim = edge_dim)
     self$input <- nn_linear(input_dim, hidden_dim)
     # Shortest path distances of recently seen batches, so repeated batches
     # (every epoch of full batch training, for example) are not recomputed.
@@ -314,19 +339,21 @@ graph_transformer_model <- nn_module(
     self$dist_cache$entries <- list()
     self$degree_emb <- nn_embedding(max_degree + 1L, hidden_dim)
     self$layers <- nn_module_list(lapply(seq_len(num_layers), function(i) {
-      graph_transformer_layer(hidden_dim, heads, max_dist, dropout)
+      graph_transformer_layer(hidden_dim, heads, max_dist, dropout, edge_dim)
     }))
     self$ln <- nn_layer_norm(hidden_dim)
     self$head <- if (is.null(pool)) nn_linear(hidden_dim, output_dim)
                  else graph_mlp(c(hidden_dim, hidden_dim, output_dim))
   },
-  forward = function(x, edge_index, batch = NULL, num_graphs = NULL, return_embedding = FALSE, ...) {
+  forward = function(x, edge_index, batch = NULL, num_graphs = NULL, return_embedding = FALSE,
+                     edge_attr = NULL, ...) {
     n <- x$size(1L)
     if (is.null(batch)) batch <- torch_ones(n, dtype = torch_long(), device = x$device)
     deg <- scatter_count(edge_index[2L, ], n)$to(dtype = torch_long())$clamp(max = self$config$max_degree)
     h <- self$input(x) + self$degree_emb(deg + 1L)
     dist <- self$distances(edge_index, batch, x$device)
-    for (layer in seq_along(self$layers)) h <- self$layers[[layer]](h, batch, dist)
+    if (is.null(self$config$edge_dim)) edge_attr <- NULL
+    for (layer in seq_along(self$layers)) h <- self$layers[[layer]](h, batch, dist, edge_index, edge_attr)
     h <- self$ln(h)
     if (return_embedding) return(h)
     if (!is.null(self$config$pool)) {

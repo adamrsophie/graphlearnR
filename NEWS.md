@@ -114,7 +114,8 @@ First release.
 - The reproducibility record keeps exact split members and all training
   settings.
 - `graph_transformer_model()` caches shortest path distances of recent
-  batches.
+  batches and, with `edge_dim`, adds a learned attention bias from edge
+  features (Graphormer's edge encoding for direct edges).
 - `scatter_std()` (and the PNA `std` aggregator) now returns 0 for empty
   and constant groups, as PyTorch Geometric's `StdAggregation`; PNA layers
   are compared with PyG's `PNAConv` in the benchmark workflow.
