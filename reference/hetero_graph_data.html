@@ -104,7 +104,10 @@ node count, or a list with any of <code>x</code>, <code>y</code>, <code>num_node
 <dd><p>Named list, one entry per relation. Name an entry
 <code>"src__relation__dst"</code> and give a 2 by E (or E by 2) matrix, or give a
 list with <code>edge_index</code> and optional <code>src</code>, <code>rel</code>, <code>dst</code>, <code>edge_attr</code>,
-<code>edge_weight</code>, <code>edge_y</code>.</p></dd>
+<code>edge_weight</code>, <code>edge_y</code>, <code>edge_time</code>. <code>edge_time</code> is a relative time
+per edge (for example the target's year minus the source's), used by
+the relative temporal encoding of <code><a href="hgt_conv.html">hgt_conv()</a></code>; reverse relations get
+its negative.</p></dd>
 
 
 <dt id="arg-metadata">metadata<a class="anchor" aria-label="anchor" href="#arg-metadata"></a></dt>

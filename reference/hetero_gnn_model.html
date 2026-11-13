@@ -90,7 +90,8 @@ head for <code>target_type</code>.</p>
 <span>  dropout <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  aggr <span class="op">=</span> <span class="st">"mean"</span>,</span>
 <span>  relation_aggr <span class="op">=</span> <span class="st">"sum"</span>,</span>
-<span>  num_bases <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  num_bases <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  temporal_encoding <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -141,6 +142,11 @@ relations, feature sizes, node counts); its data are not stored.</p></dd>
 
 <dt id="arg-num-bases">num_bases<a class="anchor" aria-label="anchor" href="#arg-num-bases"></a></dt>
 <dd><p>Basis count for <code>"rgcn"</code>.</p></dd>
+
+
+<dt id="arg-temporal-encoding">temporal_encoding<a class="anchor" aria-label="anchor" href="#arg-temporal-encoding"></a></dt>
+<dd><p>For <code>"hgt"</code>, use the relative temporal encoding
+with the relations' <code>edge_time</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

@@ -312,8 +312,25 @@ updates.</p>
 <p>Each event is scored against one random destination. The synthetic
 stream repeats earlier pairs often, so memory and the learned node
 embeddings (<code>node_embedding = TRUE</code>, the default) carry most
-of the signal. The graph attention embedding and the other message
-aggregators of the paper are not implemented.</p>
+of the signal.</p>
+<p>The embedding can also look at each node’s most recent partners. With
+<code>embedding = "graph_attention"</code>, the variant the TGN paper
+found best, multi head attention runs over the
+<code>num_neighbors</code> latest partners; keys and values combine the
+partner’s memory, the time since that interaction and the event
+features, and the query comes from the node’s own memory. Only partners
+from earlier batches are visible, for the same reason as above.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://torch.mlverse.org/docs/reference/torch_manual_seed.html" class="external-link">torch_manual_seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">tgn_att</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tgn_model.html">tgn_model</a></span><span class="op">(</span><span class="va">stream</span><span class="op">$</span><span class="va">num_nodes</span>, memory_dim <span class="op">=</span> <span class="fl">32</span>, time_dim <span class="op">=</span> <span class="fl">8</span>, embedding_dim <span class="op">=</span> <span class="fl">32</span>,</span>
+<span>                     embedding <span class="op">=</span> <span class="st">"graph_attention"</span>, num_neighbors <span class="op">=</span> <span class="fl">5</span>, heads <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">fit_att</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tgn_model.html">train_tgn</a></span><span class="op">(</span><span class="va">tgn_att</span>, <span class="va">sp_t</span>, epochs <span class="op">=</span> <span class="fl">10</span>, batch_size <span class="op">=</span> <span class="fl">50</span>, lr <span class="op">=</span> <span class="fl">0.01</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">fit_att</span><span class="op">$</span><span class="va">test_metrics</span></span>
+<span><span class="co">#&gt;           roc_auc average_precision </span></span>
+<span><span class="co">#&gt;         0.8542172         0.8504464</span></span></code></pre></div>
+<p>The implementation has one embedding layer (one hop) and keeps the
+most recent message per node; the paper’s other message aggregators are
+not included.</p>
 </div>
 <div class="section level2">
 <h2 id="the-recurrent-cell">The recurrent cell<a class="anchor" aria-label="anchor" href="#the-recurrent-cell"></a>
@@ -325,7 +342,7 @@ of each node mixes with its neighbors at every step.
 output at step <span class="math inline">s</span> depends only on inputs
 up to step <span class="math inline">s</span>; the test suite checks
 this by changing later inputs and comparing.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">g</span> <span class="op">&lt;-</span> <span class="va">sig</span><span class="op">$</span><span class="va">graph</span></span>
 <span><span class="va">tt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/graph_tensors.html">graph_tensors</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://torch.mlverse.org/docs/reference/torch_manual_seed.html" class="external-link">torch_manual_seed</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span></span>

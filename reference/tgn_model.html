@@ -85,9 +85,10 @@ in chronological batches:</p>
 <span>  time_dim <span class="op">=</span> <span class="fl">16L</span>,</span>
 <span>  embedding_dim <span class="op">=</span> <span class="fl">32L</span>,</span>
 <span>  edge_dim <span class="op">=</span> <span class="fl">0L</span>,</span>
-<span>  embedding <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"time"</span>, <span class="st">"graph_sum"</span><span class="op">)</span>,</span>
+<span>  embedding <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"time"</span>, <span class="st">"graph_sum"</span>, <span class="st">"graph_attention"</span><span class="op">)</span>,</span>
 <span>  num_neighbors <span class="op">=</span> <span class="fl">10L</span>,</span>
-<span>  node_embedding <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  node_embedding <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  heads <span class="op">=</span> <span class="fl">2L</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">train_tgn</span><span class="op">(</span></span>
@@ -126,17 +127,22 @@ in chronological batches:</p>
 
 
 <dt id="arg-embedding">embedding<a class="anchor" aria-label="anchor" href="#arg-embedding"></a></dt>
-<dd><p><code>"time"</code> or <code>"graph_sum"</code>.</p></dd>
+<dd><p><code>"time"</code>, <code>"graph_sum"</code> or <code>"graph_attention"</code>.</p></dd>
 
 
 <dt id="arg-num-neighbors">num_neighbors<a class="anchor" aria-label="anchor" href="#arg-num-neighbors"></a></dt>
-<dd><p>Neighbors used by <code>"graph_sum"</code>.</p></dd>
+<dd><p>Most recent partners used by the graph embeddings.</p></dd>
 
 
 <dt id="arg-node-embedding">node_embedding<a class="anchor" aria-label="anchor" href="#arg-node-embedding"></a></dt>
 <dd><p>Add a learned static embedding per node to
 \(z_i\) (useful without node features; makes the model
 transductive).</p></dd>
+
+
+<dt id="arg-heads">heads<a class="anchor" aria-label="anchor" href="#arg-heads"></a></dt>
+<dd><p>Attention heads for <code>"graph_attention"</code>; <code>embedding_dim</code>
+must be divisible by it.</p></dd>
 
 
 <dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
@@ -188,13 +194,20 @@ batch's own events never inform its predictions.</p></li>
 last update, \(z_i = W [s_i, \phi(t - t_i^{last})]\)
 (<code>embedding = "time"</code>), plus, with <code>embedding = "graph_sum"</code>, the mean
 of \(W' [s_j, \phi(t - t_{ij})]\) over the <code>num_neighbors</code> most recent
-earlier interaction partners \(j\).</p></li>
+earlier interaction partners \(j\). With
+<code>embedding = "graph_attention"</code> (the paper's best variant), multi head
+attention runs over those partners with query
+\(W_Q [s_i, \phi(0)]\), keys and values
+\(W_{K,V} [s_j, \phi(t - t_{ij}), e_{ij}]\), and
+\(z_i = \mathrm{MLP}([\tilde h_i, s_i, \phi(t - t_i^{last})])\),
+\(\tilde h_i\) the attention output (zero without partners); the
+weights of the last call are kept in <code>model$last_attention</code>.</p></li>
 <li><p>An MLP scores \([z_{src}, z_{dst}]\); the loss is binary cross entropy
 against one random destination per event.</p></li>
 </ol><p>\(\phi(\Delta t) = \cos(\omega \Delta t + b)\) is the learnable time
 encoding of TGAT (Xu et al. 2020). Memory is detached between batches
-(truncated backpropagation over one batch). The graph attention embedding
-and the other message aggregators of the paper are not implemented.</p>
+(truncated backpropagation over one batch). Only one embedding layer
+(one hop) and the "last" message aggregator are implemented.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -214,7 +227,7 @@ temporal graphs.</p>
 <span class="r-in"><span>  <span class="va">fit</span><span class="op">$</span><span class="va">test_metrics</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>           roc_auc average_precision </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         0.4906086         0.5119871 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         0.4942285         0.4849707 </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

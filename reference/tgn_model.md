@@ -14,9 +14,10 @@ tgn_model(
   time_dim = 16L,
   embedding_dim = 32L,
   edge_dim = 0L,
-  embedding = c("time", "graph_sum"),
+  embedding = c("time", "graph_sum", "graph_attention"),
   num_neighbors = 10L,
-  node_embedding = TRUE
+  node_embedding = TRUE,
+  heads = 2L
 )
 
 train_tgn(
@@ -54,16 +55,21 @@ train_tgn(
 
 - embedding:
 
-  `"time"` or `"graph_sum"`.
+  `"time"`, `"graph_sum"` or `"graph_attention"`.
 
 - num_neighbors:
 
-  Neighbors used by `"graph_sum"`.
+  Most recent partners used by the graph embeddings.
 
 - node_embedding:
 
   Add a learned static embedding per node to \\z_i\\ (useful without
   node features; makes the model transductive).
+
+- heads:
+
+  Attention heads for `"graph_attention"`; `embedding_dim` must be
+  divisible by it.
 
 - model:
 
@@ -117,16 +123,22 @@ training (and, for test, validation) events, without gradient updates.
     node's last update, \\z_i = W \[s_i, \phi(t - t_i^{last})\]\\
     (`embedding = "time"`), plus, with `embedding = "graph_sum"`, the
     mean of \\W' \[s_j, \phi(t - t\_{ij})\]\\ over the `num_neighbors`
-    most recent earlier interaction partners \\j\\.
+    most recent earlier interaction partners \\j\\. With
+    `embedding = "graph_attention"` (the paper's best variant), multi
+    head attention runs over those partners with query \\W_Q \[s_i,
+    \phi(0)\]\\, keys and values \\W\_{K,V} \[s_j, \phi(t - t\_{ij}),
+    e\_{ij}\]\\, and \\z_i = \mathrm{MLP}(\[\tilde h_i, s_i, \phi(t -
+    t_i^{last})\])\\, \\\tilde h_i\\ the attention output (zero without
+    partners); the weights of the last call are kept in
+    `model$last_attention`.
 
 3.  An MLP scores \\\[z\_{src}, z\_{dst}\]\\; the loss is binary cross
     entropy against one random destination per event.
 
 \\\phi(\Delta t) = \cos(\omega \Delta t + b)\\ is the learnable time
 encoding of TGAT (Xu et al. 2020). Memory is detached between batches
-(truncated backpropagation over one batch). The graph attention
-embedding and the other message aggregators of the paper are not
-implemented.
+(truncated backpropagation over one batch). Only one embedding layer
+(one hop) and the "last" message aggregator are implemented.
 
 ## References
 
@@ -146,5 +158,5 @@ if (torch::torch_is_installed()) {
   fit$test_metrics
 }
 #>           roc_auc average_precision 
-#>         0.4906086         0.5119871 
+#>         0.4942285         0.4849707 
 ```

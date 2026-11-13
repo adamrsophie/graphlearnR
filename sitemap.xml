@@ -23,7 +23,9 @@
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/add_reverse_relations.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/add_self_loops_tensor.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/aggregate_jax.html</loc></url>
+<url><loc>https://adamrsophie.github.io/graphlearnR/reference/appnp.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/attention_weights.html</loc></url>
+<url><loc>https://adamrsophie.github.io/graphlearnR/reference/cheb_conv.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/cluster_loader.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/consistent_labels.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/corrupt_tails.html</loc></url>
@@ -78,6 +80,7 @@
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/molecule_graph.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/negative_sampling.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/node_loader.html</loc></url>
+<url><loc>https://adamrsophie.github.io/graphlearnR/reference/pna_conv.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/positional-encodings.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/predict.graph_fit.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/read_ogb_node.html</loc></url>

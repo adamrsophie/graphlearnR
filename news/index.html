@@ -77,7 +77,9 @@
 </ul></div>
 <div class="section level3">
 <h3 id="message-passing-and-layers-0-1-0">Message passing and layers<a class="anchor" aria-label="anchor" href="#message-passing-and-layers-0-1-0"></a></h3>
-<ul><li>Scatter aggregations (sum, mean, max, min, std, softmax) and <code><a href="../reference/message_passing.html">message_passing()</a></code> for custom layers.</li>
+<ul><li>
+<code><a href="../reference/cheb_conv.html">cheb_conv()</a></code> (ChebConv), <code><a href="../reference/pna_conv.html">pna_conv()</a></code> with <code><a href="../reference/pna_conv.html">pna_degree()</a></code> (PNA), <code><a href="../reference/appnp.html">appnp()</a></code> and <code><a href="../reference/appnp.html">appnp_model()</a></code> (APPNP), and <code><a href="../reference/topk_pool.html">sag_pool()</a></code> (SAGPool).</li>
+<li>Scatter aggregations (sum, mean, max, min, std, softmax) and <code><a href="../reference/message_passing.html">message_passing()</a></code> for custom layers.</li>
 <li>Layers: GraphSAGE, GCN, GraphConv, GIN and GINE, GAT, GATv2, graph transformer convolution, edge conditioned convolution (NNConv), and RGCN with basis decomposition.</li>
 <li>Global add, mean, max, and attention pooling, top-k pooling, and DiffPool (<code><a href="../reference/to_dense_adj.html">dense_diff_pool()</a></code>, <code><a href="../reference/to_dense_adj.html">to_dense_adj()</a></code>, <code><a href="../reference/to_dense_adj.html">dense_graph_conv()</a></code>, <code><a href="../reference/diffpool_model.html">diffpool_model()</a></code>), whose auxiliary losses the trainer adds.</li>
 <li>
@@ -107,7 +109,9 @@
 <code><a href="../reference/hetero_graph_data.html">hetero_graph_data()</a></code>, reverse relations, typed sampling, typed link splits, <code><a href="../reference/hetero_conv.html">hetero_conv()</a></code>, and <code><a href="../reference/hetero_gnn_model.html">hetero_gnn_model()</a></code>.</li>
 <li>Event based temporal graphs, snapshots, strictly causal temporal neighbors, a graph GRU, spatiotemporal forecasting, and dynamic link prediction with baselines.</li>
 <li>
-<code><a href="../reference/tgn_model.html">tgn_model()</a></code> and <code><a href="../reference/tgn_model.html">train_tgn()</a></code>: temporal graph networks with node memory.</li>
+<code><a href="../reference/tgn_model.html">tgn_model()</a></code> and <code><a href="../reference/tgn_model.html">train_tgn()</a></code>: temporal graph networks with node memory and time, graph sum, or graph attention embeddings.</li>
+<li>
+<code>hgt_conv(temporal_encoding = TRUE)</code> and the <code>edge_time</code> field of heterogeneous relations add HGT’s relative temporal encoding.</li>
 <li>
 <code><a href="../reference/graph_ode_block.html">graph_ode_block()</a></code> and <code><a href="../reference/graph_ode_block.html">graph_ode_model()</a></code>: GRAND style continuous depth diffusion with fixed step Runge-Kutta or Euler integration.</li>
 <li>Laplacian and random walk positional encodings, shortest path distances, and a Graphormer style graph transformer.</li>

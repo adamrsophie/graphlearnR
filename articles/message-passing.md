@@ -129,6 +129,9 @@ That is the GraphSAGE update, which graphlearnR also provides as
 | [`transformer_conv()`](https://adamrsophie.github.io/graphlearnR/reference/gnn-layers.md) | scaled dot product attention over neighbors | optional features |
 | [`nn_conv()`](https://adamrsophie.github.io/graphlearnR/reference/gnn-layers.md) | W_1 h_i + \sum_j \Theta(e\_{ji}) h_j (edge conditioned) | features, required |
 | [`rgcn_conv()`](https://adamrsophie.github.io/graphlearnR/reference/gnn-layers.md) | W_0 h_i + \sum_r \operatorname{mean}\_{j \in \mathcal{N}\_r(i)} W_r h_j | relation type, required |
+| [`cheb_conv()`](https://adamrsophie.github.io/graphlearnR/reference/cheb_conv.md) | \sum\_{k=1}^{K} T\_{k-1}(\hat L) X W_k, Chebyshev polynomials of the scaled Laplacian | weights |
+| [`pna_conv()`](https://adamrsophie.github.io/graphlearnR/reference/pna_conv.md) | several aggregators times degree scalers, then an MLP | optional features |
+| [`appnp()`](https://adamrsophie.github.io/graphlearnR/reference/appnp.md) | H \leftarrow (1 - \alpha) \hat A H + \alpha X, K times, no parameters | weights |
 
 Every layer takes `(x, edge_index, ...)` and returns new node features.
 
@@ -147,6 +150,38 @@ sapply(layers, function(l) dim(l(tt$x, tt$edge_index)))
 #> [1,]   34  34  34  34          34
 #> [2,]    8   8   8   8           8
 ```
+
+[`cheb_conv()`](https://adamrsophie.github.io/graphlearnR/reference/cheb_conv.md)
+is a spectral filter that reaches `K - 1` hops in one layer.
+[`pna_conv()`](https://adamrsophie.github.io/graphlearnR/reference/pna_conv.md)
+(principal neighborhood aggregation) combines mean, min, max and
+standard deviation of the messages and rescales them by the node’s
+degree relative to the training graphs, so it needs their degree
+histogram from
+[`pna_degree()`](https://adamrsophie.github.io/graphlearnR/reference/pna_conv.md).
+[`appnp()`](https://adamrsophie.github.io/graphlearnR/reference/appnp.md)
+has no weights: it smooths predictions by personalized PageRank, and
+[`appnp_model()`](https://adamrsophie.github.io/graphlearnR/reference/appnp.md)
+puts it after an MLP.
+
+``` r
+
+dim(cheb_conv(34, 8, K = 3)(tt$x, tt$edge_index))
+#> [1] 34  8
+dim(pna_conv(34, 8, deg = pna_degree(g))(tt$x, tt$edge_index))
+#> [1] 34  8
+g_appnp <- split_nodes(dataset_karate(), seed = 1)
+torch_manual_seed(1)
+fit_appnp <- train_graph_model(appnp_model(34, 16, 2, K = 10, alpha = 0.1), g_appnp,
+                               "node_classification", epochs = 100, seed = 1)
+evaluate_graph_model(fit_appnp, g_appnp)[1, ]
+#>     metric     value
+#> 1 accuracy 0.8333333
+```
+
+The tests compare ChebConv with the dense Chebyshev recursion, APPNP
+with the closed form \alpha (I - (1 - \alpha)\hat A)^{-1} X, and PNA
+with an explicit loop over each node’s messages.
 
 Attention layers keep the coefficients of their last forward pass.
 Within each target node they sum to one.
@@ -240,7 +275,10 @@ take the `batch` vector;
 [`global_attention_pool()`](https://adamrsophie.github.io/graphlearnR/reference/global_attention_pool.md)
 learns a gate;
 [`topk_pool()`](https://adamrsophie.github.io/graphlearnR/reference/topk_pool.md)
-keeps the highest scoring fraction of nodes in each graph.
+keeps the highest scoring fraction of nodes in each graph, and
+[`sag_pool()`](https://adamrsophie.github.io/graphlearnR/reference/topk_pool.md)
+(SAGPool) does the same with scores from a graph convolution, so a
+node’s score depends on its neighbors.
 
 ``` r
 

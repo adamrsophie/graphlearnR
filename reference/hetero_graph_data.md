@@ -28,7 +28,11 @@ validate_hetero_graph(hg)
   Named list, one entry per relation. Name an entry
   `"src__relation__dst"` and give a 2 by E (or E by 2) matrix, or give a
   list with `edge_index` and optional `src`, `rel`, `dst`, `edge_attr`,
-  `edge_weight`, `edge_y`.
+  `edge_weight`, `edge_y`, `edge_time`. `edge_time` is a relative time
+  per edge (for example the target's year minus the source's), used by
+  the relative temporal encoding of
+  [`hgt_conv()`](https://adamrsophie.github.io/graphlearnR/reference/hgt_conv.md);
+  reverse relations get its negative.
 
 - metadata:
 

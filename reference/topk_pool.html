@@ -79,7 +79,9 @@ edges between kept nodes are retained.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">topk_pool</span><span class="op">(</span><span class="va">in_features</span>, ratio <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">topk_pool</span><span class="op">(</span><span class="va">in_features</span>, ratio <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">sag_pool</span><span class="op">(</span><span class="va">in_features</span>, ratio <span class="op">=</span> <span class="fl">0.5</span>, gnn <span class="op">=</span> <span class="st">"graph_conv"</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -93,11 +95,24 @@ edges between kept nodes are retained.</p>
 <dt id="arg-ratio">ratio<a class="anchor" aria-label="anchor" href="#arg-ratio"></a></dt>
 <dd><p>Fraction of nodes kept per graph.</p></dd>
 
+
+<dt id="arg-gnn">gnn<a class="anchor" aria-label="anchor" href="#arg-gnn"></a></dt>
+<dd><p>For <code>sag_pool()</code>, the layer that scores nodes: <code>"graph_conv"</code>,
+<code>"gcn"</code> or <code>"sage"</code>, or a module mapping <code>(x, edge_index)</code> to one score
+per node.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>An <code>nn_module</code> returning a list with <code>x</code>, <code>edge_index</code>, <code>batch</code>,
 <code>perm</code> (kept node indices in the input) and <code>score</code>.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p><code>sag_pool()</code> is self attention graph pooling (SAGPool, Lee, Lee
+and Kang 2019): the scores come from a graph convolution,
+\(y = \mathrm{GNN}(X, A)\), so they depend on the neighborhood; the
+rest is as in <code>topk_pool()</code>.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

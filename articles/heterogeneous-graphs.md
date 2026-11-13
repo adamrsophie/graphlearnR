@@ -158,8 +158,7 @@ which helps when there are many relations with few edges each.
 Keys, queries and values are projected with weights per node type, each
 relation has its own attention and message matrices, and the attention
 softmax at a node runs over all its incoming edges across relations, so
-relations compete for attention. The relative temporal encoding of the
-paper is not implemented.
+relations compete for attention.
 
 ``` r
 
@@ -182,6 +181,36 @@ summary(as.numeric(scatter_sum(a$alpha, a$index, 80)$sum(dim = 2)))
 The last line sums the attention each protein gives to its neighbors per
 head; every protein with incoming edges gets exactly one per head, which
 is 2 here.
+
+HGT also has the paper’s relative temporal encoding. Give each relation
+an `edge_time`, the time of the edge relative to its target (for example
+the citing paper’s year minus the cited paper’s), and set
+`temporal_encoding = TRUE`. A sinusoidal encoding of that time
+difference is projected and added to the source features before the keys
+and values are computed, so the same neighbor can count differently
+depending on how long ago the interaction was. Reverse relations get the
+negated times.
+
+``` r
+
+dt <- dataset_synthetic_hetero(seed = 1)
+set.seed(1)
+dt$edges$drug__targets__protein$edge_time <- runif(ncol(dt$edges$drug__targets__protein$edge_index), 0, 5)
+dt <- add_reverse_relations(dt)
+summary(dt$edges$protein__rev_targets__drug$edge_time)
+#>     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+#> -4.96342 -3.61857 -2.38733 -2.45056 -1.28959 -0.06539
+torch_manual_seed(1)
+m_rte <- hetero_gnn_model(dt, hidden_dim = 32, output_dim = 3, target_type = "drug",
+                          conv = "hgt", temporal_encoding = TRUE, dropout = 0.2)
+fit_rte <- train_graph_model(m_rte, dt, "node_classification", target_type = "drug",
+                             epochs = 80, lr = 0.01, seed = 1)
+evaluate_graph_model(fit_rte, dt)[1, ]
+#>     metric value
+#> 1 accuracy  0.75
+```
+
+Relations without `edge_time` use a time difference of zero.
 
 ## Relation specific link prediction
 

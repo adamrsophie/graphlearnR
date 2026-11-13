@@ -23,6 +23,18 @@ First release.
 
 ### Message passing and layers
 
+- [`cheb_conv()`](https://adamrsophie.github.io/graphlearnR/reference/cheb_conv.md)
+  (ChebConv),
+  [`pna_conv()`](https://adamrsophie.github.io/graphlearnR/reference/pna_conv.md)
+  with
+  [`pna_degree()`](https://adamrsophie.github.io/graphlearnR/reference/pna_conv.md)
+  (PNA),
+  [`appnp()`](https://adamrsophie.github.io/graphlearnR/reference/appnp.md)
+  and
+  [`appnp_model()`](https://adamrsophie.github.io/graphlearnR/reference/appnp.md)
+  (APPNP), and
+  [`sag_pool()`](https://adamrsophie.github.io/graphlearnR/reference/topk_pool.md)
+  (SAGPool).
 - Scatter aggregations (sum, mean, max, min, std, softmax) and
   [`message_passing()`](https://adamrsophie.github.io/graphlearnR/reference/message_passing.md)
   for custom layers.
@@ -84,7 +96,10 @@ First release.
 - [`tgn_model()`](https://adamrsophie.github.io/graphlearnR/reference/tgn_model.md)
   and
   [`train_tgn()`](https://adamrsophie.github.io/graphlearnR/reference/tgn_model.md):
-  temporal graph networks with node memory.
+  temporal graph networks with node memory and time, graph sum, or graph
+  attention embeddings.
+- `hgt_conv(temporal_encoding = TRUE)` and the `edge_time` field of
+  heterogeneous relations add HGT’s relative temporal encoding.
 - [`graph_ode_block()`](https://adamrsophie.github.io/graphlearnR/reference/graph_ode_block.md)
   and
   [`graph_ode_model()`](https://adamrsophie.github.io/graphlearnR/reference/graph_ode_block.md):

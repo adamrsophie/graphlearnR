@@ -94,6 +94,14 @@ Scatter aggregation and the general message passing operator.
   [`nn_conv()`](https://adamrsophie.github.io/graphlearnR/reference/gnn-layers.md)
   [`rgcn_conv()`](https://adamrsophie.github.io/graphlearnR/reference/gnn-layers.md)
   : Graph neural network layers
+- [`cheb_conv()`](https://adamrsophie.github.io/graphlearnR/reference/cheb_conv.md)
+  : Chebyshev spectral graph convolution
+- [`appnp()`](https://adamrsophie.github.io/graphlearnR/reference/appnp.md)
+  [`appnp_model()`](https://adamrsophie.github.io/graphlearnR/reference/appnp.md)
+  : Personalized PageRank propagation (APPNP)
+- [`pna_conv()`](https://adamrsophie.github.io/graphlearnR/reference/pna_conv.md)
+  [`pna_degree()`](https://adamrsophie.github.io/graphlearnR/reference/pna_conv.md)
+  : Principal neighborhood aggregation (PNA)
 - [`graph_mlp()`](https://adamrsophie.github.io/graphlearnR/reference/graph_mlp.md)
   : Multilayer perceptron
 - [`global_add_pool()`](https://adamrsophie.github.io/graphlearnR/reference/global-pooling.md)
@@ -103,6 +111,7 @@ Scatter aggregation and the general message passing operator.
 - [`global_attention_pool()`](https://adamrsophie.github.io/graphlearnR/reference/global_attention_pool.md)
   : Global attention pooling
 - [`topk_pool()`](https://adamrsophie.github.io/graphlearnR/reference/topk_pool.md)
+  [`sag_pool()`](https://adamrsophie.github.io/graphlearnR/reference/topk_pool.md)
   : Top-k pooling (hierarchical, experimental)
 - [`to_dense_adj()`](https://adamrsophie.github.io/graphlearnR/reference/to_dense_adj.md)
   [`dense_diff_pool()`](https://adamrsophie.github.io/graphlearnR/reference/to_dense_adj.md)

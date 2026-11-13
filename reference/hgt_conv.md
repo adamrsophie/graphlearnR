@@ -13,12 +13,19 @@ A\_{\tau(t)}(\mathrm{GELU}(\tilde h_t)) + (1 - \beta\_{\tau(t)})
 x_t,\$\$ with \\\beta = \mathrm{sigmoid}(\text{skip})\\ a learned gate
 per type (the skip term is used only when input and output sizes match).
 Node types without incoming edges get \\A\_{\tau}(0)\\ plus the skip
-term. Relative temporal encoding from the paper is not implemented.
+term.
 
 ## Usage
 
 ``` r
-hgt_conv(node_types, relations, in_features, out_features, heads = 2L)
+hgt_conv(
+  node_types,
+  relations,
+  in_features,
+  out_features,
+  heads = 2L,
+  temporal_encoding = FALSE
+)
 ```
 
 ## Arguments
@@ -43,12 +50,27 @@ hgt_conv(node_types, relations, in_features, out_features, heads = 2L)
 
   Number of attention heads.
 
+- temporal_encoding:
+
+  Use the relative temporal encoding.
+
 ## Value
 
-An `nn_module` called as `layer(x_dict, edge_index_dict)` that returns a
+An `nn_module` called as
+`layer(x_dict, edge_index_dict, edge_time_dict = NULL)` that returns a
 named list of node feature tensors.
 
 ## Details
+
+With `temporal_encoding = TRUE`, the relative temporal encoding of the
+paper is added to each source representation before the key and value
+projections: for an edge with relative time \\\Delta t\\ (the relation's
+`edge_time`, see
+[`hetero_graph_data()`](https://adamrsophie.github.io/graphlearnR/reference/hetero_graph_data.md)),
+\\\hat x_s = x_s + \mathrm{Linear}(\mathrm{Base}(\Delta t))\\ with
+\\\mathrm{Base}(\Delta t)\_{2i} = \sin(\Delta t / 10000^{2i/F})\\ and
+\\\mathrm{Base}(\Delta t)\_{2i+1} = \cos(\Delta t / 10000^{2i/F})\\.
+Relations without `edge_time` use \\\Delta t = 0\\.
 
 Cost is \\O(E H D^2)\\ for the relation transforms plus \\O(N F F')\\
 for the type projections; the layer keeps an E by heads attention tensor

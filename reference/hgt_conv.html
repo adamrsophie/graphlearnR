@@ -12,8 +12,7 @@ $$\tilde h_t = \sum_s \alpha_{st} (v_s W^{msg}_{r}),\quad
   (1 - \beta_{\tau(t)}) x_t,$$
 with \(\beta = \mathrm{sigmoid}(\text{skip})\) a learned gate per type
 (the skip term is used only when input and output sizes match). Node types
-without incoming edges get \(A_{\tau}(0)\) plus the skip term.
-Relative temporal encoding from the paper is not implemented."><meta property="og:description" content="One layer of the heterogeneous graph transformer (HGT, Hu et al. 2020).
+without incoming edges get \(A_{\tau}(0)\) plus the skip term."><meta property="og:description" content="One layer of the heterogeneous graph transformer (HGT, Hu et al. 2020).
 For a target node \(t\) of type \(\tau(t)\), an incoming edge from
 \(s\) through relation \(r\), and head \(h\) with \(D\) channels,
 $$k_s = K_{\tau(s)} x_s,\ q_t = Q_{\tau(t)} x_t,\ v_s = V_{\tau(s)} x_s,$$
@@ -26,8 +25,7 @@ $$\tilde h_t = \sum_s \alpha_{st} (v_s W^{msg}_{r}),\quad
   (1 - \beta_{\tau(t)}) x_t,$$
 with \(\beta = \mathrm{sigmoid}(\text{skip})\) a learned gate per type
 (the skip term is used only when input and output sizes match). Node types
-without incoming edges get \(A_{\tau}(0)\) plus the skip term.
-Relative temporal encoding from the paper is not implemented."></head><body>
+without incoming edges get \(A_{\tau}(0)\) plus the skip term."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -106,13 +104,19 @@ $$\tilde h_t = \sum_s \alpha_{st} (v_s W^{msg}_{r}),\quad
   (1 - \beta_{\tau(t)}) x_t,$$
 with \(\beta = \mathrm{sigmoid}(\text{skip})\) a learned gate per type
 (the skip term is used only when input and output sizes match). Node types
-without incoming edges get \(A_{\tau}(0)\) plus the skip term.
-Relative temporal encoding from the paper is not implemented.</p>
+without incoming edges get \(A_{\tau}(0)\) plus the skip term.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">hgt_conv</span><span class="op">(</span><span class="va">node_types</span>, <span class="va">relations</span>, <span class="va">in_features</span>, <span class="va">out_features</span>, heads <span class="op">=</span> <span class="fl">2L</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">hgt_conv</span><span class="op">(</span></span>
+<span>  <span class="va">node_types</span>,</span>
+<span>  <span class="va">relations</span>,</span>
+<span>  <span class="va">in_features</span>,</span>
+<span>  <span class="va">out_features</span>,</span>
+<span>  heads <span class="op">=</span> <span class="fl">2L</span>,</span>
+<span>  temporal_encoding <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -138,15 +142,28 @@ Relative temporal encoding from the paper is not implemented.</p>
 <dt id="arg-heads">heads<a class="anchor" aria-label="anchor" href="#arg-heads"></a></dt>
 <dd><p>Number of attention heads.</p></dd>
 
+
+<dt id="arg-temporal-encoding">temporal_encoding<a class="anchor" aria-label="anchor" href="#arg-temporal-encoding"></a></dt>
+<dd><p>Use the relative temporal encoding.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>An <code>nn_module</code> called as <code>layer(x_dict, edge_index_dict)</code> that
-returns a named list of node feature tensors.</p>
+    <p>An <code>nn_module</code> called as
+<code>layer(x_dict, edge_index_dict, edge_time_dict = NULL)</code> that returns a
+named list of node feature tensors.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Cost is \(O(E H D^2)\) for the relation transforms plus
+    <p>With <code>temporal_encoding = TRUE</code>, the relative temporal encoding of the
+paper is added to each source representation before the key and value
+projections: for an edge with relative time \(\Delta t\) (the
+relation's <code>edge_time</code>, see <code><a href="hetero_graph_data.html">hetero_graph_data()</a></code>),
+\(\hat x_s = x_s + \mathrm{Linear}(\mathrm{Base}(\Delta t))\) with
+\(\mathrm{Base}(\Delta t)_{2i} = \sin(\Delta t / 10000^{2i/F})\) and
+\(\mathrm{Base}(\Delta t)_{2i+1} = \cos(\Delta t / 10000^{2i/F})\).
+Relations without <code>edge_time</code> use \(\Delta t = 0\).</p>
+<p>Cost is \(O(E H D^2)\) for the relation transforms plus
 \(O(N F F')\) for the type projections; the layer keeps an E by heads
 attention tensor per target type in <code>last_attention</code>.</p>
     </div>

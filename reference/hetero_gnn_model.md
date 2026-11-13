@@ -19,7 +19,8 @@ hetero_gnn_model(
   dropout = 0.5,
   aggr = "mean",
   relation_aggr = "sum",
-  num_bases = NULL
+  num_bases = NULL,
+  temporal_encoding = FALSE
 )
 ```
 
@@ -69,6 +70,11 @@ hetero_gnn_model(
 - num_bases:
 
   Basis count for `"rgcn"`.
+
+- temporal_encoding:
+
+  For `"hgt"`, use the relative temporal encoding with the relations'
+  `edge_time`.
 
 ## Value
 
