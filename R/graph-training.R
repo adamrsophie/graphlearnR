@@ -57,7 +57,11 @@
 #' @param val_data Validation graphs for graph level tasks.
 #' @param batch_size Graphs per batch (graph tasks) or seeds per batch (node
 #'   tasks with `fanouts`).
-#' @param fanouts Neighbor sampling fanouts for node mini-batches.
+#' @param fanouts Neighbor sampling fanouts for node mini-batches. For a
+#'   heterogeneous node task they go to [sample_hetero_neighbors()] (a
+#'   vector applied to every relation, or a named list per relation), with
+#'   training nodes of `target_type` as seeds; the loss uses the seeds only
+#'   and validation runs on the full graph.
 #' @param loader A [cluster_loader()] or [saint_loader()] for node tasks.
 #' @param decoder Decoder module for link and edge tasks, or for link
 #'   prediction the name of a [link_decoder()] type; defaults to
@@ -121,6 +125,7 @@ train_graph_model <- function(model, data,
   # would be silently ignored.
   given <- c(fanouts = !is.null(fanouts), batch_size = !is.null(batch_size), loader = !is.null(loader))
   used <- if (grepl("^node", task) && !inherits(data, "hetero_graph_data")) names(given)
+          else if (grepl("^node", task)) c("fanouts", "batch_size")
           else if (grepl("^graph", task)) "batch_size" else character()
   unused <- setdiff(names(given)[given], used)
   if (length(unused)) {
@@ -348,7 +353,7 @@ node_task_runner <- function(model, data, task, dev, fanouts, batch_size, seed, 
                              subgraph_loader = NULL) {
   classif <- task == "node_classification"
   if (inherits(data, "hetero_graph_data")) {
-    return(hetero_node_runner(model, data, classif, dev, target_type))
+    return(hetero_node_runner(model, data, classif, dev, target_type, fanouts, batch_size, seed))
   }
   if (is.null(data$y)) stopf("Node tasks need node labels `y`.")
   if (is.null(data$train_mask)) {

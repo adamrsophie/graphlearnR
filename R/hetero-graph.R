@@ -789,7 +789,8 @@ hetero_gnn <- nn_module(
   }
 )
 
-hetero_node_runner <- function(model, hg, classif, dev, target_type) {
+hetero_node_runner <- function(model, hg, classif, dev, target_type, fanouts = NULL,
+                               batch_size = NULL, seed = NULL) {
   if (is.null(target_type)) stopf("Give `target_type` for heterogeneous node tasks.")
   nd <- hg$nodes[[target_type]]
   if (is.null(nd$y) || is.null(nd$train_mask)) {
@@ -803,11 +804,33 @@ hetero_node_runner <- function(model, hg, classif, dev, target_type) {
   va <- if (!is.null(nd$val_mask) && any(nd$val_mask)) tensor_which(ht$val_mask[[target_type]])
   metric_fn <- node_metric(classif)
   fwd <- function() model(ht)[[target_type]]
+  # Typed neighbor sampled mini batches: seeds are training nodes of the
+  # target type, sampled first in each batch, and the loss uses the seeds
+  # only (sampled context nodes are not targets).
+  train_ids <- which(nd$train_mask)
+  sampled_epoch <- function(epoch, opt, loss_fn, grad_clip) {
+    s <- if (is.null(seed)) NULL else seed + epoch
+    parts <- batch_split(length(train_ids), batch_size %||% 64L, TRUE, s)
+    seeds <- sub_seeds(s, length(parts))
+    tot <- 0
+    for (i in seq_along(parts)) {
+      ids <- train_ids[parts[[i]]]
+      sg <- sample_hetero_neighbors(hg, stats::setNames(list(ids), target_type), fanouts, seed = seeds[i])
+      out <- model(hetero_tensors(sg, dev))[[target_type]]
+      k <- length(ids)
+      idx <- torch_tensor(seq_len(k), dtype = torch_long(), device = dev)
+      target <- y$index_select(1L, torch_tensor(ids, dtype = torch_long(), device = dev))
+      loss <- loss_fn(out$index_select(1L, idx), target)
+      tot <- tot + step_optimizer(opt, loss, grad_clip, all_params(opt)) * k
+    }
+    tot / length(train_ids)
+  }
   list(
     default_loss = if (classif) "cross_entropy" else "mse",
     metric_name = if (classif) "accuracy" else "rmse",
     levels = if (classif) levels(nd$y),
     train_epoch = function(epoch, opt, loss_fn, grad_clip) {
+      if (!is.null(fanouts)) return(sampled_epoch(epoch, opt, loss_fn, grad_clip))
       out <- fwd()
       loss <- loss_fn(out$index_select(1L, tr), y$index_select(1L, tr))
       step_optimizer(opt, loss, grad_clip, all_params(opt))

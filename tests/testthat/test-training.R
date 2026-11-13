@@ -278,7 +278,7 @@ test_that("mini batch options that a task would ignore are errors", {
   hg <- dataset_synthetic_hetero(seed = 1)
   expect_error(train_graph_model(hetero_gnn_model(hg, hidden_dim = 8, output_dim = 3, target_type = "drug"), hg,
                                  "node_classification", target_type = "drug", epochs = 1,
-                                 fanouts = c(5, 5)), "fanouts")
+                                 loader = cluster_loader(dataset_karate(), 2)), "loader")
 })
 
 test_that("write_graph_dataset refuses to mix with an existing dataset", {

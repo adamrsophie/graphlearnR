@@ -248,3 +248,25 @@ test_that("unbatch rebuilds heterogeneous graphs exactly", {
     expect_equal(got$metadata, ref$metadata)
   }
 })
+
+test_that("heterogeneous node training works on typed neighbor samples", {
+  skip_if_no_torch()
+  testthat::skip_on_cran()  # trains for many epochs
+  hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
+  torch::torch_manual_seed(1)
+  m <- hetero_gnn_model(hg, hidden_dim = 16, output_dim = 3, target_type = "drug", dropout = 0)
+  fit <- train_graph_model(m, hg, "node_classification", target_type = "drug", epochs = 40,
+                           lr = 0.02, fanouts = c(5, 5), batch_size = 8, seed = 1)
+  ev <- evaluate_graph_model(fit)
+  expect_gt(ev$value[ev$metric == "accuracy"], 0.6)
+  # reproducible with the same seed
+  torch::torch_manual_seed(1)
+  m2 <- hetero_gnn_model(hg, hidden_dim = 16, output_dim = 3, target_type = "drug", dropout = 0)
+  fit2 <- train_graph_model(m2, hg, "node_classification", target_type = "drug", epochs = 3,
+                            lr = 0.02, fanouts = c(5, 5), batch_size = 8, seed = 1)
+  torch::torch_manual_seed(1)
+  m3 <- hetero_gnn_model(hg, hidden_dim = 16, output_dim = 3, target_type = "drug", dropout = 0)
+  fit3 <- train_graph_model(m3, hg, "node_classification", target_type = "drug", epochs = 3,
+                            lr = 0.02, fanouts = c(5, 5), batch_size = 8, seed = 1)
+  expect_equal(fit2$history$train_loss, fit3$history$train_loss)
+})

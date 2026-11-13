@@ -43,8 +43,13 @@ Input projection plus centrality encoding (a learned embedding of each
 node's clipped degree, added to the features), \code{num_layers}
 \code{\link[=graph_transformer_layer]{graph_transformer_layer()}}s with shortest path attention bias, a final
 layer norm, and either a node level linear head or global pooling and an
-MLP head. Shortest path distances are computed in R for each batch, which
-costs \eqn{O(\sum_g n_g (n_g + e_g))} per forward pass.
+MLP head. Shortest path distances are computed in R for each new batch,
+which costs \eqn{O(\sum_g n_g (n_g + e_g))}; the distances of the 64 most
+recent distinct batches are cached in the model, so repeated batches (for
+example full batch training) reuse them. Edge features are not used by
+this model; for edge aware attention use \code{\link[=transformer_conv]{transformer_conv()}} with
+\code{edge_dim}, which also gives a sparse, neighborhood local alternative to
+dense attention.
 }
 \details{
 The forward signature matches \code{\link[=gnn_model]{gnn_model()}}, so the model works with

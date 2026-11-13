@@ -60,7 +60,11 @@ a numeric label matrix.}
 \item{batch_size}{Graphs per batch (graph tasks) or seeds per batch (node
 tasks with \code{fanouts}).}
 
-\item{fanouts}{Neighbor sampling fanouts for node mini-batches.}
+\item{fanouts}{Neighbor sampling fanouts for node mini-batches. For a
+heterogeneous node task they go to \code{\link[=sample_hetero_neighbors]{sample_hetero_neighbors()}} (a
+vector applied to every relation, or a named list per relation), with
+training nodes of \code{target_type} as seeds; the loss uses the seeds only
+and validation runs on the full graph.}
 
 \item{decoder}{Decoder module for link and edge tasks, or for link
 prediction the name of a \code{\link[=link_decoder]{link_decoder()}} type; defaults to
