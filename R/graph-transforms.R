@@ -32,8 +32,11 @@ NULL
 
 #' @rdname graph-transforms
 #' @param fill_weight Weight of new self loops.
+#' @param loop_type Relation code of new self loops in a graph with
+#'   `edge_type` (for example a dedicated code for [rgcn_conv()]). The default
+#'   `NA` marks them as untyped, which typed layers reject.
 #' @export
-add_self_loops <- function(g, fill_weight = 1) {
+add_self_loops <- function(g, fill_weight = 1, loop_type = NA) {
   ei <- g$edge_index
   has <- logical(g$num_nodes)
   has[ei[1L, ei[1L, ] == ei[2L, ]]] <- TRUE
@@ -43,8 +46,11 @@ add_self_loops <- function(g, fill_weight = 1) {
   g$edge_index <- cbind(ei, rbind(new, new, deparse.level = 0L))
   if (!is.null(g$edge_weight)) g$edge_weight <- c(g$edge_weight, rep(fill_weight, k))
   if (!is.null(g$edge_attr)) g$edge_attr <- rbind(g$edge_attr, matrix(0, k, ncol(g$edge_attr)))
-  if (!is.null(g$edge_y)) g$edge_y <- c(g$edge_y, rep(NA, k))
-  if (!is.null(g$edge_type)) g$edge_type <- c(g$edge_type, rep(NA, k))
+  if (!is.null(g$edge_y)) {
+    g$edge_y <- if (is.matrix(g$edge_y)) rbind(g$edge_y, matrix(NA, k, ncol(g$edge_y)))
+                else c(g$edge_y, rep(NA, k))
+  }
+  if (!is.null(g$edge_type)) g$edge_type <- c(g$edge_type, rep(loop_type, k))
   g$edge_pair <- c(g$edge_pair, max(g$edge_pair, 0L) + seq_len(k))
   for (f in c("edge_train_mask", "edge_val_mask", "edge_test_mask")) {
     if (!is.null(g[[f]])) g[[f]] <- c(g[[f]], rep(FALSE, k))

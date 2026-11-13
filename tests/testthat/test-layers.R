@@ -216,3 +216,19 @@ test_that("layers report missing required inputs", {
   expect_error(nn_conv(2, 2), "edge_nn")
   expect_error(gin_conv(graph_mlp(c(2, 2)), edge_dim = 1), "in_features")
 })
+
+test_that("attention layers handle a pair of feature sets with one input size", {
+  skip_if_no_torch()
+  ei <- torch::torch_tensor(rbind(c(1L, 4L, 2L), c(1L, 2L, 2L)), dtype = torch::torch_long())
+  for (layer in list(gat_conv(3, 2), gatv2_conv(3, 2))) {
+    out <- layer(list(torch::torch_randn(4, 3), torch::torch_randn(2, 3)), ei)
+    expect_equal(out$size(1), 2)
+  }
+})
+
+test_that("rgcn_conv rejects relation codes outside its range", {
+  skip_if_no_torch()
+  conv <- rgcn_conv(2, 2, num_relations = 2)
+  ei <- torch::torch_tensor(rbind(c(1L, 2L), c(2L, 1L)), dtype = torch::torch_long())
+  expect_error(conv(torch::torch_randn(2, 2), ei, edge_type = c(3, 3)), "1:2")
+})

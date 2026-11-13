@@ -63,6 +63,9 @@ hetero_graph_data <- function(nodes, edges, metadata = list(), validate = TRUE) 
     if (is.null(src) || is.null(rel) || is.null(dst)) {
       stopf("Name relation %d \"src__relation__dst\" or give `src`, `rel` and `dst`.", i)
     }
+    if (grepl("__", rel, fixed = TRUE)) {
+      stopf("Relation names must not contain \"__\" (relation %d: `%s`).", i, rel)
+    }
     key <- paste(src, rel, dst, sep = "__")
     el[[key]] <- list(src = src, rel = rel, dst = dst,
                       edge_index = normalize_edge_index(v$edge_index),
@@ -306,6 +309,9 @@ hetero_tensors <- function(hg, device = NULL) {
     edge_attr = lapply(hg$edges, function(e) ft(e$edge_attr)),
     edge_weight = lapply(hg$edges, function(e) ft(e$edge_weight)),
     edge_time = lapply(hg$edges, function(e) ft(e$edge_time)),
+    node_index = lapply(stats::setNames(hg$node_types, hg$node_types), function(t) {
+      if (!is.null(hg$n_id[[t]])) torch_tensor(as.integer(hg$n_id[[t]]), dtype = torch_long(), device = dev)
+    }),
     num_nodes = num_nodes(hg), node_types = hg$node_types,
     relations = edge_types(hg), device = dev
   )
@@ -338,6 +344,15 @@ hetero_batch <- function(graphs) {
     list(x = pk("x"), y = pk("y"), num_nodes = sum(counts[t, ]),
          train_mask = pk("train_mask"), val_mask = pk("val_mask"), test_mask = pk("test_mask"))
   })
+  # Original node indices per type (for featureless types, these select each
+  # node's embedding row), and the external identifiers of every graph.
+  n_id <- lapply(stats::setNames(types, types), function(t) {
+    unlist(lapply(graphs, function(g) g$n_id[[t]] %||% seq_len(g$nodes[[t]]$num_nodes)),
+           use.names = FALSE)
+  })
+  original_node_ids <- lapply(stats::setNames(types, types), function(t) {
+    lapply(graphs, function(g) g$nodes[[t]]$node_ids)
+  })
   edges <- lapply(stats::setNames(keys, keys), function(k) {
     e1 <- graphs[[1L]]$edges[[k]]
     ei <- do.call(cbind, lapply(seq_along(graphs), function(j) {
@@ -348,9 +363,12 @@ hetero_batch <- function(graphs) {
          edge_attr = bind_rows_values(lapply(graphs, function(g) g$edges[[k]]$edge_attr)),
          edge_weight = bind_rows_values(lapply(graphs, function(g) g$edges[[k]]$edge_weight)),
          edge_time = bind_rows_values(lapply(graphs, function(g) g$edges[[k]]$edge_time)),
+         edge_y = bind_rows_values(lapply(graphs, function(g) g$edges[[k]]$edge_y)),
          reverse = e1$reverse, reverse_of = e1$reverse_of)
   })
   hb <- hetero_graph_data(nodes, edges, metadata = list(num_graphs = length(graphs)))
+  hb$n_id <- n_id
+  hb$original_node_ids <- original_node_ids
   hb$batch <- lapply(stats::setNames(types, types), function(t) rep.int(seq_along(graphs), counts[t, ]))
   hb$num_graphs <- length(graphs)
   class(hb) <- c("hetero_graph_batch", class(hb))
@@ -663,7 +681,18 @@ hetero_gnn <- nn_module(
     h <- list()
     for (t in sc$node_types) {
       inp <- self$input[[t]]
-      h[[t]] <- if (sc$feature_dims[[t]] > 0L) inp(ht$x[[t]]) else inp$weight
+      h[[t]] <- if (sc$feature_dims[[t]] > 0L) {
+        inp(ht$x[[t]])
+      } else if (!is.null(ht$node_index[[t]])) {
+        # Sampled or batched graphs: look up each node's own embedding row.
+        inp(ht$node_index[[t]])
+      } else {
+        if (ht$num_nodes[[t]] != sc$num_nodes[[t]]) {
+          stopf("Node type `%s` has no features and %d nodes, but the model has embeddings for %d; give the original node indices in `n_id`.",
+                t, ht$num_nodes[[t]], sc$num_nodes[[t]])
+        }
+        inp$weight
+      }
     }
     for (layer in seq_along(self$layers)) {
       conv <- self$layers[[layer]]
@@ -683,8 +712,12 @@ hetero_gnn <- nn_module(
           eis[[length(eis) + 1L]] <- ei + off
           ets[[length(ets) + 1L]] <- torch_full(ei$size(2L), i, dtype = torch_long(), device = ei$device)
         }
-        ei_all <- torch_cat(eis, dim = 2L)
-        H <- conv(H, ei_all, edge_type = torch_cat(ets))
+        dev <- H$device
+        ei_all <- if (length(eis)) torch_cat(eis, dim = 2L)
+                  else torch_empty(2L, 0L, dtype = torch_long(), device = dev)
+        et_all <- if (length(ets)) torch_cat(ets)
+                  else torch_empty(0L, dtype = torch_long(), device = dev)
+        H <- conv(H, ei_all, edge_type = et_all)
         h <- lapply(stats::setNames(sc$node_types, sc$node_types), function(t) {
           H$narrow(1L, ptr[[t]] + 1L, n[[t]])
         })

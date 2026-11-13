@@ -100,7 +100,8 @@ sage_conv <- nn_module(
 )
 
 #' @rdname gnn-layers
-#' @param add_self_loops Add self loops before propagation.
+#' @param add_self_loops Add self loops before propagation (never for a pair
+#'   of source and target feature sets, whose index spaces differ).
 #' @param improved Self loop weight 2 instead of 1 (`gcn_conv`).
 #' @export
 gcn_conv <- nn_module(
@@ -239,10 +240,13 @@ gat_conv <- nn_module(
   forward = function(x, edge_index, edge_attr = NULL, ...) {
     H <- self$heads
     C <- self$out_features
+    pair <- is.list(x)
     xs <- self$lin_src(src_of(x))$view(c(-1L, H, C))
-    xd <- if (self$bipartite) self$lin_dst(dst_of(x))$view(c(-1L, H, C)) else xs
+    # A pair of feature sets with one input size shares the source map.
+    xd <- if (self$bipartite) self$lin_dst(dst_of(x))$view(c(-1L, H, C))
+          else if (pair) self$lin_src(dst_of(x))$view(c(-1L, H, C)) else xs
     n_dst <- xd$size(1L)
-    if (self$add_loops && !self$bipartite) {
+    if (self$add_loops && !self$bipartite && !pair) {
       rl <- remove_self_loops_tensor(edge_index, edge_attr = edge_attr)
       sl <- add_self_loops_tensor(rl$edge_index, n_dst, edge_attr = rl$edge_attr)
       edge_index <- sl$edge_index
@@ -300,7 +304,7 @@ gatv2_conv <- nn_module(
     xl <- self$lin_l(src_of(x))$view(c(-1L, H, C))
     xr <- self$lin_r(dst_of(x))$view(c(-1L, H, C))
     n_dst <- xr$size(1L)
-    if (self$add_loops && !self$bipartite) {
+    if (self$add_loops && !self$bipartite && !is.list(x)) {
       rl <- remove_self_loops_tensor(edge_index, edge_attr = edge_attr)
       sl <- add_self_loops_tensor(rl$edge_index, n_dst, edge_attr = rl$edge_attr)
       edge_index <- sl$edge_index
@@ -447,6 +451,15 @@ rgcn_conv <- nn_module(
   forward = function(x, edge_index, edge_type, ...) {
     if (missing(edge_type) || is.null(edge_type)) stopf("`rgcn_conv` needs `edge_type`.")
     edge_type <- as_index_tensor(edge_type, x$device)
+    if (edge_type$numel() != edge_index$size(2L)) {
+      stopf("`edge_type` has %d entries for %d edges.", edge_type$numel(), edge_index$size(2L))
+    }
+    if (edge_type$numel() > 0L) {
+      rng <- as.numeric(as_r_array(torch_stack(list(edge_type$min(), edge_type$max()))))
+      if (rng[1L] < 1 || rng[2L] > self$num_relations) {
+        stopf("`edge_type` codes must be in 1:%d; found %g to %g.", self$num_relations, rng[1L], rng[2L])
+      }
+    }
     w <- self$relation_weights()
     n <- x$size(1L)
     out <- torch_zeros(n, w$size(3L), dtype = x$dtype, device = x$device)

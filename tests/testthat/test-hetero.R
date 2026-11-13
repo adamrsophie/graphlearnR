@@ -186,3 +186,39 @@ test_that("same type relations split both orientations together", {
   expect_true(all(neg[1, ] != neg[2, ]))
   expect_length(intersect(key(neg), key(sp$all_pos)), 0L)
 })
+
+test_that("featureless node types use the embedding rows of sampled and batched nodes", {
+  skip_if_no_torch()
+  hg <- hetero_graph_data(
+    nodes = list(a = list(x = matrix(rnorm(8), 4, 2)), b = list(num_nodes = 6)),
+    edges = list(b__to__a = rbind(c(6, 1, 2, 3), c(4, 1, 2, 3)),
+                 a__back__b = rbind(c(4, 1, 2, 3), c(6, 1, 2, 3))))
+  torch::torch_manual_seed(1)
+  m <- hetero_gnn_model(hg, hidden_dim = 4, num_layers = 1, conv = "sage")
+  m$eval()
+  full <- as_mat(m(hetero_tensors(hg))$b)
+  sg <- sample_hetero_neighbors(hg, list(a = c(4, 1)), c(2, 2), seed = 1)
+  out <- m(hetero_tensors(sg))
+  expect_equal(out$b$size(1), length(sg$n_id$b))
+  hb <- hetero_batch(list(hg, hg))
+  outb <- as_mat(m(hetero_tensors(hb))$b)
+  expect_equal(outb[1:6, ], full, tolerance = 1e-5)
+  expect_equal(outb[7:12, ], full, tolerance = 1e-5)
+  expect_error(m(hetero_tensors(hetero_graph_data(
+    nodes = list(a = list(x = matrix(1, 4, 2)), b = list(num_nodes = 5)),
+    edges = list(b__to__a = rbind(1, 1), a__back__b = rbind(1, 1))))), "original node")
+})
+
+test_that("relation names with a double underscore are rejected", {
+  expect_error(hetero_graph_data(nodes = list(a = diag(3), b = diag(3)),
+                                 edges = list(list(src = "a", rel = "is__part", dst = "b",
+                                                   edge_index = rbind(1:3, 1:3)))), "__")
+})
+
+test_that("an rgcn hetero model runs when every relation is empty", {
+  skip_if_no_torch()
+  hg <- hetero_graph_data(nodes = list(a = matrix(1, 3, 2), b = matrix(1, 2, 2)),
+                          edges = list(a__to__b = matrix(integer(), 2, 0)))
+  m <- hetero_gnn_model(hg, hidden_dim = 4, num_layers = 1, conv = "rgcn")
+  expect_equal(m(hetero_tensors(hg))$a$size(1), 3)
+})
