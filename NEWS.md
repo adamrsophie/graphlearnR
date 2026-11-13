@@ -91,6 +91,8 @@ First release.
 
 - `edge_conv()` (EdgeConv of dynamic graph CNNs, max over
   \[x_i, x_j - x_i\] messages).
+- `gps_layer()`: GPS graph transformer layer (local message passing plus
+  masked global attention per graph).
 - `meta_layer()` composes edge, node and graph level updates (graph network
   block, as PyG's `MetaLayer`).
 - `predict()` for temporal fits: TGN continues from its stored memory and

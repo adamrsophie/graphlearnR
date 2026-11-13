@@ -380,3 +380,67 @@ graph_transformer_model <- nn_module(
     dist
   }
 )
+
+#' GPS layer: local message passing plus global attention
+#'
+#' One layer of the general, powerful, scalable graph transformer (GPS,
+#' Rampasek et al. 2022), as PyTorch Geometric's `GPSConv`:
+#' \deqn{h_L = \mathrm{LN}(x + \mathrm{conv}(x)),\quad
+#'       h_G = \mathrm{LN}(x + \mathrm{MHA}(x)),\quad
+#'       h = h_L + h_G,\quad
+#'       \mathrm{out} = \mathrm{LN}(h + \mathrm{MLP}(h)).}
+#' The local part is any message passing layer whose input and output size
+#' is `dim` (for example `gin_conv()` or `gat_conv()` with `concat = FALSE`);
+#' the global part is multi head self attention among the nodes of each
+#' graph of the batch (padded with [to_dense_batch()] and masked, so graphs
+#' never attend to each other). Layer norm is used where PyG defaults to
+#' batch norm. Positional encodings ([laplacian_pe()], [random_walk_pe()])
+#' are added to the input features by the caller, as in the paper.
+#'
+#' Both parts are permutation equivariant. Memory of the global part is
+#' \eqn{O(B L^2 H)} for `B` graphs of at most `L` nodes; linear attention
+#' variants (Performer) are not provided.
+#'
+#' @param dim Feature size.
+#' @param conv Local message passing module mapping `dim` to `dim`, or
+#'   `NULL` for attention only.
+#' @param heads Attention heads (`dim` must be divisible by `heads`).
+#' @param dropout Dropout after each part.
+#' @param attn_dropout Dropout on attention weights.
+#' @return An `nn_module` called as
+#'   `layer(x, edge_index, batch = NULL, ...)`; `...` (for example
+#'   `edge_attr`) goes to `conv`.
+#' @references Rampasek et al. (2022) Recipe for a general, powerful,
+#'   scalable graph transformer. NeurIPS.
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   g <- dataset_karate()
+#'   tt <- graph_tensors(g)
+#'   layer <- gps_layer(8, conv = gin_conv(graph_mlp(c(8, 8, 8))), heads = 2)
+#'   layer(torch::torch_randn(34, 8), tt$edge_index)$shape
+#' }
+#' @export
+gps_layer <- nn_module(
+  "gps_layer",
+  initialize = function(dim, conv = NULL, heads = 4L, dropout = 0, attn_dropout = 0) {
+    if (dim %% heads != 0L) stopf("`dim` must be divisible by `heads`.")
+    self$conv <- conv
+    self$dropout <- dropout
+    self$attn <- nn_multihead_attention(dim, heads, dropout = attn_dropout, batch_first = TRUE)
+    self$norm1 <- nn_layer_norm(dim)
+    self$norm2 <- nn_layer_norm(dim)
+    self$norm3 <- nn_layer_norm(dim)
+    self$mlp <- nn_sequential(nn_linear(dim, 2L * dim), nn_relu(), nn_linear(2L * dim, dim))
+  },
+  forward = function(x, edge_index, batch = NULL, ...) {
+    drop <- function(t) nnf_dropout(t, p = self$dropout, training = self$training)
+    if (is.null(batch)) batch <- torch_ones(x$size(1L), dtype = torch_long(), device = x$device)
+    h <- if (is.null(self$conv)) 0 else self$norm1(x + drop(self$conv(x, edge_index, ...)))
+    dense <- to_dense_batch(x, batch)
+    att <- self$attn(dense$x, dense$x, dense$x, key_padding_mask = dense$mask$logical_not(),
+                     need_weights = FALSE)[[1L]]
+    dense$x <- att
+    h <- h + self$norm2(x + drop(from_dense_batch(dense)))
+    self$norm3(h + drop(self$mlp(h)))
+  }
+)
