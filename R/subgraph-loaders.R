@@ -176,7 +176,10 @@ loader_batches.saint_loader <- function(loader, epoch = 1L) {
 
 #' @export
 print.subgraph_loader <- function(x, ...) {
-  if (inherits(x, "cluster_loader")) {
+  if (inherits(x, "ladies_loader")) {
+    cat(sprintf("<ladies_loader> %d seeds per batch, layer sizes %s\n", x$batch_size,
+                paste(x$layer_sizes, collapse = ", ")))
+  } else if (inherits(x, "cluster_loader")) {
     cat(sprintf("<cluster_loader> %d parts (%s), %d per batch\n", length(x$parts), x$method,
                 x$clusters_per_batch))
   } else {
@@ -185,4 +188,119 @@ print.subgraph_loader <- function(x, ...) {
                 if (is.null(x$node_norm)) "" else sprintf(", normalized from %d samples", x$num_samples)))
   }
   invisible(x)
+}
+
+#' Layer wise importance sampled mini batches (LADIES)
+#'
+#' Builds node mini batches by layer dependent importance sampling (Zou et
+#' al. 2019), the successor of FastGCN (Chen, Ma and Xiao 2018). For each
+#' batch, `batch_size` training nodes are the seeds (layer 0). Going from
+#' layer \eqn{l} to layer \eqn{l + 1}, candidates are the sources of edges
+#' into the layer \eqn{l} nodes, and `layer_sizes[l + 1]` of them are drawn
+#' without replacement with probability
+#' \deqn{p(u) \propto \sum_{v \in S_l} \hat A_{vu}^2,}
+#' where \eqn{\hat A = D^{-1/2}(A + I)D^{-1/2}} (degrees are weighted in
+#' degrees plus one). Layer \eqn{l + 1} is the sampled set plus the layer
+#' \eqn{l} nodes. Each kept edge \eqn{u \to v} gets the weight
+#' \eqn{\hat A_{vu} / p(u)}, normalized to sum to one over the incoming
+#' edges of \eqn{v} in that layer (the row normalization of LADIES).
+#'
+#' The batch is one `graph_data` subgraph that holds the edges of all
+#' layers together (with the weight of the first layer that kept an edge),
+#' so it works with any model in [train_graph_model()]; this is a common
+#' simplification of the layer by layer bipartite blocks of the paper.
+#' Models should read `edge_weight` (for example `gnn_model("sage")` or
+#' `gnn_model("graph")`; `gcn_conv` normalizes the weights again). Only the
+#' seeds carry `train_mask`, so the loss uses the seeds only.
+#'
+#' @param g A `graph_data` object with `train_mask` (training passes its
+#'   own masks to the loader).
+#' @param batch_size Seed nodes per batch.
+#' @param layer_sizes Nodes sampled per layer, one entry per model layer.
+#' @param shuffle Shuffle the seeds each epoch.
+#' @param seed Optional integer seed; batches of epoch \eqn{e} use
+#'   `seed + e`.
+#' @return A `ladies_loader`, to pass as `loader` to [train_graph_model()]
+#'   or to [loader_batches()].
+#' @references Zou et al. (2019) Layer-dependent importance sampling for
+#'   training deep and large graph convolutional networks. NeurIPS. Chen,
+#'   Ma and Xiao (2018) FastGCN: fast learning with graph convolutional
+#'   networks via importance sampling. ICLR.
+#' @examples
+#' g <- split_nodes(dataset_karate(), seed = 1)
+#' ld <- ladies_loader(g, batch_size = 8, layer_sizes = c(10, 10), seed = 1)
+#' b <- loader_batches(ld, epoch = 1)[[1]]
+#' c(nodes = b$num_nodes, seeds = sum(b$train_mask))
+#' @export
+ladies_loader <- function(g, batch_size = 64L, layer_sizes = c(256L, 256L), shuffle = TRUE,
+                          seed = NULL) {
+  if (!inherits(g, "graph_data")) stopf("`g` must be a graph_data object.")
+  batch_size <- check_count(batch_size, "batch_size", 1L)
+  layer_sizes <- vapply(layer_sizes, check_count, integer(1), name = "layer_sizes", min = 1L)
+  if (!length(layer_sizes)) stopf("`layer_sizes` needs at least one entry.")
+  ei <- g$edge_index
+  n <- g$num_nodes
+  w <- g$edge_weight %||% rep(1, ncol(ei))
+  deg <- 1 + tapply_sum(w, ei[2L, ], n)
+  ahat <- w / sqrt(deg[ei[1L, ]] * deg[ei[2L, ]])
+  ord <- order(ei[2L, ], method = "radix")
+  csc <- list(ptr = c(0L, cumsum(tabulate(ei[2L, ], n))), eid = ord)
+  structure(list(graph = g, batch_size = batch_size, layer_sizes = layer_sizes,
+                 shuffle = shuffle, seed = seed, ahat = ahat, csc = csc),
+            class = c("ladies_loader", "subgraph_loader", "graph_loader_base"))
+}
+
+tapply_sum <- function(x, group, n) {
+  out <- numeric(n)
+  s <- rowsum(x, group)
+  out[as.integer(rownames(s))] <- s[, 1L]
+  out
+}
+
+ladies_batch <- function(loader, seeds) {
+  g <- loader$graph
+  ei <- g$edge_index
+  csc <- loader$csc
+  cur <- seeds
+  edges <- integer()
+  ew <- numeric()
+  for (s in loader$layer_sizes) {
+    inc <- unlist(lapply(cur, function(v) {
+      if (csc$ptr[v + 1L] > csc$ptr[v]) csc$eid[(csc$ptr[v] + 1L):csc$ptr[v + 1L]]
+    }), use.names = FALSE)
+    if (!length(inc)) break
+    src <- ei[1L, inc]
+    score <- tapply_sum(loader$ahat[inc]^2, src, g$num_nodes)
+    cand <- which(score > 0)
+    p <- score[cand] / sum(score[cand])
+    take <- if (length(cand) <= s) cand else cand[sample.int(length(cand), s, prob = p)]
+    keep <- inc[src %in% take]
+    # importance weight, then normalize over the incoming edges of each target
+    wk <- loader$ahat[keep] / (score[ei[1L, keep]] / sum(score[cand]))
+    wk <- wk / tapply_sum(wk, ei[2L, keep], g$num_nodes)[ei[2L, keep]]
+    new <- !keep %in% edges
+    edges <- c(edges, keep[new])
+    ew <- c(ew, wk[new])
+    cur <- sort(unique(c(cur, take)))
+  }
+  nodes <- sort(unique(c(seeds, ei[, edges])))
+  o <- order(edges)
+  sub <- edge_subset(g, edges[o])
+  sub$edge_weight <- ew[o]
+  sub <- subgraph_batch(sub, nodes)
+  sub$train_mask <- nodes %in% seeds
+  sub$val_mask <- NULL
+  sub$test_mask <- NULL
+  sub
+}
+
+#' @export
+loader_batches.ladies_loader <- function(loader, epoch = 1L) {
+  s <- if (is.null(loader$seed)) NULL else loader$seed + epoch
+  ids <- which(loader$graph$train_mask %||% stopf("The loader graph needs `train_mask`."))
+  parts <- batch_split(length(ids), loader$batch_size, loader$shuffle, s)
+  seeds <- sub_seeds(s, length(parts))
+  lapply(seq_along(parts), function(i) {
+    with_optional_seed(seeds[i], ladies_batch(loader, ids[parts[[i]]]))
+  })
 }

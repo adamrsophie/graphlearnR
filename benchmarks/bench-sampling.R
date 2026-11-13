@@ -1,5 +1,5 @@
 # Times sampling separately from model execution: building the mini batches
-# of one epoch (neighbor, Cluster-GCN and GraphSAINT loaders) and, on the
+# of one epoch (neighbor, Cluster-GCN, GraphSAINT and LADIES loaders) and, on the
 # same prebuilt batches, the forward and backward passes of a GraphSAGE
 # model. CPU only.
 # Usage: Rscript benchmarks/bench-sampling.R <output_dir>
@@ -17,7 +17,8 @@ for (n_per in c(500, 2500)) {
   loaders <- list(
     neighbor = node_loader(g, batch_size = 256, fanouts = c(10, 10), seed = 1),
     cluster = cluster_loader(g, num_parts = 16, clusters_per_batch = 2, seed = 1),
-    saint = saint_loader(g, batch_size = 200, walk_length = 2, num_steps = 10, seed = 1)
+    saint = saint_loader(g, batch_size = 200, walk_length = 2, num_steps = 10, seed = 1),
+    ladies = ladies_loader(g, batch_size = 256, layer_sizes = c(512, 512), seed = 1)
   )
   for (nm in names(loaders)) {
     t_sample <- system.time(batches <- loader_batches(loaders[[nm]], epoch = 1))[["elapsed"]]

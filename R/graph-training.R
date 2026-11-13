@@ -62,7 +62,8 @@
 #'   vector applied to every relation, or a named list per relation), with
 #'   training nodes of `target_type` as seeds; the loss uses the seeds only
 #'   and validation runs on the full graph.
-#' @param loader A [cluster_loader()] or [saint_loader()] for node tasks.
+#' @param loader A [cluster_loader()], [saint_loader()] or [ladies_loader()]
+#'   for node tasks.
 #' @param decoder Decoder module for link and edge tasks, or for link
 #'   prediction the name of a [link_decoder()] type; defaults to
 #'   [link_decoder()] `"dot"` and an [edge_decoder()].
@@ -369,7 +370,7 @@ node_task_runner <- function(model, data, task, dev, fanouts, batch_size, seed, 
   }
   if (!is.null(subgraph_loader)) {
     if (!inherits(subgraph_loader, "subgraph_loader")) {
-      stopf("`loader` must come from cluster_loader() or saint_loader().")
+      stopf("`loader` must come from cluster_loader(), saint_loader() or ladies_loader().")
     }
     if (!is.null(fanouts)) stopf("Use either `fanouts` or `loader`, not both.")
     if (!identical(subgraph_loader$graph$num_nodes, data$num_nodes) ||

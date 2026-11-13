@@ -96,6 +96,7 @@ reference:
   - k_hop_subgraph
   - node_loader
   - cluster_loader
+  - ladies_loader
   - negative_sampling
   - corrupt_tails
 - title: Splits

@@ -96,7 +96,8 @@ checkpointed one.}
 
 \item{target_type}{Node type to predict for heterogeneous graphs.}
 
-\item{loader}{A \code{\link[=cluster_loader]{cluster_loader()}} or \code{\link[=saint_loader]{saint_loader()}} for node tasks.}
+\item{loader}{A \code{\link[=cluster_loader]{cluster_loader()}}, \code{\link[=saint_loader]{saint_loader()}} or \code{\link[=ladies_loader]{ladies_loader()}}
+for node tasks.}
 
 \item{verbose}{Print progress every \code{verbose} epochs (\code{FALSE} or \code{0} for
 none, \code{TRUE} for every epoch).}

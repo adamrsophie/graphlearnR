@@ -69,3 +69,41 @@ test_that("saint node weights estimate the full graph mean", {
   est <- mean(vapply(loader_batches(sl), function(b) sum(b$node_norm), numeric(1)))
   expect_equal(est, 1, tolerance = 0.1)
 })
+
+test_that("ladies_loader samples by layer importance and trains on seeds only", {
+  g <- split_nodes(dataset_sbm(c(40, 40), p_in = 0.3, p_out = 0.02, seed = 1), seed = 1)
+  ld <- ladies_loader(g, batch_size = 10, layer_sizes = c(15, 15), seed = 2)
+  bs <- loader_batches(ld, epoch = 1)
+  expect_length(bs, ceiling(sum(g$train_mask) / 10))
+  b <- bs[[1]]
+  # seeds are training nodes and the only nodes with train_mask
+  expect_equal(sum(b$train_mask), 10)
+  expect_true(all(g$train_mask[b$node_ids[b$train_mask]]))
+  # every kept edge exists in the original graph
+  key <- paste(g$edge_index[1, ], g$edge_index[2, ])
+  orig <- paste(b$node_ids[b$edge_index[1, ]], b$node_ids[b$edge_index[2, ]])
+  expect_true(all(orig %in% key))
+  # weights are positive; each seed's incoming weights from the first layer sum to one
+  expect_true(all(b$edge_weight > 0))
+  s1 <- which(b$train_mask)[1]
+  expect_equal(sum(b$edge_weight[b$edge_index[2, ] == s1]), 1, tolerance = 1e-8)
+  # node count is bounded by seeds plus the layer sizes
+  expect_lte(b$num_nodes, 10 + 15 + 15)
+  # the same seed and epoch give the same batches
+  expect_identical(loader_batches(ld, 1)[[2]]$node_ids, bs[[2]]$node_ids)
+  expect_error(ladies_loader(g, layer_sizes = integer()), "at least one")
+  expect_output(print(ld), "ladies_loader")
+})
+
+test_that("training with ladies_loader learns a separable graph", {
+  skip_if_no_torch()
+  testthat::skip_on_cran()  # trains for many epochs
+  g <- split_nodes(dataset_sbm(c(60, 60), p_in = 0.2, p_out = 0.01, seed = 1), seed = 1)
+  torch::torch_manual_seed(1)
+  m <- gnn_model("sage", ncol(g$x), 16, 2)
+  fit <- train_graph_model(m, g, "node_classification", epochs = 30, lr = 0.02,
+                           loader = ladies_loader(g, batch_size = 20, layer_sizes = c(30, 30), seed = 1),
+                           seed = 1)
+  ev <- evaluate_graph_model(fit, g)
+  expect_gt(ev$value[ev$metric == "accuracy"], 0.8)
+})

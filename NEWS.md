@@ -97,6 +97,8 @@ First release.
   saved and loaded.
 - Heterogeneous node tasks train on typed neighbor samples with `fanouts`
   and `batch_size`.
+- `ladies_loader()`: layer wise importance sampled node batches (LADIES,
+  the successor of FastGCN) for `train_graph_model(loader = )`.
 - `evaluate_embeddings()` (linear probe and clustering), average precision
   in classification metrics, filtered per positive link ranking in
   `evaluate_graph_model()`, and `ogb_evaluate()` with the official OGB
