@@ -24,3 +24,8 @@ An object of class \code{spatiotemporal_signal}.
 A graph whose structure is fixed while node features change over time,
 such as traffic sensors on a road network.
 }
+\examples{
+g <- dataset_karate()
+sig <- spatiotemporal_signal(g, matrix(rnorm(10 * 34), 10, 34))
+sig
+}

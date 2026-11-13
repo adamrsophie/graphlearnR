@@ -101,6 +101,9 @@ print.temporal_graph_data <- function(x, ...) {
 #' @param tg A `temporal_graph_data` object.
 #' @param start,end Window `[start, end)`; `NULL` means unbounded.
 #' @return A `temporal_graph_data` with the selected events.
+#' @examples
+#' tg <- dataset_synthetic_temporal(seed = 1)
+#' temporal_window(tg, start = 10, end = 20)
 #' @export
 temporal_window <- function(tg, start = NULL, end = NULL) {
   keep <- rep(TRUE, length(tg$t))
@@ -126,6 +129,10 @@ temporal_window <- function(tg, start = NULL, end = NULL) {
 #' @param val,test Proportions used when the cut points are `NULL`.
 #' @return A list with `train`, `val`, `test` (each a `temporal_graph_data`)
 #'   and the cut points.
+#' @examples
+#' tg <- dataset_synthetic_temporal(seed = 1)
+#' sp <- split_temporal(tg)
+#' lengths(sp[c("train", "val", "test")])
 #' @export
 split_temporal <- function(tg, val_time = NULL, test_time = NULL, val = 0.15, test = 0.15) {
   if (is.null(val_time) || is.null(test_time)) {
@@ -159,6 +166,10 @@ split_temporal <- function(tg, val_time = NULL, test_time = NULL, val = 0.15, te
 #' @param direction `"in"` or `"both"`.
 #' @return A data frame with `query`, `node`, `neighbor`, `t` and `event`
 #'   (position in the sorted event list).
+#' @examples
+#' tg <- dataset_synthetic_temporal(seed = 1)
+#' nb <- temporal_neighbors(tg, nodes = tg$dst[50], times = tg$t[50], k = 5)
+#' nb
 #' @export
 temporal_neighbors <- function(tg, nodes, times, k = 10L, strict = TRUE,
                                direction = c("in", "both")) {
@@ -196,6 +207,10 @@ temporal_neighbors <- function(tg, nodes, times, k = 10L, strict = TRUE,
 #' @param graphs List of `graph_data` objects with equal `num_nodes`.
 #' @param start,end Interval bounds per snapshot.
 #' @return An object of class `snapshot_sequence`.
+#' @examples
+#' tg <- dataset_synthetic_temporal(seed = 1)
+#' snaps <- temporal_snapshots(tg, breaks = 5)
+#' length(snaps$graphs)
 #' @export
 snapshot_sequence <- function(graphs, start = seq_along(graphs) - 1, end = seq_along(graphs)) {
   n <- vapply(graphs, num_nodes, integer(1))
@@ -259,6 +274,10 @@ print.snapshot_sequence <- function(x, ...) {
 #'   feature.
 #' @param times Optional time stamps.
 #' @return An object of class `spatiotemporal_signal`.
+#' @examples
+#' g <- dataset_karate()
+#' sig <- spatiotemporal_signal(g, matrix(rnorm(10 * 34), 10, 34))
+#' sig
 #' @export
 spatiotemporal_signal <- function(graph, features, targets = NULL, times = NULL) {
   if (is.matrix(features)) features <- array(features, c(dim(features), 1L))
@@ -290,6 +309,14 @@ print.spatiotemporal_signal <- function(x, ...) {
 #' @param in_features Input feature size.
 #' @param hidden_features Hidden state size.
 #' @return An `nn_module` called as `cell(x, edge_index, h, edge_weight)`.
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   cell <- graph_gru_cell(3, 8)
+#'   g <- dataset_karate()
+#'   x <- torch::torch_randn(34, 3)
+#'   ei <- graph_tensors(g)$edge_index
+#'   cell(x, ei)$shape
+#' }
 #' @export
 graph_gru_cell <- nn_module(
   "graph_gru_cell",
@@ -324,6 +351,11 @@ graph_gru_cell <- nn_module(
 #' @param output_dim Output size (per node), or `NULL` to return hidden
 #'   states.
 #' @return An `nn_module` of class `temporal_gnn`.
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   m <- temporal_gnn_model(input_dim = 2, hidden_dim = 8, output_dim = 1)
+#'   m
+#' }
 #' @export
 temporal_gnn_model <- nn_module(
   "temporal_gnn",
@@ -367,6 +399,12 @@ temporal_gnn_model <- nn_module(
 #' @return An object of class `temporal_fit` with the model, history,
 #'   window split and test metrics (`test_metrics`), alongside a naive
 #'   last value baseline (`baseline_metrics`).
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   sig <- dataset_synthetic_signal(seed = 1)
+#'   fit <- train_spatiotemporal_model(sig, lags = 3, hidden_dim = 8, epochs = 3, seed = 1)
+#'   fit
+#' }
 #' @export
 train_spatiotemporal_model <- function(signal, lags = 4L, horizon = 1L, hidden_dim = 32L,
                                        epochs = 50L, lr = 0.01, train = 0.7, val = 0.15,
@@ -462,6 +500,12 @@ print.temporal_fit <- function(x, ...) {
 #' @param device Device.
 #' @return An object of class `temporal_fit` with per step test metrics
 #'   (`step_metrics`) and averages (`test_metrics`).
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   snaps <- temporal_snapshots(dataset_synthetic_temporal(seed = 1), breaks = 8)
+#'   fit <- train_dynamic_link_model(snaps, hidden_dim = 8, epochs = 3, seed = 1)
+#'   fit
+#' }
 #' @export
 train_dynamic_link_model <- function(snapshots, train_steps = NULL, hidden_dim = 32L,
                                      epochs = 50L, lr = 0.01, neg_ratio = 1, seed = NULL,
@@ -557,6 +601,9 @@ train_dynamic_link_model <- function(snapshots, train_steps = NULL, hidden_dim =
 #' @param seed Optional integer seed.
 #' @param method `"history"` or `"preferential"`.
 #' @return Named vector of mean ROC-AUC and average precision.
+#' @examples
+#' snaps <- temporal_snapshots(dataset_synthetic_temporal(seed = 1), breaks = 8)
+#' dynamic_link_baseline(snaps, steps = 7:8, seed = 1)
 #' @export
 dynamic_link_baseline <- function(snapshots, steps, neg_ratio = 1, seed = NULL,
                                   method = c("history", "preferential")) {
@@ -593,6 +640,11 @@ dynamic_link_baseline <- function(snapshots, steps, neg_ratio = 1, seed = NULL,
 #' @param num_steps Time steps.
 #' @param seed Optional integer seed.
 #' @return A `temporal_graph_data` or a `spatiotemporal_signal`.
+#' @examples
+#' tg <- dataset_synthetic_temporal(seed = 1)
+#' tg
+#' sig <- dataset_synthetic_signal(seed = 1)
+#' dim(sig$features)
 #' @export
 dataset_synthetic_temporal <- function(num_nodes = 40L, num_events = 800L, seed = NULL) {
   with_optional_seed(seed, {

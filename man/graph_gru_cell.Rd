@@ -21,3 +21,12 @@ A GRU whose input and hidden transforms are graph convolutions:
 with \eqn{G} a \code{\link[=gcn_conv]{gcn_conv()}}. This follows GConvGRU (Seo et al. 2018) with
 the Chebyshev convolution replaced by a first order GCN.
 }
+\examples{
+if (torch::torch_is_installed()) {
+  cell <- graph_gru_cell(3, 8)
+  g <- dataset_karate()
+  x <- torch::torch_randn(34, 3)
+  ei <- graph_tensors(g)$edge_index
+  cell(x, ei)$shape
+}
+}

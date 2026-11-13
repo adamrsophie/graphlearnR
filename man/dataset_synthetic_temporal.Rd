@@ -28,3 +28,9 @@ so the past predicts the future. \code{dataset_synthetic_signal()} simulates
 a diffusion process on a ring graph: each node's value moves towards the
 mean of its neighbors plus noise.
 }
+\examples{
+tg <- dataset_synthetic_temporal(seed = 1)
+tg
+sig <- dataset_synthetic_signal(seed = 1)
+dim(sig$features)
+}

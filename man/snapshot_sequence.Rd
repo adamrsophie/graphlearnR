@@ -35,3 +35,8 @@ events with \verb{breaks[k] <= t < breaks[k + 1]} (the last interval is closed
 on the right), or with \code{cumulative = TRUE} all events with
 \code{t < breaks[k + 1]}. Repeated interactions become edge weights (counts).
 }
+\examples{
+tg <- dataset_synthetic_temporal(seed = 1)
+snaps <- temporal_snapshots(tg, breaks = 5)
+length(snaps$graphs)
+}

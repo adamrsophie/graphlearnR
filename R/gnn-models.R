@@ -25,7 +25,8 @@
 #' @param output_dim Output size (classes or targets), or `NULL`.
 #' @param num_layers Number of message passing layers.
 #' @param dropout Dropout probability after each layer.
-#' @param activation Activation module constructor.
+#' @param activation Activation name: `"relu"`, `"elu"`, `"gelu"`, `"tanh"`
+#'   or `"leaky_relu"` (slope 0.2).
 #' @param heads Attention heads.
 #' @param edge_dim Edge feature size (`"mpnn"`, GINE, attention with edge
 #'   features).
@@ -197,6 +198,13 @@ model_forward <- function(model, tt, ...) {
 #' @return An `nn_module` called as `decoder(z, pairs, relation = NULL)`,
 #'   where `pairs` is a 2 by K long tensor of one based node indices. For
 #'   typed links pass `z = list(z_src, z_dst)`.
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   dec <- link_decoder("distmult", dim = 8)
+#'   z <- torch::torch_randn(5, 8)
+#'   pairs <- torch::torch_tensor(rbind(c(1, 2), c(3, 4)), dtype = torch::torch_long())
+#'   dec(z, pairs)
+#' }
 #' @export
 link_decoder <- nn_module(
   "link_decoder",

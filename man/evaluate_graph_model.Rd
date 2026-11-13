@@ -36,3 +36,11 @@ training graph only.
 \item Edge tasks: edges in the \code{split} edge mask.
 }
 }
+\examples{
+if (torch::torch_is_installed()) {
+  g <- split_nodes(dataset_karate(), seed = 1)
+  fit <- train_graph_model(gnn_model("gcn", 34, 8, 2), g, "node_classification",
+                           epochs = 20, seed = 1)
+  evaluate_graph_model(fit)
+}
+}

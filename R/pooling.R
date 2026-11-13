@@ -65,6 +65,12 @@ global_max_pool <- function(x, batch = NULL, num_graphs = NULL) {
 #'   layer.
 #' @param nn Optional module applied to node features before weighting.
 #' @return An `nn_module` called as `module(x, batch, num_graphs)`.
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   pool <- global_attention_pool(4)
+#'   x <- torch::torch_randn(5, 4)
+#'   pool(x, batch = c(1, 1, 2, 2, 2), num_graphs = 2)$shape
+#' }
 #' @export
 global_attention_pool <- nn_module(
   "global_attention_pool",
@@ -92,6 +98,11 @@ global_attention_pool <- nn_module(
 #' @param ratio Fraction of nodes kept per graph.
 #' @return An `nn_module` returning a list with `x`, `edge_index`, `batch`,
 #'   `perm` (kept node indices in the input) and `score`.
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   pool <- topk_pool(2, ratio = 0.5)
+#'   pool
+#' }
 #' @export
 topk_pool <- nn_module(
   "topk_pool",

@@ -49,3 +49,11 @@ Scores are logits; apply a sigmoid for probabilities. \code{edge_decoder()} is
 an MLP on \eqn{[z_u \Vert z_v \Vert e_{uv}]} for edge classification or
 regression.
 }
+\examples{
+if (torch::torch_is_installed()) {
+  dec <- link_decoder("distmult", dim = 8)
+  z <- torch::torch_randn(5, 8)
+  pairs <- torch::torch_tensor(rbind(c(1, 2), c(3, 4)), dtype = torch::torch_long())
+  dec(z, pairs)
+}
+}

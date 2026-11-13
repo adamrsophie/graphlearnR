@@ -27,3 +27,9 @@ get the same assignment. Only edges with a non missing \code{edge_y} are
 assigned. The graph structure stays intact: edge labels, not edges, are
 held out.
 }
+\examples{
+g <- dataset_karate()
+g$edge_y <- factor(ifelse(g$edge_index[1, ] < g$edge_index[2, ], "up", "down"))
+g <- split_edge_labels(g, seed = 1)
+table(g$edge_train_mask)
+}

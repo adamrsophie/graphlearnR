@@ -66,3 +66,9 @@ returned graph is directed from the citing paper to the cited paper.
 Citations to papers missing from \code{.content} are dropped and counted in
 \code{metadata$dropped_edges}.
 }
+\examples{
+\dontrun{
+mutag <- download_tu_dataset("MUTAG")
+cora <- download_planetoid_raw("cora")
+}
+}

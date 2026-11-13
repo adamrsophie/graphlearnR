@@ -23,3 +23,10 @@ Soft attention readout (Li et al. 2016): each node gets a gate score
 each graph, and the graph vector is \eqn{\sum_i \mathrm{softmax}(s)_i\,
 \mathrm{nn}(x_i)}. Permutation invariant.
 }
+\examples{
+if (torch::torch_is_installed()) {
+  pool <- global_attention_pool(4)
+  x <- torch::torch_randn(5, 4)
+  pool(x, batch = c(1, 1, 2, 2, 2), num_graphs = 2)$shape
+}
+}

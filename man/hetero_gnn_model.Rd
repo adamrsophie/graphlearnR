@@ -74,3 +74,10 @@ node.
 Embedding tables make the model transductive for featureless types: it
 can only predict for nodes seen during training.
 }
+\examples{
+if (torch::torch_is_installed()) {
+  hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
+  m <- hetero_gnn_model(hg, hidden_dim = 16, output_dim = 3, target_type = "drug")
+  m
+}
+}

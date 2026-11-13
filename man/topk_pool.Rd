@@ -34,3 +34,9 @@ and Kang 2019): the scores come from a graph convolution,
 \eqn{y = \mathrm{GNN}(X, A)}, so they depend on the neighborhood; the
 rest is as in \code{topk_pool()}.
 }
+\examples{
+if (torch::torch_is_installed()) {
+  pool <- topk_pool(2, ratio = 0.5)
+  pool
+}
+}

@@ -146,6 +146,9 @@ induced_from_edges <- function(g, n_id, local, e_id, hop, num_seeds) {
 #' @param nodes Seed nodes.
 #' @param k Number of hops.
 #' @return A `sampled_graph`.
+#' @examples
+#' sub <- k_hop_subgraph(dataset_karate(), nodes = 1, k = 1)
+#' sub$num_nodes
 #' @export
 k_hop_subgraph <- function(g, nodes, k) {
   sample_neighbors(g, nodes, rep(-1L, check_count(k, "k")))
@@ -340,6 +343,9 @@ negative_sampling <- function(exclude, num_nodes = NULL, num_samples,
 #' @param seed Optional integer seed.
 #' @return A K by `k` integer matrix of negative targets. The head of a pair
 #'   is never drawn as its own corrupted tail.
+#' @examples
+#' pos <- rbind(c(1, 2), c(2, 3))
+#' corrupt_tails(pos, num_nodes = 10, k = 3, seed = 1)
 #' @export
 corrupt_tails <- function(pos, num_nodes, k, known = pos, filtered = TRUE, directed = TRUE,
                           seed = NULL) {

@@ -230,6 +230,13 @@ gnn_explainer <- function(model, g, target = NULL, output = NULL, epochs = 100L,
 #' @param explanation A `graph_explanation` with an `edges` table.
 #' @param k Number of top edges.
 #' @return A named numeric vector.
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   g <- split_nodes(dataset_karate(), seed = 1)
+#'   fit <- train_graph_model(gnn_model("gcn", 34, 8, 2), g, "node_classification",
+#'                            epochs = 20, seed = 1)
+#'   explanation_fidelity(fit, g, explain_edges(fit, g, target = 1), k = 3)
+#' }
 #' @export
 explanation_fidelity <- function(model, g, explanation, k = 5L) {
   model <- explain_model(model)
@@ -316,6 +323,14 @@ explanation_subgraph <- function(g, explanation, k = 5L) {
 #' @param model A model or `graph_fit`.
 #' @return A list, one data frame per attention layer, with `from`, `to` and
 #'   one column per head.
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   g <- split_nodes(dataset_karate(), seed = 1)
+#'   fit <- train_graph_model(gnn_model("gat", 34, 8, 2, heads = 2), g,
+#'                            "node_classification", epochs = 5, seed = 1)
+#'   invisible(predict(fit, g))
+#'   head(attention_weights(fit)[[1]])
+#' }
 #' @export
 attention_weights <- function(model) {
   model <- if (inherits(model, "graph_fit")) model$model else model

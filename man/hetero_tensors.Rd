@@ -20,3 +20,9 @@ A list with named lists \code{x}, \code{y}, \code{edge_index}, \code{edge_attr},
 Converts every node type and relation of a heterogeneous graph to \code{torch}
 tensors, once, on one device.
 }
+\examples{
+if (torch::torch_is_installed()) {
+  ht <- hetero_tensors(dataset_synthetic_hetero(seed = 1))
+  names(ht)
+}
+}

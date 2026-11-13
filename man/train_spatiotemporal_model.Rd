@@ -51,3 +51,10 @@ after the first forecast origin of the next period are dropped (a purge of
 \code{horizon - 1} windows), so no training target is later than a validation
 or test forecast origin.
 }
+\examples{
+if (torch::torch_is_installed()) {
+  sig <- dataset_synthetic_signal(seed = 1)
+  fit <- train_spatiotemporal_model(sig, lags = 3, hidden_dim = 8, epochs = 3, seed = 1)
+  fit
+}
+}

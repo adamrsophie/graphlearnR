@@ -82,6 +82,12 @@ message_passing <- function(x, edge_index, message = NULL, aggr = "sum",
 #' @param edge_attr Optional edge feature tensor; new loops get the mean
 #'   edge feature of their incoming edges (zero if none).
 #' @return A list with `edge_index`, `edge_weight` and `edge_attr`.
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   ei <- torch::torch_tensor(rbind(c(1, 2), c(2, 3)), dtype = torch::torch_long())
+#'   add_self_loops_tensor(ei, 3)$edge_index
+#'   gcn_norm(ei, 3)$edge_weight
+#' }
 #' @export
 add_self_loops_tensor <- function(edge_index, num_nodes, edge_weight = NULL,
                                   fill_value = 1, remaining = FALSE,

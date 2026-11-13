@@ -41,3 +41,8 @@ the query time is ever returned with the default \code{strict = TRUE}.
 For directed graphs only events with \code{dst == node} (incoming messages) are
 used unless \code{direction = "both"}.
 }
+\examples{
+tg <- dataset_synthetic_temporal(seed = 1)
+nb <- temporal_neighbors(tg, nodes = tg$dst[50], times = tg$t[50], k = 5)
+nb
+}

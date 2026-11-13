@@ -233,6 +233,11 @@ dataset_synthetic_graphs <- function(n = 100L, min_nodes = 5L, max_nodes = 12L,
 #' @param overwrite Download again even if the archive exists.
 #' @return `download_tu_dataset()` returns a `graph_dataset`;
 #'   `download_planetoid_raw()` returns a `graph_data`.
+#' @examples
+#' \dontrun{
+#' mutag <- download_tu_dataset("MUTAG")
+#' cora <- download_planetoid_raw("cora")
+#' }
 #' @name download-datasets
 NULL
 

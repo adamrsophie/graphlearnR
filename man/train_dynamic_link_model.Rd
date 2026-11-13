@@ -47,3 +47,10 @@ evaluated, in time order, with the state carried forward through every
 earlier snapshot. No snapshot after \code{k} ever influences a score for
 snapshot \code{k + 1}.
 }
+\examples{
+if (torch::torch_is_installed()) {
+  snaps <- temporal_snapshots(dataset_synthetic_temporal(seed = 1), breaks = 8)
+  fit <- train_dynamic_link_model(snaps, hidden_dim = 8, epochs = 3, seed = 1)
+  fit
+}
+}

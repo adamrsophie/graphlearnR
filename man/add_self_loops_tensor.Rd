@@ -60,3 +60,10 @@ symmetric normalization
 \eqn{w_{ij} / \sqrt{d_i d_j}} with \eqn{d} the weighted in degree after
 adding self loops, as in Kipf and Welling (2017).
 }
+\examples{
+if (torch::torch_is_installed()) {
+  ei <- torch::torch_tensor(rbind(c(1, 2), c(2, 3)), dtype = torch::torch_long())
+  add_self_loops_tensor(ei, 3)$edge_index
+  gcn_norm(ei, 3)$edge_weight
+}
+}

@@ -19,3 +19,7 @@ For every relation \code{src__rel__dst} without a reverse, adds
 \verb{dst__<prefix>rel__src} with flipped edges and the same edge attributes,
 and records the pairing in \code{reverse} and \code{reverse_of}.
 }
+\examples{
+hg <- dataset_synthetic_hetero(seed = 1)
+edge_types(add_reverse_relations(hg))
+}

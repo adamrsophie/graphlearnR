@@ -26,8 +26,11 @@
 #' training.
 #'
 #' **Reproducibility.** With `seed`, `torch`'s global generator is seeded
-#' with `torch_manual_seed(seed)` (needed for weight initialization done
-#' before the call, and for dropout), and every R side random draw (batching,
+#' with `torch_manual_seed(seed)` for dropout and other torch draws during
+#' training; this changes the global torch random state for the rest of the
+#' session. Weights are initialized when the model is built, before this
+#' call, so seed torch yourself before building the model for identical
+#' weights. Every R side random draw (batching,
 #' neighbor and negative sampling) uses a seed derived from `seed` inside
 #' [withr::with_seed()], so the caller's R random state is not changed. The
 #' fit records seeds, settings, package versions and the device in
@@ -345,7 +348,8 @@ node_task_runner <- function(model, data, task, dev, fanouts, batch_size, seed, 
       stopf("`loader` must come from cluster_loader() or saint_loader().")
     }
     if (!is.null(fanouts)) stopf("Use either `fanouts` or `loader`, not both.")
-    if (!identical(subgraph_loader$graph$num_nodes, data$num_nodes)) {
+    if (!identical(subgraph_loader$graph$num_nodes, data$num_nodes) ||
+        !identical(ncol(subgraph_loader$graph$edge_index), ncol(data$edge_index))) {
       stopf("`loader` was built on a different graph.")
     }
     # The loader keeps its own copy of the graph; use the training masks of `data`.
@@ -640,6 +644,16 @@ print.graph_fit <- function(x, ...) {
 #' @param device Device to load onto.
 #' @return `save_graph_fit()` returns `path` invisibly; `load_graph_fit()`
 #'   returns a `graph_fit` (without `data` and `optimizer`).
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   g <- split_nodes(dataset_karate(), seed = 1)
+#'   fit <- train_graph_model(gnn_model("gcn", 34, 8, 2), g, "node_classification",
+#'                            epochs = 5, seed = 1)
+#'   path <- tempfile(fileext = ".rds")
+#'   save_graph_fit(fit, path)
+#'   back <- load_graph_fit(path)
+#'   all.equal(predict(fit, g, type = "prob"), predict(back, g, type = "prob"))
+#' }
 #' @export
 save_graph_fit <- function(fit, path) {
   obj <- list(

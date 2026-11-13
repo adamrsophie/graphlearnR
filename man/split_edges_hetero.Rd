@@ -39,3 +39,8 @@ and negatives are unordered pairs without self loops; otherwise negatives
 are typed pairs (source type, target type). Negatives are drawn with
 \code{\link[=negative_sampling]{negative_sampling()}}, excluding every known positive of the relation.
 }
+\examples{
+hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
+sp <- split_edges_hetero(hg, "drug__targets__protein", seed = 1)
+ncol(sp$test_pos)
+}

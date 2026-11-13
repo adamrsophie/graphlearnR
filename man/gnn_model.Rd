@@ -39,7 +39,8 @@ gnn_model(
 
 \item{dropout}{Dropout probability after each layer.}
 
-\item{activation}{Activation module constructor.}
+\item{activation}{Activation name: \code{"relu"}, \code{"elu"}, \code{"gelu"}, \code{"tanh"}
+or \code{"leaky_relu"} (slope 0.2).}
 
 \item{heads}{Attention heads.}
 

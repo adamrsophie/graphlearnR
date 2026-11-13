@@ -39,3 +39,7 @@ that \verb{(u, v')} is not a known positive (filtered setting, Bordes et al.
 2013) unless \code{filtered = FALSE}. Used for mean reciprocal rank and
 per-query Hits@K.
 }
+\examples{
+pos <- rbind(c(1, 2), c(2, 3))
+corrupt_tails(pos, num_nodes = 10, k = 3, seed = 1)
+}

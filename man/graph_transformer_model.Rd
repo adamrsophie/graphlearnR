@@ -50,6 +50,12 @@ costs \eqn{O(\sum_g n_g (n_g + e_g))} per forward pass.
 The forward signature matches \code{\link[=gnn_model]{gnn_model()}}, so the model works with
 \code{\link[=train_graph_model]{train_graph_model()}}.
 }
+\examples{
+if (torch::torch_is_installed()) {
+  m <- graph_transformer_model(input_dim = 34, hidden_dim = 16, output_dim = 2, heads = 2)
+  m
+}
+}
 \references{
 Ying et al. (2021) Do transformers really perform badly for
 graph representation? NeurIPS.

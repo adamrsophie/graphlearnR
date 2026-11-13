@@ -161,6 +161,8 @@ num_edges.hetero_graph_data <- function(g, unique_pairs = FALSE) {
 #' @param hg A `hetero_graph_data` object.
 #' @return A data frame with `key`, `src`, `rel`, `dst`, `num_edges` and
 #'   `reverse` (the paired reverse relation, if any).
+#' @examples
+#' edge_types(dataset_synthetic_hetero(seed = 1))
 #' @export
 edge_types <- function(hg) {
   data.frame(
@@ -199,6 +201,9 @@ print.hetero_graph_data <- function(x, ...) {
 #' @param hg A `hetero_graph_data` object.
 #' @param prefix Prefix for the reverse relation name.
 #' @return The extended `hetero_graph_data`.
+#' @examples
+#' hg <- dataset_synthetic_hetero(seed = 1)
+#' edge_types(add_reverse_relations(hg))
 #' @export
 add_reverse_relations <- function(hg, prefix = "rev_") {
   for (key in names(hg$edges)) {
@@ -229,6 +234,9 @@ add_reverse_relations <- function(hg, prefix = "rev_") {
 #' @param hg A `hetero_graph_data` object.
 #' @param target_type Node type whose labels and masks are kept.
 #' @return A directed `graph_data` object.
+#' @examples
+#' g <- to_homogeneous(dataset_synthetic_hetero(seed = 1), target_type = "drug")
+#' g
 #' @export
 to_homogeneous <- function(hg, target_type = NULL) {
   types <- hg$node_types
@@ -283,6 +291,11 @@ to_homogeneous <- function(hg, target_type = NULL) {
 #' @return A list with named lists `x`, `y`, `edge_index`, `edge_attr`,
 #'   `edge_weight` and the masks, plus `num_nodes`, `node_types` and
 #'   `relations` (the result of [edge_types()]).
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   ht <- hetero_tensors(dataset_synthetic_hetero(seed = 1))
+#'   names(ht)
+#' }
 #' @export
 hetero_tensors <- function(hg, device = NULL) {
   dev <- resolve_device(device)
@@ -326,6 +339,10 @@ hetero_tensors <- function(hg, device = NULL) {
 #'
 #' @param graphs A list of `hetero_graph_data` objects.
 #' @return A `hetero_graph_data` of class `hetero_graph_batch`.
+#' @examples
+#' hg <- dataset_synthetic_hetero(seed = 1)
+#' hb <- hetero_batch(list(hg, hg))
+#' hb$num_nodes
 #' @export
 hetero_batch <- function(graphs) {
   types <- graphs[[1L]]$node_types
@@ -391,6 +408,10 @@ hetero_batch <- function(graphs) {
 #' @param fanouts Integer vector (all relations) or named list per relation.
 #' @param seed Optional integer seed.
 #' @return A `hetero_graph_data` of class `sampled_hetero_graph`.
+#' @examples
+#' hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
+#' sg <- sample_hetero_neighbors(hg, seeds = list(drug = c(1, 2)), fanouts = c(3, 2), seed = 1)
+#' sg$num_nodes
 #' @export
 sample_hetero_neighbors <- function(hg, seeds, fanouts, seed = NULL) {
   types <- hg$node_types
@@ -476,6 +497,10 @@ sample_hetero_neighbors <- function(hg, seeds, fanouts, seed = NULL) {
 #' @param relation Relation key, `"src__rel__dst"`.
 #' @inheritParams split_edges
 #' @return An object of class `hetero_link_split`.
+#' @examples
+#' hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
+#' sp <- split_edges_hetero(hg, "drug__targets__protein", seed = 1)
+#' ncol(sp$test_pos)
 #' @export
 split_edges_hetero <- function(hg, relation, val = 0.1, test = 0.1, neg_ratio = 1,
                                seed = NULL) {
@@ -554,6 +579,13 @@ print.hetero_link_split <- function(x, ...) {
 #'   `layer(list(x_src, x_dst), edge_index)`.
 #' @param aggr `"sum"` or `"mean"` over relations.
 #' @return An `nn_module` called as `module(x_dict, edge_index_dict)`.
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
+#'   convs <- lapply(stats::setNames(nm = edge_types(hg)), function(r) sage_conv(16, 8))
+#'   conv <- hetero_conv(convs)
+#'   conv
+#' }
 #' @export
 hetero_conv <- nn_module(
   "hetero_conv",
@@ -619,6 +651,12 @@ hetero_conv <- nn_module(
 #' @return An `nn_module` of class `hetero_gnn`, called as `model(ht)` with
 #'   `ht` from [hetero_tensors()]; it returns a named list of per type
 #'   outputs.
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
+#'   m <- hetero_gnn_model(hg, hidden_dim = 16, output_dim = 3, target_type = "drug")
+#'   m
+#' }
 #' @export
 hetero_gnn_model <- function(hg, hidden_dim = 64L, output_dim = NULL, target_type = NULL,
                              num_layers = 2L, conv = c("sage", "graph_conv", "gat", "rgcn", "hgt"),
@@ -848,6 +886,9 @@ predict_hetero_links <- function(object, new_data, pairs, type) {
 #' @param seed Optional integer seed.
 #' @return A `hetero_graph_data` with relations `drug__targets__protein` and
 #'   `protein__interacts__protein`, drug labels and drug masks.
+#' @examples
+#' hg <- dataset_synthetic_hetero(seed = 1)
+#' hg
 #' @export
 dataset_synthetic_hetero <- function(num_drugs = 60L, num_proteins = 80L, num_classes = 3L,
                                      seed = NULL) {

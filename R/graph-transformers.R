@@ -139,6 +139,13 @@ add_positional_encoding <- function(g, type = c("random_walk", "laplacian"), k =
 #' @param batch Graph membership (integer vector, `1:B`, nodes of a graph
 #'   contiguous as produced by [graph_batch()]).
 #' @return A list with `x`, `mask` and `index` (the flat positions).
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   x <- torch::torch_randn(5, 2)
+#'   d <- to_dense_batch(x, batch = c(1, 1, 2, 2, 2))
+#'   d$x$shape
+#'   from_dense_batch(d)$shape
+#' }
 #' @export
 to_dense_batch <- function(x, batch) {
   b <- as.integer(as_r_array(batch))
@@ -189,6 +196,11 @@ from_dense_batch <- function(dense) {
 #' @return An `nn_module` called as `layer(x, batch, dist)` where `dist` is a
 #'   `B` by `L` by `L` long tensor of clipped distances (padding uses
 #'   `max_dist + 2`).
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   layer <- graph_transformer_layer(8, heads = 2)
+#'   layer
+#' }
 #' @export
 graph_transformer_layer <- nn_module(
   "graph_transformer_layer",
@@ -276,6 +288,11 @@ batch_distances <- function(edge_index, batch, max_dist, device) {
 #' @return An `nn_module` of class `graph_transformer`.
 #' @references Ying et al. (2021) Do transformers really perform badly for
 #'   graph representation? NeurIPS.
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   m <- graph_transformer_model(input_dim = 34, hidden_dim = 16, output_dim = 2, heads = 2)
+#'   m
+#' }
 #' @export
 graph_transformer_model <- nn_module(
   "graph_transformer",

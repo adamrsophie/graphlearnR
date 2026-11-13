@@ -27,3 +27,14 @@ class levels, training history and reproducibility record into one
 \code{.rds} file. Training data and optimizer state are not saved.
 \code{load_graph_fit()} restores a fit that \code{\link[=predict]{predict()}} can use.
 }
+\examples{
+if (torch::torch_is_installed()) {
+  g <- split_nodes(dataset_karate(), seed = 1)
+  fit <- train_graph_model(gnn_model("gcn", 34, 8, 2), g, "node_classification",
+                           epochs = 5, seed = 1)
+  path <- tempfile(fileext = ".rds")
+  save_graph_fit(fit, path)
+  back <- load_graph_fit(path)
+  all.equal(predict(fit, g, type = "prob"), predict(back, g, type = "prob"))
+}
+}

@@ -21,3 +21,11 @@ results arriving at each target node type, the scheme of PyG's
 \code{HeteroConv}. Node types that receive no relation keep their input
 features.
 }
+\examples{
+if (torch::torch_is_installed()) {
+  hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
+  convs <- lapply(stats::setNames(nm = edge_types(hg)), function(r) sage_conv(16, 8))
+  conv <- hetero_conv(convs)
+  conv
+}
+}

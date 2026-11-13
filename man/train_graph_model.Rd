@@ -126,8 +126,11 @@ training positives; validation and test pairs are never used for
 training.
 
 \strong{Reproducibility.} With \code{seed}, \code{torch}'s global generator is seeded
-with \code{torch_manual_seed(seed)} (needed for weight initialization done
-before the call, and for dropout), and every R side random draw (batching,
+with \code{torch_manual_seed(seed)} for dropout and other torch draws during
+training; this changes the global torch random state for the rest of the
+session. Weights are initialized when the model is built, before this
+call, so seed torch yourself before building the model for identical
+weights. Every R side random draw (batching,
 neighbor and negative sampling) uses a seed derived from \code{seed} inside
 \code{\link[withr:with_seed]{withr::with_seed()}}, so the caller's R random state is not changed. The
 fit records seeds, settings, package versions and the device in

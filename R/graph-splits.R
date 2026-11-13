@@ -198,6 +198,11 @@ edge_subset <- function(g, cols) {
 #'
 #' @inheritParams split_nodes
 #' @return `g` with the edge masks set.
+#' @examples
+#' g <- dataset_karate()
+#' g$edge_y <- factor(ifelse(g$edge_index[1, ] < g$edge_index[2, ], "up", "down"))
+#' g <- split_edge_labels(g, seed = 1)
+#' table(g$edge_train_mask)
 #' @export
 split_edge_labels <- function(g, train = 0.6, val = 0.2, test = 0.2, seed = NULL) {
   if (is.null(g$edge_y)) stopf("The graph has no `edge_y` labels.")

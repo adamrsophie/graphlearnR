@@ -17,3 +17,7 @@ A \code{temporal_graph_data} with the selected events.
 \description{
 Select events in a time window
 }
+\examples{
+tg <- dataset_synthetic_temporal(seed = 1)
+temporal_window(tg, start = 10, end = 20)
+}

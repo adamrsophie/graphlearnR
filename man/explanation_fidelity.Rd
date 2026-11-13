@@ -45,3 +45,11 @@ when everything else is removed; small is good), following Yuan et al.
 Gaussian feature noise and reports the mean Spearman correlation of edge
 attributions with the original.
 }
+\examples{
+if (torch::torch_is_installed()) {
+  g <- split_nodes(dataset_karate(), seed = 1)
+  fit <- train_graph_model(gnn_model("gcn", 34, 8, 2), g, "node_classification",
+                           epochs = 20, seed = 1)
+  explanation_fidelity(fit, g, explain_edges(fit, g, target = 1), k = 3)
+}
+}

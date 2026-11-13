@@ -20,3 +20,7 @@ A \code{sampled_graph}.
 Exact \code{k} hop computation graph of \code{nodes}: all incoming edges up to \code{k}
 hops, equivalent to \code{\link[=sample_neighbors]{sample_neighbors()}} with every fanout \code{-1}.
 }
+\examples{
+sub <- k_hop_subgraph(dataset_karate(), nodes = 1, k = 1)
+sub$num_nodes
+}

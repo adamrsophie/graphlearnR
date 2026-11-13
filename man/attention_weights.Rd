@@ -19,3 +19,12 @@ Collects the attention coefficients stored by attention layers
 pass. Run a forward pass (for example \code{\link[=predict]{predict()}}) first. Attention shows
 how a layer weighted neighbors; it is not a feature importance measure.
 }
+\examples{
+if (torch::torch_is_installed()) {
+  g <- split_nodes(dataset_karate(), seed = 1)
+  fit <- train_graph_model(gnn_model("gat", 34, 8, 2, heads = 2), g,
+                           "node_classification", epochs = 5, seed = 1)
+  invisible(predict(fit, g))
+  head(attention_weights(fit)[[1]])
+}
+}

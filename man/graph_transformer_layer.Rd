@@ -36,3 +36,9 @@ sparse \code{\link[=transformer_conv]{transformer_conv()}}.
 The layer is permutation equivariant: distances and attention are
 functions of node pairs, not of node order.
 }
+\examples{
+if (torch::torch_is_installed()) {
+  layer <- graph_transformer_layer(8, heads = 2)
+  layer
+}
+}

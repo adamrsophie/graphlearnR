@@ -29,3 +29,8 @@ The result is a \code{hetero_graph_data} with local indices; \code{n_id[[type]]}
 holds the original indices (seeds first) and \code{num_seeds[[type]]} the seed
 counts.
 }
+\examples{
+hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
+sg <- sample_hetero_neighbors(hg, seeds = list(drug = c(1, 2)), fanouts = c(3, 2), seed = 1)
+sg$num_nodes
+}

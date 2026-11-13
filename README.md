@@ -93,11 +93,14 @@ molecular graphs, explainability, evaluation, and the sibling packages.
 
 ## How it is tested
 
-Every layer is checked for permutation equivariance, against a dense or
-reference formula, and with finite difference gradients in double precision.
+The message passing layers are checked for permutation equivariance, and
+most against a dense or reference formula; SAGE, GCN, GraphConv, GAT, GIN,
+Chebyshev and PNA layers also have finite difference gradient checks in
+double precision.
 Pooled models are checked for permutation invariance and batched forward
 passes against separate ones. Splits, samplers and temporal code are checked
-for leakage. Continuous integration runs `R CMD check` on Linux, macOS and
+for leakage within the documented protocols (for example, held out positive
+pairs are not used for message passing). Continuous integration runs `R CMD check` on Linux, macOS and
 Windows. A benchmark workflow copies weights into PyTorch Geometric and
 checks that SAGEConv and GCNConv give the same outputs (largest difference
 6e-8 in the last run); on one 2 thread CPU runner, single layer forward

@@ -17,3 +17,8 @@ Concatenates graphs with the same node and relation types. Within each
 node type, indices of graph \code{k} are shifted by the node counts of that
 type in graphs \verb{1, ..., k - 1}; \code{batch[[type]]} records graph membership.
 }
+\examples{
+hg <- dataset_synthetic_hetero(seed = 1)
+hb <- hetero_batch(list(hg, hg))
+hb$num_nodes
+}

@@ -56,3 +56,12 @@ features of its stored edge in \code{new_data}; pairs that are not edges
 are an error.
 }
 }
+\examples{
+if (torch::torch_is_installed()) {
+  g <- split_nodes(dataset_karate(), seed = 1)
+  fit <- train_graph_model(gnn_model("gcn", 34, 8, 2), g, "node_classification",
+                           epochs = 20, seed = 1)
+  head(predict(fit, g))
+  head(predict(fit, g, type = "prob"))
+}
+}

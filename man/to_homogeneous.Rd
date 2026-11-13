@@ -23,3 +23,7 @@ different sizes are padded with zeros to the largest size, and
 \code{metadata$feature_dims} records the original sizes. Labels and masks come
 from \code{target_type} only (other nodes get \code{NA} labels and \code{FALSE} masks).
 }
+\examples{
+g <- to_homogeneous(dataset_synthetic_hetero(seed = 1), target_type = "drug")
+g
+}

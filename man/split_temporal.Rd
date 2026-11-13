@@ -24,3 +24,8 @@ evaluated at time \code{t} may use any event strictly before \code{t}, including
 earlier validation events, but never later ones. With proportions instead
 of times, the cut points are event time quantiles.
 }
+\examples{
+tg <- dataset_synthetic_temporal(seed = 1)
+sp <- split_temporal(tg)
+lengths(sp[c("train", "val", "test")])
+}

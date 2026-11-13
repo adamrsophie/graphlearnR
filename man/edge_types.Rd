@@ -16,3 +16,6 @@ A data frame with \code{key}, \code{src}, \code{rel}, \code{dst}, \code{num_edge
 \description{
 Relation table of a heterogeneous graph
 }
+\examples{
+edge_types(dataset_synthetic_hetero(seed = 1))
+}

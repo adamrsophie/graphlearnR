@@ -24,3 +24,9 @@ tensors (one graph per step, or the same graph repeated) and returns a list
 with per step outputs and the final hidden state. Outputs at step \code{s}
 depend only on inputs at steps \verb{1, ..., s}.
 }
+\examples{
+if (torch::torch_is_installed()) {
+  m <- temporal_gnn_model(input_dim = 2, hidden_dim = 8, output_dim = 1)
+  m
+}
+}

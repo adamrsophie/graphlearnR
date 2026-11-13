@@ -30,3 +30,7 @@ Drug labels are the latent class, so they can be predicted from the
 targeted proteins. Protein-protein interactions are denser within
 families. The data are simulated and carry no biological meaning.
 }
+\examples{
+hg <- dataset_synthetic_hetero(seed = 1)
+hg
+}

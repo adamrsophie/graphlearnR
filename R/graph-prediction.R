@@ -28,6 +28,14 @@
 #'   `graph_predictions` with `.row`, an identifier column, `.pred_class`
 #'   and `.prob_<level>` columns (classification), `.pred` (regression) or
 #'   `.score` and `.prob` (links).
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   g <- split_nodes(dataset_karate(), seed = 1)
+#'   fit <- train_graph_model(gnn_model("gcn", 34, 8, 2), g, "node_classification",
+#'                            epochs = 20, seed = 1)
+#'   head(predict(fit, g))
+#'   head(predict(fit, g, type = "prob"))
+#' }
 #' @export
 predict.graph_fit <- function(object, new_data = NULL,
                               type = c("frame", "class", "prob", "response",
@@ -173,6 +181,13 @@ format_predictions <- function(out, type, object, ids, id_name) {
 #' @param split `"test"`, `"val"` or `"train"`.
 #' @param ks Cut-offs for Hits@K.
 #' @return A data frame with `metric` and `value`.
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   g <- split_nodes(dataset_karate(), seed = 1)
+#'   fit <- train_graph_model(gnn_model("gcn", 34, 8, 2), g, "node_classification",
+#'                            epochs = 20, seed = 1)
+#'   evaluate_graph_model(fit)
+#' }
 #' @export
 evaluate_graph_model <- function(fit, new_data = NULL, split = c("test", "val", "train"),
                                  ks = c(1L, 10L, 50L)) {
