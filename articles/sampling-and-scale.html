@@ -207,7 +207,8 @@ context but no gradient signal of their own.</p>
 <span><span class="co">#&gt; 5          f1_macro 0.994444059</span></span>
 <span><span class="co">#&gt; 6               ece 0.004808865</span></span>
 <span><span class="co">#&gt; 7             brier 0.012243922</span></span>
-<span><span class="co">#&gt; 8           roc_auc 0.997314815</span></span></code></pre></div>
+<span><span class="co">#&gt; 8           roc_auc 0.997314815</span></span>
+<span><span class="co">#&gt; 9 average_precision 0.996850348</span></span></code></pre></div>
 <p>Prediction and evaluation run on the full graph, so the reported
 numbers do not depend on the sampling.</p>
 </div>
@@ -240,7 +241,8 @@ stay inside a batch.</p>
 <span><span class="co">#&gt; 5          f1_macro 0.98884064</span></span>
 <span><span class="co">#&gt; 6               ece 0.03582429</span></span>
 <span><span class="co">#&gt; 7             brier 0.02780312</span></span>
-<span><span class="co">#&gt; 8           roc_auc 0.99699074</span></span></code></pre></div>
+<span><span class="co">#&gt; 8           roc_auc 0.99699074</span></span>
+<span><span class="co">#&gt; 9 average_precision 0.99643901</span></span></code></pre></div>
 <p><code><a href="../reference/cluster_loader.html">saint_loader()</a></code> follows the GraphSAINT random walk
 sampler. Each batch is the subgraph induced by the nodes that short
 random walks visit. Nodes and edges are not sampled uniformly, so the
@@ -271,8 +273,41 @@ are rescaled, as in PyTorch Geometric’s
 <span><span class="co">#&gt; 5          f1_macro 0.9607759</span></span>
 <span><span class="co">#&gt; 6               ece 0.1829428</span></span>
 <span><span class="co">#&gt; 7             brier 0.1303652</span></span>
-<span><span class="co">#&gt; 8           roc_auc 0.9972685</span></span></code></pre></div>
-<p>Both loaders return <code>graph_data</code> batches whose
+<span><span class="co">#&gt; 8           roc_auc 0.9972685</span></span>
+<span><span class="co">#&gt; 9 average_precision 0.9954860</span></span></code></pre></div>
+<p><code><a href="../reference/ladies_loader.html">ladies_loader()</a></code> is layer wise importance sampling
+(LADIES, the successor of FastGCN). Seeds are training nodes; for each
+model layer it draws a fixed number of neighbors of the current layer,
+with probability proportional to the squared normalized adjacency mass
+they send into that layer, and reweights the kept edges by the inverse
+probability (normalized per target node). The number of nodes per batch
+is bounded by the seeds plus the layer sizes, whatever the degrees,
+unlike neighbor sampling whose size grows with the fanout product. Only
+the seeds carry <code>train_mask</code>, so the loss uses them alone.
+Use a model that reads <code>edge_weight</code>, such as SAGE.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ld</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ladies_loader.html">ladies_loader</a></span><span class="op">(</span><span class="va">big</span>, batch_size <span class="op">=</span> <span class="fl">64</span>, layer_sizes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">128</span>, <span class="fl">128</span><span class="op">)</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">ld</span></span>
+<span><span class="co">#&gt; &lt;ladies_loader&gt; 64 seeds per batch, layer sizes 128, 128</span></span>
+<span><span class="va">b</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/node_loader.html">loader_batches</a></span><span class="op">(</span><span class="va">ld</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>nodes <span class="op">=</span> <span class="fu"><a href="../reference/graph-queries.html">num_nodes</a></span><span class="op">(</span><span class="va">b</span><span class="op">)</span>, edges <span class="op">=</span> <span class="fu"><a href="../reference/graph-queries.html">num_edges</a></span><span class="op">(</span><span class="va">b</span><span class="op">)</span>, seeds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">b</span><span class="op">$</span><span class="va">train_mask</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; nodes edges seeds </span></span>
+<span><span class="co">#&gt;   268   513    64</span></span>
+<span><span class="fu"><a href="https://torch.mlverse.org/docs/reference/torch_manual_seed.html" class="external-link">torch_manual_seed</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">fit_ld</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/train_graph_model.html">train_graph_model</a></span><span class="op">(</span><span class="fu"><a href="../reference/gnn_model.html">gnn_model</a></span><span class="op">(</span><span class="st">"sage"</span>, <span class="fl">8</span>, <span class="fl">32</span>, <span class="fl">3</span><span class="op">)</span>, <span class="va">big</span>, <span class="st">"node_classification"</span>,</span>
+<span>                            epochs <span class="op">=</span> <span class="fl">15</span>, loader <span class="op">=</span> <span class="va">ld</span>, seed <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/evaluate_graph_model.html">evaluate_graph_model</a></span><span class="op">(</span><span class="va">fit_ld</span>, <span class="va">big</span><span class="op">)</span></span>
+<span><span class="co">#&gt;              metric      value</span></span>
+<span><span class="co">#&gt; 1          accuracy 0.99444444</span></span>
+<span><span class="co">#&gt; 2 balanced_accuracy 0.99444444</span></span>
+<span><span class="co">#&gt; 3   precision_macro 0.99453552</span></span>
+<span><span class="co">#&gt; 4      recall_macro 0.99444444</span></span>
+<span><span class="co">#&gt; 5          f1_macro 0.99444406</span></span>
+<span><span class="co">#&gt; 6               ece 0.01418162</span></span>
+<span><span class="co">#&gt; 7             brier 0.01848900</span></span>
+<span><span class="co">#&gt; 8           roc_auc 0.99689815</span></span>
+<span><span class="co">#&gt; 9 average_precision 0.99662898</span></span></code></pre></div>
+<p>All three loaders return <code>graph_data</code> batches whose
 <code>node_ids</code> hold the original node indices, so a batch can be
 inspected like any other graph.</p>
 </div>
@@ -286,7 +321,7 @@ undirected graphs it returns canonical pairs with
 <code>from &lt; to</code> and excludes both directions of each positive.
 Bipartite sampling draws sources and targets from different node
 sets.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pos</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dataset_karate.html">dataset_karate</a></span><span class="op">(</span><span class="op">)</span><span class="op">$</span><span class="va">edge_index</span></span>
 <span><span class="va">neg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/negative_sampling.html">negative_sampling</a></span><span class="op">(</span><span class="va">pos</span>, num_nodes <span class="op">=</span> <span class="fl">34</span>, num_samples <span class="op">=</span> <span class="fl">5</span>, directed <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>                         seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>

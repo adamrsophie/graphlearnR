@@ -320,6 +320,7 @@ evaluate_graph_model(fit_ode, g_ode)
 #> 6               ece 1.756549e-05
 #> 7             brier 2.002353e-09
 #> 8           roc_auc 1.000000e+00
+#> 9 average_precision 1.000000e+00
 ```
 
 The tests compare the block with the closed form solution e^{t(A - I)}

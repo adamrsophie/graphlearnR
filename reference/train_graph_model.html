@@ -139,7 +139,11 @@ a function taking a parameter list and returning a <code>torch</code> optimizer.
 <dt id="arg-loss">loss<a class="anchor" aria-label="anchor" href="#arg-loss"></a></dt>
 <dd><p><code>NULL</code> for the task default (cross entropy, mean squared error,
 binary cross entropy with logits), a name (<code>"cross_entropy"</code>, <code>"mse"</code>,
-<code>"l1"</code>, <code>"huber"</code>, <code>"bce"</code>, <code>"focal"</code>), or a function <code>(prediction, target)</code>.</p></dd>
+<code>"l1"</code>, <code>"huber"</code>, <code>"bce"</code>, <code>"bce_masked"</code>, <code>"focal"</code>), or a function
+<code>(prediction, target)</code>. <code>"bce_masked"</code> is binary cross entropy with
+logits over multi task 0/1 targets that ignores missing (<code>NA</code>) entries,
+for datasets such as <code>ogbg-molpcba</code>; use it with a regression task and
+a numeric label matrix.</p></dd>
 
 
 <dt id="arg-val-data">val_data<a class="anchor" aria-label="anchor" href="#arg-val-data"></a></dt>
@@ -152,7 +156,11 @@ tasks with <code>fanouts</code>).</p></dd>
 
 
 <dt id="arg-fanouts">fanouts<a class="anchor" aria-label="anchor" href="#arg-fanouts"></a></dt>
-<dd><p>Neighbor sampling fanouts for node mini-batches.</p></dd>
+<dd><p>Neighbor sampling fanouts for node mini-batches. For a
+heterogeneous node task they go to <code><a href="sample_hetero_neighbors.html">sample_hetero_neighbors()</a></code> (a
+vector applied to every relation, or a named list per relation), with
+training nodes of <code>target_type</code> as seeds; the loss uses the seeds only
+and validation runs on the full graph.</p></dd>
 
 
 <dt id="arg-decoder">decoder<a class="anchor" aria-label="anchor" href="#arg-decoder"></a></dt>
@@ -204,7 +212,8 @@ checkpointed one.</p></dd>
 
 
 <dt id="arg-loader">loader<a class="anchor" aria-label="anchor" href="#arg-loader"></a></dt>
-<dd><p>A <code><a href="cluster_loader.html">cluster_loader()</a></code> or <code><a href="cluster_loader.html">saint_loader()</a></code> for node tasks.</p></dd>
+<dd><p>A <code><a href="cluster_loader.html">cluster_loader()</a></code>, <code><a href="cluster_loader.html">saint_loader()</a></code> or <code><a href="ladies_loader.html">ladies_loader()</a></code>
+for node tasks.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>

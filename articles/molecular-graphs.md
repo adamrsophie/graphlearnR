@@ -132,6 +132,7 @@ evaluate_graph_model(fit, mols[sp$test])
 #> 6               ece 0.12851698
 #> 7             brier 0.07594893
 #> 8           roc_auc         NA
+#> 9 average_precision 1.00000000
 ```
 
 For comparison, a random stratified split:
@@ -155,6 +156,7 @@ evaluate_graph_model(fit_r, mols[sp_r$test])
 #> 6               ece 0.2657013
 #> 7             brier 0.4401036
 #> 8           roc_auc 1.0000000
+#> 9 average_precision 1.0000000
 ```
 
 ## Real data: MUTAG

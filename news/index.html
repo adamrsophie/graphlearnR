@@ -132,6 +132,25 @@
 <code><a href="../reference/molecule_graph.html">molecule_graph()</a></code> builds graphs from atoms and bonds with element and bond order features; <code><a href="../reference/molecule_graph.html">dataset_synthetic_molecules()</a></code> generates small synthetic molecules with scaffold identifiers for scaffold splits.</li>
 </ul></div>
 <div class="section level3">
+<h3 id="models-evaluation-and-data-additions-0-1-0">Models, evaluation and data (additions)<a class="anchor" aria-label="anchor" href="#models-evaluation-and-data-additions-0-1-0"></a></h3>
+<ul><li>
+<code><a href="../reference/meta_layer.html">meta_layer()</a></code> composes edge, node and graph level updates (graph network block, as PyG’s <code>MetaLayer</code>).</li>
+<li>
+<code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> for temporal fits: TGN continues from its stored memory and neighbor store, dynamic link models score from earlier snapshots, and spatiotemporal models forecast from given origins; temporal fits can be saved and loaded.</li>
+<li>Heterogeneous node tasks train on typed neighbor samples with <code>fanouts</code> and <code>batch_size</code>.</li>
+<li>
+<code><a href="../reference/ladies_loader.html">ladies_loader()</a></code>: layer wise importance sampled node batches (LADIES, the successor of FastGCN) for <code>train_graph_model(loader = )</code>.</li>
+<li>
+<code><a href="../reference/evaluate_embeddings.html">evaluate_embeddings()</a></code> (linear probe and clustering), average precision in classification metrics, filtered per positive link ranking in <code><a href="../reference/evaluate_graph_model.html">evaluate_graph_model()</a></code>, and <code><a href="../reference/ogb_evaluate.html">ogb_evaluate()</a></code> with the official OGB metrics; the <code>bce_masked</code> loss trains multi task targets with missing labels.</li>
+<li>Datasets check a shared feature schema (<code><a href="../reference/graph_dataset.html">graph_schema()</a></code>); <code><a href="../reference/download-datasets.html">download_pubmed_raw()</a></code> and <code><a href="../reference/download-datasets.html">read_linqs_pubmed()</a></code> read Pubmed-Diabetes.</li>
+<li>igraph conversion keeps feature names, label matrices, edge masks, graph labels, graph attributes and metadata; <code><a href="../reference/graph_batch.html">unbatch()</a></code> rebuilds heterogeneous batches.</li>
+<li>The reproducibility record keeps exact split members and all training settings.</li>
+<li>
+<code><a href="../reference/graph_transformer_model.html">graph_transformer_model()</a></code> caches shortest path distances of recent batches.</li>
+<li>
+<code><a href="../reference/scatter.html">scatter_std()</a></code> (and the PNA <code>std</code> aggregator) now returns 0 for empty and constant groups, as PyTorch Geometric’s <code>StdAggregation</code>; PNA layers are compared with PyG’s <code>PNAConv</code> in the benchmark workflow.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="correctness-and-safety-behavior-0-1-0">Correctness and safety behavior<a class="anchor" aria-label="anchor" href="#correctness-and-safety-behavior-0-1-0"></a></h3>
 <ul><li>
 <code><a href="../reference/split_edges.html">split_edges()</a></code> and <code><a href="../reference/split_edges_hetero.html">split_edges_hetero()</a></code> treat parallel duplicates (and, for undirected or same type relations, both orientations) as one unit, so a held out pair never stays in the training graph.</li>

@@ -123,6 +123,7 @@ evaluate_graph_model(fit, big)
 #> 6               ece 0.004808865
 #> 7             brier 0.012243922
 #> 8           roc_auc 0.997314815
+#> 9 average_precision 0.996850348
 ```
 
 Prediction and evaluation run on the full graph, so the reported numbers
@@ -160,6 +161,7 @@ evaluate_graph_model(fit_cl, big)
 #> 6               ece 0.03582429
 #> 7             brier 0.02780312
 #> 8           roc_auc 0.99699074
+#> 9 average_precision 0.99643901
 ```
 
 [`saint_loader()`](https://adamrsophie.github.io/graphlearnR/reference/cluster_loader.md)
@@ -195,9 +197,47 @@ evaluate_graph_model(fit_sl, big)
 #> 6               ece 0.1829428
 #> 7             brier 0.1303652
 #> 8           roc_auc 0.9972685
+#> 9 average_precision 0.9954860
 ```
 
-Both loaders return `graph_data` batches whose `node_ids` hold the
+[`ladies_loader()`](https://adamrsophie.github.io/graphlearnR/reference/ladies_loader.md)
+is layer wise importance sampling (LADIES, the successor of FastGCN).
+Seeds are training nodes; for each model layer it draws a fixed number
+of neighbors of the current layer, with probability proportional to the
+squared normalized adjacency mass they send into that layer, and
+reweights the kept edges by the inverse probability (normalized per
+target node). The number of nodes per batch is bounded by the seeds plus
+the layer sizes, whatever the degrees, unlike neighbor sampling whose
+size grows with the fanout product. Only the seeds carry `train_mask`,
+so the loss uses them alone. Use a model that reads `edge_weight`, such
+as SAGE.
+
+``` r
+
+ld <- ladies_loader(big, batch_size = 64, layer_sizes = c(128, 128), seed = 1)
+ld
+#> <ladies_loader> 64 seeds per batch, layer sizes 128, 128
+b <- loader_batches(ld)[[1]]
+c(nodes = num_nodes(b), edges = num_edges(b), seeds = sum(b$train_mask))
+#> nodes edges seeds 
+#>   268   513    64
+torch_manual_seed(2)
+fit_ld <- train_graph_model(gnn_model("sage", 8, 32, 3), big, "node_classification",
+                            epochs = 15, loader = ld, seed = 2)
+evaluate_graph_model(fit_ld, big)
+#>              metric      value
+#> 1          accuracy 0.99444444
+#> 2 balanced_accuracy 0.99444444
+#> 3   precision_macro 0.99453552
+#> 4      recall_macro 0.99444444
+#> 5          f1_macro 0.99444406
+#> 6               ece 0.01418162
+#> 7             brier 0.01848900
+#> 8           roc_auc 0.99689815
+#> 9 average_precision 0.99662898
+```
+
+All three loaders return `graph_data` batches whose `node_ids` hold the
 original node indices, so a batch can be inspected like any other graph.
 
 ## Negative sampling

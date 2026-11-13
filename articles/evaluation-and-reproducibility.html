@@ -223,7 +223,8 @@ the individual metrics are exported too.</p>
 <span><span class="co">#&gt; 5          f1_macro 0.6666667</span></span>
 <span><span class="co">#&gt; 6               ece 0.3333333</span></span>
 <span><span class="co">#&gt; 7             brier 0.3100000</span></span>
-<span><span class="co">#&gt; 8           roc_auc 0.9629630</span></span></code></pre></div>
+<span><span class="co">#&gt; 8           roc_auc 0.9629630</span></span>
+<span><span class="co">#&gt; 9 average_precision 0.9722222</span></span></code></pre></div>
 <ul>
 <li>Classification: accuracy, balanced accuracy, macro precision,
 recall, and F1, one versus rest ROC AUC, Brier score, and expected
@@ -290,10 +291,12 @@ in the last bits between runs.</p>
 <p>Each fit stores what is needed to report or repeat it:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">f1</span><span class="op">$</span><span class="va">reproducibility</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="co">#&gt; List of 16</span></span>
+<span><span class="co">#&gt; List of 18</span></span>
 <span><span class="co">#&gt;  $ seed           : num 7</span></span>
 <span><span class="co">#&gt;  $ task           : chr "node_classification"</span></span>
-<span><span class="co">#&gt;  $ hyperparameters:List of 6</span></span>
+<span><span class="co">#&gt;  $ hyperparameters:List of 9</span></span>
+<span><span class="co">#&gt;  $ decoder        : NULL</span></span>
+<span><span class="co">#&gt;  $ loader         : NULL</span></span>
 <span><span class="co">#&gt;  $ optimizer      : chr "adam"</span></span>
 <span><span class="co">#&gt;  $ scheduler      : NULL</span></span>
 <span><span class="co">#&gt;  $ loss           : chr "default"</span></span>
@@ -301,14 +304,13 @@ in the last bits between runs.</p>
 <span><span class="co">#&gt;  $ model_class    : chr "graph_model"</span></span>
 <span><span class="co">#&gt;  $ num_parameters : num 467</span></span>
 <span><span class="co">#&gt;  $ dataset        :List of 7</span></span>
-<span><span class="co">#&gt;  $ splits         : Named int [1:3] 72 24 24</span></span>
-<span><span class="co">#&gt;   ..- attr(*, "names")= chr [1:3] "train" "val" "test"</span></span>
+<span><span class="co">#&gt;  $ splits         :List of 2</span></span>
 <span><span class="co">#&gt;  $ device         : chr "cpu"</span></span>
-<span><span class="co">#&gt;  $ precision      : chr "float32"</span></span>
+<span><span class="co">#&gt;  $ precision      : chr "Float"</span></span>
 <span><span class="co">#&gt;  $ versions       : Named chr [1:3] "4.6.2" "0.1.0" "0.17.0"</span></span>
 <span><span class="co">#&gt;   ..- attr(*, "names")= chr [1:3] "R" "graphlearnR" "torch"</span></span>
 <span><span class="co">#&gt;  $ platform       : chr "x86_64-pc-linux-gnu"</span></span>
-<span><span class="co">#&gt;  $ time           : chr "2026-11-13 13:43:32 UTC"</span></span></code></pre></div>
+<span><span class="co">#&gt;  $ time           : chr "2026-11-13 15:18:19 UTC"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="a-checklist-for-papers-and-reports">A checklist for papers and reports<a class="anchor" aria-label="anchor" href="#a-checklist-for-papers-and-reports"></a>

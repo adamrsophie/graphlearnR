@@ -77,6 +77,8 @@ Scatter aggregation and the general message passing operator.
   : Scatter aggregation over groups
 - [`message_passing()`](https://adamrsophie.github.io/graphlearnR/reference/message_passing.md)
   : Generic message passing
+- [`meta_layer()`](https://adamrsophie.github.io/graphlearnR/reference/meta_layer.md)
+  : Edge, node and graph update block
 - [`add_self_loops_tensor()`](https://adamrsophie.github.io/graphlearnR/reference/add_self_loops_tensor.md)
   [`remove_self_loops_tensor()`](https://adamrsophie.github.io/graphlearnR/reference/add_self_loops_tensor.md)
   [`gcn_norm()`](https://adamrsophie.github.io/graphlearnR/reference/add_self_loops_tensor.md)
@@ -144,6 +146,8 @@ Scatter aggregation and the general message passing operator.
 - [`cluster_loader()`](https://adamrsophie.github.io/graphlearnR/reference/cluster_loader.md)
   [`saint_loader()`](https://adamrsophie.github.io/graphlearnR/reference/cluster_loader.md)
   : Cluster and GraphSAINT subgraph loaders
+- [`ladies_loader()`](https://adamrsophie.github.io/graphlearnR/reference/ladies_loader.md)
+  : Layer wise importance sampled mini batches (LADIES)
 - [`negative_sampling()`](https://adamrsophie.github.io/graphlearnR/reference/negative_sampling.md)
   : Negative edge sampling
 - [`corrupt_tails()`](https://adamrsophie.github.io/graphlearnR/reference/corrupt_tails.md)
@@ -172,6 +176,8 @@ Leakage safe splits for every task.
   : Evaluate a trained graph model
 - [`evaluate_predictions()`](https://adamrsophie.github.io/graphlearnR/reference/evaluate_predictions.md)
   : Evaluate predictions for a task
+- [`evaluate_embeddings()`](https://adamrsophie.github.io/graphlearnR/reference/evaluate_embeddings.md)
+  : Evaluate node or graph embeddings
 - [`save_graph_fit()`](https://adamrsophie.github.io/graphlearnR/reference/save_graph_fit.md)
   [`load_graph_fit()`](https://adamrsophie.github.io/graphlearnR/reference/save_graph_fit.md)
   : Save and load a trained model
@@ -255,6 +261,8 @@ Leakage safe splits for every task.
 - [`tgn_model()`](https://adamrsophie.github.io/graphlearnR/reference/tgn_model.md)
   [`train_tgn()`](https://adamrsophie.github.io/graphlearnR/reference/tgn_model.md)
   : Temporal graph network with node memory
+- [`predict(`*`<temporal_fit>`*`)`](https://adamrsophie.github.io/graphlearnR/reference/predict.temporal_fit.md)
+  : Predict with a temporal model
 
 ## Graph transformers and encodings
 
@@ -288,6 +296,7 @@ Leakage safe splits for every task.
 ## Datasets
 
 - [`graph_dataset()`](https://adamrsophie.github.io/graphlearnR/reference/graph_dataset.md)
+  [`graph_schema()`](https://adamrsophie.github.io/graphlearnR/reference/graph_dataset.md)
   [`graph_dataset_disk()`](https://adamrsophie.github.io/graphlearnR/reference/graph_dataset.md)
   [`write_graph_dataset()`](https://adamrsophie.github.io/graphlearnR/reference/graph_dataset.md)
   : Graph datasets
@@ -305,12 +314,16 @@ Leakage safe splits for every task.
 - [`download_tu_dataset()`](https://adamrsophie.github.io/graphlearnR/reference/download-datasets.md)
   [`read_tu_dataset()`](https://adamrsophie.github.io/graphlearnR/reference/download-datasets.md)
   [`download_planetoid_raw()`](https://adamrsophie.github.io/graphlearnR/reference/download-datasets.md)
+  [`download_pubmed_raw()`](https://adamrsophie.github.io/graphlearnR/reference/download-datasets.md)
+  [`read_linqs_pubmed()`](https://adamrsophie.github.io/graphlearnR/reference/download-datasets.md)
   [`read_linqs_citation()`](https://adamrsophie.github.io/graphlearnR/reference/download-datasets.md)
   : Download and read public benchmark datasets
 - [`read_ogb_node()`](https://adamrsophie.github.io/graphlearnR/reference/read_ogb_node.md)
   [`read_ogb_graph()`](https://adamrsophie.github.io/graphlearnR/reference/read_ogb_node.md)
   [`download_ogb()`](https://adamrsophie.github.io/graphlearnR/reference/read_ogb_node.md)
   : Open Graph Benchmark datasets
+- [`ogb_evaluate()`](https://adamrsophie.github.io/graphlearnR/reference/ogb_evaluate.md)
+  : Official OGB evaluation metrics
 
 ## Molecules
 

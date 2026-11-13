@@ -20,6 +20,10 @@ download_planetoid_raw(
   overwrite = FALSE
 )
 
+download_pubmed_raw(root = tempdir(), md5 = NULL, overwrite = FALSE)
+
+read_linqs_pubmed(dir)
+
 read_linqs_citation(dir, name = basename(dir))
 ```
 
@@ -58,15 +62,26 @@ read_linqs_citation(dir, name = basename(dir))
   <https://www.chrsmrrs.com/graphkerneldatasets/>.
 
 - `download_planetoid_raw()`: the original LINQS releases of Cora and
-  CiteSeer (Sen et al. 2008) from <https://linqs-data.soe.ucsc.edu/>.
-  These are the raw citation graphs. They are **not** the Planetoid
-  splits used by Kipf and Welling (2017) and PyG's `Planetoid` class
-  (which also drop and reorder nodes), so results are not comparable to
-  published leaderboards. Open Graph Benchmark datasets are read by
+  CiteSeer (Sen et al. 2008) from <https://linqs-data.soe.ucsc.edu/>;
+  `download_pubmed_raw()` the Pubmed-Diabetes release (Namata et
+  al. 2012) from the same site. These are the raw citation graphs. They
+  are **not** the Planetoid splits used by Kipf and Welling (2017) and
+  PyG's `Planetoid` class (which also drop and reorder nodes), so
+  results are not comparable to published leaderboards. Open Graph
+  Benchmark datasets are read by
   [`download_ogb()`](https://adamrsophie.github.io/graphlearnR/reference/read_ogb_node.md).
 
-`read_tu_dataset()` and `read_linqs_citation()` parse already downloaded
-files.
+`read_tu_dataset()`, `read_linqs_citation()` and `read_linqs_pubmed()`
+parse already downloaded files.
+
+The Pubmed-Diabetes release stores sparse TF-IDF word weights as
+`word=value` fields; absent words are zero. Its `.cites.tab` file lists
+each link as `paper:A | paper:B` and does not document the direction, so
+`read_linqs_pubmed()` keeps the file order (an edge from `A` to `B`);
+use
+[`as_undirected()`](https://adamrsophie.github.io/graphlearnR/reference/graph-transforms.md)
+when direction should not matter. Links to unknown papers are dropped
+and counted in `metadata$dropped_edges`.
 
 In the LINQS `.cites` files each line is `cited citing`. The returned
 graph is directed from the citing paper to the cited paper. Citations to

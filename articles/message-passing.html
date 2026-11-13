@@ -449,7 +449,8 @@ inside the torch graph, so the block trains like any other layer.</p>
 <span><span class="co">#&gt; 5          f1_macro 1.000000e+00</span></span>
 <span><span class="co">#&gt; 6               ece 1.756549e-05</span></span>
 <span><span class="co">#&gt; 7             brier 2.002353e-09</span></span>
-<span><span class="co">#&gt; 8           roc_auc 1.000000e+00</span></span></code></pre></div>
+<span><span class="co">#&gt; 8           roc_auc 1.000000e+00</span></span>
+<span><span class="co">#&gt; 9 average_precision 1.000000e+00</span></span></code></pre></div>
 <p>The tests compare the block with the closed form solution <span class="math inline">e^{t(A - I)} X_0</span> for the GCN operator, and
 check that constant features are a fixed point of the attention
 operator. This is a fixed step discretization, not an adaptive ODE

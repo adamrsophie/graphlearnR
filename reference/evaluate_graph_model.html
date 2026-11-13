@@ -73,7 +73,9 @@
 <span>  <span class="va">fit</span>,</span>
 <span>  new_data <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  split <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"test"</span>, <span class="st">"val"</span>, <span class="st">"train"</span><span class="op">)</span>,</span>
-<span>  ks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">10L</span>, <span class="fl">50L</span><span class="op">)</span></span>
+<span>  ks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">10L</span>, <span class="fl">50L</span><span class="op">)</span>,</span>
+<span>  filtered_negatives <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  seed <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -96,6 +98,15 @@
 <dt id="arg-ks">ks<a class="anchor" aria-label="anchor" href="#arg-ks"></a></dt>
 <dd><p>Cut-offs for Hits@K.</p></dd>
 
+
+<dt id="arg-filtered-negatives">filtered_negatives<a class="anchor" aria-label="anchor" href="#arg-filtered-negatives"></a></dt>
+<dd><p>For homogeneous link prediction: number of
+filtered corrupted tails per positive for MRR and Hits@K, or <code>NULL</code>.</p></dd>
+
+
+<dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
+<dd><p>Optional seed for drawing the corrupted tails.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -108,7 +119,12 @@
 <li><p>Graph tasks: every graph in <code>new_data</code>.</p></li>
 <li><p>Link prediction: <code>split$test_pos</code> against <code>split$test_neg</code> (or the
 validation pairs with <code>split = "val"</code>), with message passing on the
-training graph only.</p></li>
+training graph only. ROC-AUC and average precision use those pairs;
+by default MRR and Hits@K rank every positive against the shared
+negatives. With <code>filtered_negatives = k</code>, each positive \((u, v)\) is
+instead ranked against <code>k</code> corrupted tails \((u, v')\) drawn by
+<code><a href="corrupt_tails.html">corrupt_tails()</a></code> so that no \((u, v')\) is a known positive pair of
+the split (the filtered setting of Bordes et al. 2013).</p></li>
 <li><p>Edge tasks: edges in the <code>split</code> edge mask.</p></li>
 </ul></div>
 
@@ -129,6 +145,7 @@ training graph only.</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6               ece 0.4036021</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 7             brier 0.3302357</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 8           roc_auc 1.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9 average_precision 1.0000000</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

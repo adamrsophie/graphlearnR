@@ -58,4 +58,5 @@ evaluate_predictions(factor(c("a", "b", "b")), p, "classification")
 #> 6               ece 0.3666667
 #> 7             brier 0.3266667
 #> 8           roc_auc 1.0000000
+#> 9 average_precision 1.0000000
 ```

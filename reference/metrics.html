@@ -134,8 +134,8 @@ binary ranking metrics, numeric for regression.</p></dd>
 
 <dt id="arg-score">score<a class="anchor" aria-label="anchor" href="#arg-score"></a></dt>
 <dd><p>Predicted score or probability of the positive class (or a
-probability matrix with one column per class for <code>metric_roc_auc()</code> and
-<code>metric_ece()</code>).</p></dd>
+probability matrix with one column per class for <code>metric_roc_auc()</code>,
+<code>metric_average_precision()</code> and <code>metric_ece()</code>).</p></dd>
 
 
 <dt id="arg-prob">prob<a class="anchor" aria-label="anchor" href="#arg-prob"></a></dt>
@@ -177,7 +177,8 @@ factor truth with more than two levels it returns the macro average of
 one-vs-rest AUCs.</p></li>
 <li><p><code>metric_average_precision()</code>: \(\sum_n (R_n - R_{n-1}) P_n\) over
 distinct score thresholds (the definition used by scikit-learn), not
-the trapezoidal area under the precision-recall curve.</p></li>
+the trapezoidal area under the precision-recall curve. A probability
+matrix gives the macro one-vs-rest average, as for ROC-AUC.</p></li>
 <li><p><code>metric_ece()</code>: expected calibration error with equal width bins on the
 top predicted probability.</p></li>
 <li><p><code>metric_hits_at_k()</code>, <code>metric_mrr()</code>: link ranking metrics. With a

@@ -117,7 +117,7 @@ per row of <code>src</code>.</p></dd>
 
 
 <dt id="arg-eps">eps<a class="anchor" aria-label="anchor" href="#arg-eps"></a></dt>
-<dd><p>Constant added under the square root in <code>scatter_std()</code>.</p></dd>
+<dd><p>Variance floor in <code>scatter_std()</code>; smaller variances give 0.</p></dd>
 
 
 <dt id="arg-aggr">aggr<a class="anchor" aria-label="anchor" href="#arg-aggr"></a></dt>
@@ -137,8 +137,10 @@ per row of <code>src</code>.</p></dd>
 <li><p><code>scatter_max()</code>, <code>scatter_min()</code>: elementwise maximum or minimum.
 Empty groups give 0. Gradients flow to the selected entries; ties
 split the gradient as <code>torch</code> defines for <code>scatter_reduce</code>.</p></li>
-<li><p><code>scatter_std()</code>: population standard deviation, with a small constant
-inside the square root so the gradient stays finite.</p></li>
+<li><p><code>scatter_std()</code>: population standard deviation, computed as
+\(\sqrt{\max(\mathrm{var}, \epsilon)}\) and set to 0 where the
+variance is at most \(\epsilon\) (empty or constant groups), as in
+PyTorch Geometric's <code>StdAggregation</code>; the gradient stays finite.</p></li>
 <li><p><code>scatter_softmax()</code>: softmax of <code>src</code> within each group (used for
 attention over incoming edges); columns are treated separately.</p></li>
 <li><p><code>scatter_aggregate()</code>: dispatch by name; several names give their

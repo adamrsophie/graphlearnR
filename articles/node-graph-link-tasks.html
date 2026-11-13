@@ -273,6 +273,7 @@ test at telling such graphs apart.</p>
 <span><span class="co">#&gt; 6               ece 0.000000e+00</span></span>
 <span><span class="co">#&gt; 7             brier 5.953295e-16</span></span>
 <span><span class="co">#&gt; 8           roc_auc 1.000000e+00</span></span>
+<span><span class="co">#&gt; 9 average_precision 1.000000e+00</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_g</span>, <span class="va">graphs</span><span class="op">[</span><span class="va">sp</span><span class="op">$</span><span class="va">test</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   .row graph .pred_class .prob_cycle  .prob_wheel</span></span>
 <span><span class="co">#&gt; 1    1     1       cycle           1 7.298568e-12</span></span>
@@ -310,7 +311,8 @@ square of the largest graph in a batch.</p>
 <span><span class="co">#&gt; 5          f1_macro 1.000000e+00</span></span>
 <span><span class="co">#&gt; 6               ece 2.903740e-05</span></span>
 <span><span class="co">#&gt; 7             brier 9.443834e-09</span></span>
-<span><span class="co">#&gt; 8           roc_auc 1.000000e+00</span></span></code></pre></div>
+<span><span class="co">#&gt; 8           roc_auc 1.000000e+00</span></span>
+<span><span class="co">#&gt; 9 average_precision 1.000000e+00</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -398,7 +400,8 @@ nodes and an edge decoder classifies each pair.</p>
 <span><span class="co">#&gt; 5          f1_macro 1.000000e+00</span></span>
 <span><span class="co">#&gt; 6               ece 4.698913e-04</span></span>
 <span><span class="co">#&gt; 7             brier 6.453759e-06</span></span>
-<span><span class="co">#&gt; 8           roc_auc 1.000000e+00</span></span></code></pre></div>
+<span><span class="co">#&gt; 8           roc_auc 1.000000e+00</span></span>
+<span><span class="co">#&gt; 9 average_precision 1.000000e+00</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="training-options">Training options<a class="anchor" aria-label="anchor" href="#training-options"></a>

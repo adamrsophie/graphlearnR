@@ -5,8 +5,14 @@ node's clipped degree, added to the features), `num_layers`
 [`graph_transformer_layer()`](https://adamrsophie.github.io/graphlearnR/reference/graph_transformer_layer.md)s
 with shortest path attention bias, a final layer norm, and either a node
 level linear head or global pooling and an MLP head. Shortest path
-distances are computed in R for each batch, which costs \\O(\sum_g n_g
-(n_g + e_g))\\ per forward pass.
+distances are computed in R for each new batch, which costs \\O(\sum_g
+n_g (n_g + e_g))\\; the distances of the 64 most recent distinct batches
+are cached in the model, so repeated batches (for example full batch
+training) reuse them. Edge features are not used by this model; for edge
+aware attention use
+[`transformer_conv()`](https://adamrsophie.github.io/graphlearnR/reference/gnn-layers.md)
+with `edge_dim`, which also gives a sparse, neighborhood local
+alternative to dense attention.
 
 ## Usage
 

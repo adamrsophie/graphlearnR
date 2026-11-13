@@ -48,7 +48,7 @@ scatter_aggregate(src, index, dim_size, aggr = "sum")
 
 - eps:
 
-  Constant added under the square root in `scatter_std()`.
+  Variance floor in `scatter_std()`; smaller variances give 0.
 
 - aggr:
 
@@ -69,8 +69,10 @@ A tensor with `dim_size` rows.
   Empty groups give 0. Gradients flow to the selected entries; ties
   split the gradient as `torch` defines for `scatter_reduce`.
 
-- `scatter_std()`: population standard deviation, with a small constant
-  inside the square root so the gradient stays finite.
+- `scatter_std()`: population standard deviation, computed as
+  \\\sqrt{\max(\mathrm{var}, \epsilon)}\\ and set to 0 where the
+  variance is at most \\\epsilon\\ (empty or constant groups), as in
+  PyTorch Geometric's `StdAggregation`; the gradient stays finite.
 
 - `scatter_softmax()`: softmax of `src` within each group (used for
   attention over incoming edges); columns are treated separately.

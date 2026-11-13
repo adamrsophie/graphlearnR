@@ -136,6 +136,47 @@ First release.
   generates small synthetic molecules with scaffold identifiers for
   scaffold splits.
 
+### Models, evaluation and data (additions)
+
+- [`meta_layer()`](https://adamrsophie.github.io/graphlearnR/reference/meta_layer.md)
+  composes edge, node and graph level updates (graph network block, as
+  PyG’s `MetaLayer`).
+- [`predict()`](https://rdrr.io/r/stats/predict.html) for temporal fits:
+  TGN continues from its stored memory and neighbor store, dynamic link
+  models score from earlier snapshots, and spatiotemporal models
+  forecast from given origins; temporal fits can be saved and loaded.
+- Heterogeneous node tasks train on typed neighbor samples with
+  `fanouts` and `batch_size`.
+- [`ladies_loader()`](https://adamrsophie.github.io/graphlearnR/reference/ladies_loader.md):
+  layer wise importance sampled node batches (LADIES, the successor of
+  FastGCN) for `train_graph_model(loader = )`.
+- [`evaluate_embeddings()`](https://adamrsophie.github.io/graphlearnR/reference/evaluate_embeddings.md)
+  (linear probe and clustering), average precision in classification
+  metrics, filtered per positive link ranking in
+  [`evaluate_graph_model()`](https://adamrsophie.github.io/graphlearnR/reference/evaluate_graph_model.md),
+  and
+  [`ogb_evaluate()`](https://adamrsophie.github.io/graphlearnR/reference/ogb_evaluate.md)
+  with the official OGB metrics; the `bce_masked` loss trains multi task
+  targets with missing labels.
+- Datasets check a shared feature schema
+  ([`graph_schema()`](https://adamrsophie.github.io/graphlearnR/reference/graph_dataset.md));
+  [`download_pubmed_raw()`](https://adamrsophie.github.io/graphlearnR/reference/download-datasets.md)
+  and
+  [`read_linqs_pubmed()`](https://adamrsophie.github.io/graphlearnR/reference/download-datasets.md)
+  read Pubmed-Diabetes.
+- igraph conversion keeps feature names, label matrices, edge masks,
+  graph labels, graph attributes and metadata;
+  [`unbatch()`](https://adamrsophie.github.io/graphlearnR/reference/graph_batch.md)
+  rebuilds heterogeneous batches.
+- The reproducibility record keeps exact split members and all training
+  settings.
+- [`graph_transformer_model()`](https://adamrsophie.github.io/graphlearnR/reference/graph_transformer_model.md)
+  caches shortest path distances of recent batches.
+- [`scatter_std()`](https://adamrsophie.github.io/graphlearnR/reference/scatter.md)
+  (and the PNA `std` aggregator) now returns 0 for empty and constant
+  groups, as PyTorch Geometric’s `StdAggregation`; PNA layers are
+  compared with PyG’s `PNAConv` in the benchmark workflow.
+
 ### Correctness and safety behavior
 
 - [`split_edges()`](https://adamrsophie.github.io/graphlearnR/reference/split_edges.md)

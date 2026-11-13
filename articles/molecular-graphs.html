@@ -216,7 +216,8 @@ per molecule.</p>
 <span><span class="co">#&gt; 5          f1_macro 0.48571429</span></span>
 <span><span class="co">#&gt; 6               ece 0.12851698</span></span>
 <span><span class="co">#&gt; 7             brier 0.07594893</span></span>
-<span><span class="co">#&gt; 8           roc_auc         NA</span></span></code></pre></div>
+<span><span class="co">#&gt; 8           roc_auc         NA</span></span>
+<span><span class="co">#&gt; 9 average_precision 1.00000000</span></span></code></pre></div>
 <p>For comparison, a random stratified split:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sp_r</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/split_graphs.html">split_graphs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">mols</span><span class="op">)</span>, labels <span class="op">=</span> <span class="va">labels</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
@@ -235,7 +236,8 @@ per molecule.</p>
 <span><span class="co">#&gt; 5          f1_macro 0.7150997</span></span>
 <span><span class="co">#&gt; 6               ece 0.2657013</span></span>
 <span><span class="co">#&gt; 7             brier 0.4401036</span></span>
-<span><span class="co">#&gt; 8           roc_auc 1.0000000</span></span></code></pre></div>
+<span><span class="co">#&gt; 8           roc_auc 1.0000000</span></span>
+<span><span class="co">#&gt; 9 average_precision 1.0000000</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="real-data-mutag">Real data: MUTAG<a class="anchor" aria-label="anchor" href="#real-data-mutag"></a>

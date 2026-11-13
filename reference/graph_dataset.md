@@ -11,6 +11,8 @@ on demand from a directory written by `write_graph_dataset()`, one
 ``` r
 graph_dataset(graphs, transform = NULL, metadata = list())
 
+graph_schema(g)
+
 graph_dataset_disk(dir, transform = NULL)
 
 write_graph_dataset(graphs, dir, metadata = list(), overwrite = FALSE)
@@ -29,6 +31,10 @@ write_graph_dataset(graphs, dir, metadata = list(), overwrite = FALSE)
 - metadata:
 
   Named list (name, source, version, license, notes).
+
+- g:
+
+  A `graph_data` object.
 
 - dir:
 
@@ -51,6 +57,13 @@ Both support [`length()`](https://rdrr.io/r/base/length.html), `[[` and
 [`train_graph_model()`](https://adamrsophie.github.io/graphlearnR/reference/train_graph_model.md)
 and
 [`split_graphs()`](https://adamrsophie.github.io/graphlearnR/reference/split_graphs.md).
+
+**Feature schema.** All graphs of a dataset must share one schema: the
+same number (and names, when set) of node feature and edge feature
+columns, and the same kind of node, edge and graph labels (factor,
+numeric vector or matrix with the same number of columns), each present
+in all graphs or in none. `graph_dataset()` and `write_graph_dataset()`
+check this; `graph_schema()` returns the schema of one graph.
 
 ## Examples
 

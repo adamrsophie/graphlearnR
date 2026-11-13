@@ -98,6 +98,7 @@ evaluate_predictions(truth, prob, "classification")
 #> 6               ece 0.3333333
 #> 7             brier 0.3100000
 #> 8           roc_auc 0.9629630
+#> 9 average_precision 0.9722222
 ```
 
 - Classification: accuracy, balanced accuracy, macro precision, recall,
@@ -178,10 +179,12 @@ Each fit stores what is needed to report or repeat it:
 ``` r
 
 str(f1$reproducibility, max.level = 1)
-#> List of 16
+#> List of 18
 #>  $ seed           : num 7
 #>  $ task           : chr "node_classification"
-#>  $ hyperparameters:List of 6
+#>  $ hyperparameters:List of 9
+#>  $ decoder        : NULL
+#>  $ loader         : NULL
 #>  $ optimizer      : chr "adam"
 #>  $ scheduler      : NULL
 #>  $ loss           : chr "default"
@@ -189,14 +192,13 @@ str(f1$reproducibility, max.level = 1)
 #>  $ model_class    : chr "graph_model"
 #>  $ num_parameters : num 467
 #>  $ dataset        :List of 7
-#>  $ splits         : Named int [1:3] 72 24 24
-#>   ..- attr(*, "names")= chr [1:3] "train" "val" "test"
+#>  $ splits         :List of 2
 #>  $ device         : chr "cpu"
-#>  $ precision      : chr "float32"
+#>  $ precision      : chr "Float"
 #>  $ versions       : Named chr [1:3] "4.6.2" "0.1.0" "0.17.0"
 #>   ..- attr(*, "names")= chr [1:3] "R" "graphlearnR" "torch"
 #>  $ platform       : chr "x86_64-pc-linux-gnu"
-#>  $ time           : chr "2026-11-13 13:43:32 UTC"
+#>  $ time           : chr "2026-11-13 15:18:19 UTC"
 ```
 
 ## A checklist for papers and reports

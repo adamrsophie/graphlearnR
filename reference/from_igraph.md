@@ -67,8 +67,10 @@ to_igraph(g)
 vertices and `e_1`, `e_2`, ... on edges, labels as `y` and `edge_y`,
 weights as `weight`, and the original identifiers as `node_id`. With the
 default arguments, `from_igraph()` reads these back, so the round trip
-keeps node order, identifiers, features, labels, weights, types and
-direction.
+keeps node order, identifiers, features and their column names, node,
+edge and graph labels (multi target label matrices as `y_1`, `y_2`,
+...), weights, types, node and edge masks, `graph_attr`, `metadata` and
+direction. Graph level fields are stored as igraph graph attributes.
 
 For undirected graphs `to_igraph()` writes each undirected pair once.
 

@@ -3,13 +3,23 @@
 node's clipped degree, added to the features), num_layers
 graph_transformer_layer()s with shortest path attention bias, a final
 layer norm, and either a node level linear head or global pooling and an
-MLP head. Shortest path distances are computed in R for each batch, which
-costs \(O(\sum_g n_g (n_g + e_g))\) per forward pass."><meta property="og:description" content="Input projection plus centrality encoding (a learned embedding of each
+MLP head. Shortest path distances are computed in R for each new batch,
+which costs \(O(\sum_g n_g (n_g + e_g))\); the distances of the 64 most
+recent distinct batches are cached in the model, so repeated batches (for
+example full batch training) reuse them. Edge features are not used by
+this model; for edge aware attention use transformer_conv() with
+edge_dim, which also gives a sparse, neighborhood local alternative to
+dense attention."><meta property="og:description" content="Input projection plus centrality encoding (a learned embedding of each
 node's clipped degree, added to the features), num_layers
 graph_transformer_layer()s with shortest path attention bias, a final
 layer norm, and either a node level linear head or global pooling and an
-MLP head. Shortest path distances are computed in R for each batch, which
-costs \(O(\sum_g n_g (n_g + e_g))\) per forward pass."><meta property="og:image" content="https://adamrsophie.github.io/graphlearnR/logo.svg"></head><body>
+MLP head. Shortest path distances are computed in R for each new batch,
+which costs \(O(\sum_g n_g (n_g + e_g))\); the distances of the 64 most
+recent distinct batches are cached in the model, so repeated batches (for
+example full batch training) reuse them. Edge features are not used by
+this model; for edge aware attention use transformer_conv() with
+edge_dim, which also gives a sparse, neighborhood local alternative to
+dense attention."><meta property="og:image" content="https://adamrsophie.github.io/graphlearnR/logo.svg"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -78,8 +88,13 @@ costs \(O(\sum_g n_g (n_g + e_g))\) per forward pass."><meta property="og:image"
 node's clipped degree, added to the features), <code>num_layers</code>
 <code><a href="graph_transformer_layer.html">graph_transformer_layer()</a></code>s with shortest path attention bias, a final
 layer norm, and either a node level linear head or global pooling and an
-MLP head. Shortest path distances are computed in R for each batch, which
-costs \(O(\sum_g n_g (n_g + e_g))\) per forward pass.</p>
+MLP head. Shortest path distances are computed in R for each new batch,
+which costs \(O(\sum_g n_g (n_g + e_g))\); the distances of the 64 most
+recent distinct batches are cached in the model, so repeated batches (for
+example full batch training) reuse them. Edge features are not used by
+this model; for edge aware attention use <code><a href="gnn-layers.html">transformer_conv()</a></code> with
+<code>edge_dim</code>, which also gives a sparse, neighborhood local alternative to
+dense attention.</p>
     </div>
 
     <div class="section level2">

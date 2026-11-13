@@ -123,6 +123,13 @@ undirected graphs.</p>
     <p>An <code>nn_module</code> called as <code>layer(x, edge_index, edge_weight = NULL)</code>.</p>
     </div>
     <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>Input <code>x</code> is N by F; output N by F'. Edge input: <code>edge_weight</code> only.
+Cost: \(K - 1\) sparse propagations, \(O(K E F)\), plus
+\(O(K N F F')\) for the transforms; memory holds the K terms
+\(T_k X\) (\(K N F\)).</p>
+    </div>
+    <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
     <p>Defferrard, Bresson and Vandergheynst (2016) Convolutional
 neural networks on graphs with fast localized spectral filtering.</p>

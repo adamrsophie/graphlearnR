@@ -142,7 +142,10 @@ returns an <code>igraph</code> object.</p>
 and <code>e_1</code>, <code>e_2</code>, ... on edges, labels as <code>y</code> and <code>edge_y</code>, weights as
 <code>weight</code>, and the original identifiers as <code>node_id</code>. With the default
 arguments, <code>from_igraph()</code> reads these back, so the round trip keeps node
-order, identifiers, features, labels, weights, types and direction.</p>
+order, identifiers, features and their column names, node, edge and
+graph labels (multi target label matrices as <code>y_1</code>, <code>y_2</code>, ...), weights,
+types, node and edge masks, <code>graph_attr</code>, <code>metadata</code> and direction.
+Graph level fields are stored as igraph graph attributes.</p>
 <p>For undirected graphs <code>to_igraph()</code> writes each undirected pair once.</p>
     </div>
 

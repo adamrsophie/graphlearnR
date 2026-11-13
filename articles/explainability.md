@@ -30,6 +30,7 @@ evaluate_graph_model(fit, g)
 #> 6               ece 0.1659179
 #> 7             brier 0.3303945
 #> 8           roc_auc 1.0000000
+#> 9 average_precision 1.0000000
 ```
 
 ## Feature attributions

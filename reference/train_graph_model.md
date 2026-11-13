@@ -71,8 +71,11 @@ train_graph_model(
 
   `NULL` for the task default (cross entropy, mean squared error, binary
   cross entropy with logits), a name (`"cross_entropy"`, `"mse"`,
-  `"l1"`, `"huber"`, `"bce"`, `"focal"`), or a function
-  `(prediction, target)`.
+  `"l1"`, `"huber"`, `"bce"`, `"bce_masked"`, `"focal"`), or a function
+  `(prediction, target)`. `"bce_masked"` is binary cross entropy with
+  logits over multi task 0/1 targets that ignores missing (`NA`)
+  entries, for datasets such as `ogbg-molpcba`; use it with a regression
+  task and a numeric label matrix.
 
 - val_data:
 
@@ -85,7 +88,12 @@ train_graph_model(
 
 - fanouts:
 
-  Neighbor sampling fanouts for node mini-batches.
+  Neighbor sampling fanouts for node mini-batches. For a heterogeneous
+  node task they go to
+  [`sample_hetero_neighbors()`](https://adamrsophie.github.io/graphlearnR/reference/sample_hetero_neighbors.md)
+  (a vector applied to every relation, or a named list per relation),
+  with training nodes of `target_type` as seeds; the loss uses the seeds
+  only and validation runs on the full graph.
 
 - decoder:
 
@@ -146,9 +154,10 @@ train_graph_model(
 - loader:
 
   A
-  [`cluster_loader()`](https://adamrsophie.github.io/graphlearnR/reference/cluster_loader.md)
-  or
+  [`cluster_loader()`](https://adamrsophie.github.io/graphlearnR/reference/cluster_loader.md),
   [`saint_loader()`](https://adamrsophie.github.io/graphlearnR/reference/cluster_loader.md)
+  or
+  [`ladies_loader()`](https://adamrsophie.github.io/graphlearnR/reference/ladies_loader.md)
   for node tasks.
 
 - verbose:

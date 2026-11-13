@@ -10,7 +10,9 @@ evaluate_graph_model(
   fit,
   new_data = NULL,
   split = c("test", "val", "train"),
-  ks = c(1L, 10L, 50L)
+  ks = c(1L, 10L, 50L),
+  filtered_negatives = NULL,
+  seed = NULL
 )
 ```
 
@@ -32,6 +34,15 @@ evaluate_graph_model(
 
   Cut-offs for Hits@K.
 
+- filtered_negatives:
+
+  For homogeneous link prediction: number of filtered corrupted tails
+  per positive for MRR and Hits@K, or `NULL`.
+
+- seed:
+
+  Optional seed for drawing the corrupted tails.
+
 ## Value
 
 A data frame with `metric` and `value`.
@@ -44,7 +55,13 @@ A data frame with `metric` and `value`.
 
 - Link prediction: `split$test_pos` against `split$test_neg` (or the
   validation pairs with `split = "val"`), with message passing on the
-  training graph only.
+  training graph only. ROC-AUC and average precision use those pairs; by
+  default MRR and Hits@K rank every positive against the shared
+  negatives. With `filtered_negatives = k`, each positive \\(u, v)\\ is
+  instead ranked against `k` corrupted tails \\(u, v')\\ drawn by
+  [`corrupt_tails()`](https://adamrsophie.github.io/graphlearnR/reference/corrupt_tails.md)
+  so that no \\(u, v')\\ is a known positive pair of the split (the
+  filtered setting of Bordes et al. 2013).
 
 - Edge tasks: edges in the `split` edge mask.
 
@@ -66,4 +83,5 @@ if (torch::torch_is_installed()) {
 #> 6               ece 0.4036021
 #> 7             brier 0.3302357
 #> 8           roc_auc 1.0000000
+#> 9 average_precision 1.0000000
 ```

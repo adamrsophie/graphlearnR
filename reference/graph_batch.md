@@ -22,7 +22,8 @@ unbatch(batch)
 
 - batch:
 
-  A `graph_batch` object.
+  A `graph_batch` object, or a heterogeneous batch from
+  [`hetero_batch()`](https://adamrsophie.github.io/graphlearnR/reference/hetero_batch.md).
 
 ## Value
 

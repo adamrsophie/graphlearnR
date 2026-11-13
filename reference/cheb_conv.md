@@ -35,6 +35,12 @@ cheb_conv(in_features, out_features, K = 3L, bias = TRUE)
 
 An `nn_module` called as `layer(x, edge_index, edge_weight = NULL)`.
 
+## Details
+
+Input `x` is N by F; output N by F'. Edge input: `edge_weight` only.
+Cost: \\K - 1\\ sparse propagations, \\O(K E F)\\, plus \\O(K N F F')\\
+for the transforms; memory holds the K terms \\T_k X\\ (\\K N F\\).
+
 ## References
 
 Defferrard, Bresson and Vandergheynst (2016) Convolutional neural

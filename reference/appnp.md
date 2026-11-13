@@ -47,6 +47,11 @@ An `nn_module`.
 
 ## Details
 
+Input and output are N by F (the feature size is unchanged). Edge input:
+`edge_weight`. Cost \\O(K E F)\\ time and \\O(E + N F)\\ memory per pass
+(each step only needs the previous one), plus the autograd graph of the
+K steps during training.
+
 `appnp_model()` is the full APPNP model: an MLP predicts per node and
 the predictions are then propagated. It can be passed to
 [`train_graph_model()`](https://adamrsophie.github.io/graphlearnR/reference/train_graph_model.md)
@@ -72,7 +77,8 @@ if (torch::torch_is_installed()) {
 #> 3   precision_macro 0.8750000
 #> 4      recall_macro 0.8333333
 #> 5          f1_macro 0.8285714
-#> 6               ece 0.1373674
-#> 7             brier 0.2635723
+#> 6               ece 0.3553087
+#> 7             brier 0.2755633
 #> 8           roc_auc 1.0000000
+#> 9 average_precision 1.0000000
 ```

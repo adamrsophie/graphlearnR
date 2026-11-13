@@ -3,11 +3,19 @@
 serialization (torch::torch_serialize()) together with the task,
 class levels, training history and reproducibility record into one
 .rds file. Training data and optimizer state are not saved.
-load_graph_fit() restores a fit that predict() can use."><meta property="og:description" content="save_graph_fit() writes the model and decoder with torch's own
+load_graph_fit() restores a fit that predict() can use.
+Temporal fits (train_tgn(), train_dynamic_link_model(),
+train_spatiotemporal_model()) are saved the same way, including a TGN's
+memory and neighbor store, so predict.temporal_fit() can continue after
+loading."><meta property="og:description" content="save_graph_fit() writes the model and decoder with torch's own
 serialization (torch::torch_serialize()) together with the task,
 class levels, training history and reproducibility record into one
 .rds file. Training data and optimizer state are not saved.
-load_graph_fit() restores a fit that predict() can use."><meta property="og:image" content="https://adamrsophie.github.io/graphlearnR/logo.svg"></head><body>
+load_graph_fit() restores a fit that predict() can use.
+Temporal fits (train_tgn(), train_dynamic_link_model(),
+train_spatiotemporal_model()) are saved the same way, including a TGN's
+memory and neighbor store, so predict.temporal_fit() can continue after
+loading."><meta property="og:image" content="https://adamrsophie.github.io/graphlearnR/logo.svg"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -76,7 +84,11 @@ load_graph_fit() restores a fit that predict() can use."><meta property="og:imag
 serialization (<code><a href="https://torch.mlverse.org/docs/reference/torch_serialize.html" class="external-link">torch::torch_serialize()</a></code>) together with the task,
 class levels, training history and reproducibility record into one
 <code>.rds</code> file. Training data and optimizer state are not saved.
-<code>load_graph_fit()</code> restores a fit that <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> can use.</p>
+<code>load_graph_fit()</code> restores a fit that <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> can use.
+Temporal fits (<code><a href="tgn_model.html">train_tgn()</a></code>, <code><a href="train_dynamic_link_model.html">train_dynamic_link_model()</a></code>,
+<code><a href="train_spatiotemporal_model.html">train_spatiotemporal_model()</a></code>) are saved the same way, including a TGN's
+memory and neighbor store, so <code><a href="predict.temporal_fit.html">predict.temporal_fit()</a></code> can continue after
+loading.</p>
     </div>
 
     <div class="section level2">
@@ -91,7 +103,7 @@ class levels, training history and reproducibility record into one
 
 
 <dl><dt id="arg-fit">fit<a class="anchor" aria-label="anchor" href="#arg-fit"></a></dt>
-<dd><p>A <code>graph_fit</code>.</p></dd>
+<dd><p>A <code>graph_fit</code> or <code>temporal_fit</code>.</p></dd>
 
 
 <dt id="arg-path">path<a class="anchor" aria-label="anchor" href="#arg-path"></a></dt>
@@ -105,7 +117,8 @@ class levels, training history and reproducibility record into one
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p><code>save_graph_fit()</code> returns <code>path</code> invisibly; <code>load_graph_fit()</code>
-returns a <code>graph_fit</code> (without <code>data</code> and <code>optimizer</code>).</p>
+returns a <code>graph_fit</code> (without <code>data</code> and <code>optimizer</code>) or a
+<code>temporal_fit</code>.</p>
     </div>
 
     <div class="section level2">

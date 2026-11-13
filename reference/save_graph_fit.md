@@ -6,7 +6,14 @@ serialization
 together with the task, class levels, training history and
 reproducibility record into one `.rds` file. Training data and optimizer
 state are not saved. `load_graph_fit()` restores a fit that
-[`predict()`](https://rdrr.io/r/stats/predict.html) can use.
+[`predict()`](https://rdrr.io/r/stats/predict.html) can use. Temporal
+fits
+([`train_tgn()`](https://adamrsophie.github.io/graphlearnR/reference/tgn_model.md),
+[`train_dynamic_link_model()`](https://adamrsophie.github.io/graphlearnR/reference/train_dynamic_link_model.md),
+[`train_spatiotemporal_model()`](https://adamrsophie.github.io/graphlearnR/reference/train_spatiotemporal_model.md))
+are saved the same way, including a TGN's memory and neighbor store, so
+[`predict.temporal_fit()`](https://adamrsophie.github.io/graphlearnR/reference/predict.temporal_fit.md)
+can continue after loading.
 
 ## Usage
 
@@ -20,7 +27,7 @@ load_graph_fit(path, device = NULL)
 
 - fit:
 
-  A `graph_fit`.
+  A `graph_fit` or `temporal_fit`.
 
 - path:
 
@@ -33,7 +40,7 @@ load_graph_fit(path, device = NULL)
 ## Value
 
 `save_graph_fit()` returns `path` invisibly; `load_graph_fit()` returns
-a `graph_fit` (without `data` and `optimizer`).
+a `graph_fit` (without `data` and `optimizer`) or a `temporal_fit`.
 
 ## Examples
 

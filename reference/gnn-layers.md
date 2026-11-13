@@ -202,12 +202,23 @@ An `nn_module`.
 | `nn_conv` | \\W x_i + \mathrm{aggr}\_j x_j \Theta(e\_{ji})\\ | `edge_attr` (required) | none added |
 | `rgcn_conv` | \\W_0 x_i + \sum_r \frac{1}{\|N_r(i)\|}\sum\_{j \in N_r(i)} W_r x_j\\ | `edge_type` (required) | none added |
 
-Cost is \\O(E F)\\ for message construction plus the dense transforms
-(\\O(N F F')\\); attention layers keep an E by heads attention tensor;
-`nn_conv` stores an E by F by F' tensor of edge specific weights and is
-the most memory hungry. All layers are permutation equivariant:
-permuting node rows and relabeling `edge_index` permutes the output rows
-the same way.
+Normalization, attention and cost per forward pass (N nodes, E edges,
+input size F, output size F', H heads, R relations):
+
+|  |  |  |  |
+|----|----|----|----|
+| Layer | Normalization or attention | Time | Extra memory |
+| `sage_conv` | `aggr` (mean by default) over incoming edges; optional L2 row normalization | \\O(EF + NFF')\\ | \\E F\\ messages |
+| `gcn_conv` | symmetric \\D^{-1/2}(A+I)D^{-1/2}\\, weighted in degree | \\O(EF' + NFF')\\ | \\E F'\\ messages |
+| `graph_conv` | none (sum by default) | \\O(EF + NFF')\\ | \\E F\\ |
+| `gin_conv` | none (sum) | \\O(EF)\\ plus the MLP | \\E F\\ |
+| `gat_conv`, `gatv2_conv` | softmax of attention scores over the incoming edges of each node, per head | \\O(EHF' + NFHF')\\ | \\E H F'\\ messages and \\E H\\ coefficients |
+| `transformer_conv` | scaled dot product softmax over incoming edges, per head | \\O(EHF' + NFHF')\\ | \\E H F'\\ and \\E H\\ |
+| `nn_conv` | `aggr` (mean by default) | \\O(E F F')\\ | \\E F F'\\ edge specific weights, the largest |
+| `rgcn_conv` | mean per relation | \\O(EF' + RNFF')\\ | \\R F F'\\ weights (or bases) |
+
+All layers are permutation equivariant: permuting node rows and
+relabeling `edge_index` permutes the output rows the same way.
 
 The formulas follow the PyTorch Geometric layers of the same names
 (`SAGEConv`, `GCNConv`, `GraphConv`, `GINConv`/`GINEConv`, `GATConv`,

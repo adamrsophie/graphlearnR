@@ -123,7 +123,11 @@ training; for <code>appnp_model()</code>, dropout in the MLP.</p></dd>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><code>appnp_model()</code> is the full APPNP model: an MLP predicts per node and the
+    <p>Input and output are N by F (the feature size is unchanged). Edge input:
+<code>edge_weight</code>. Cost \(O(K E F)\) time and \(O(E + N F)\) memory per
+pass (each step only needs the previous one), plus the autograd graph of
+the K steps during training.</p>
+<p><code>appnp_model()</code> is the full APPNP model: an MLP predicts per node and the
 predictions are then propagated. It can be passed to
 <code><a href="train_graph_model.html">train_graph_model()</a></code> for node tasks.</p>
     </div>
@@ -147,9 +151,10 @@ propagate: graph neural networks meet personalized PageRank.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3   precision_macro 0.8750000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4      recall_macro 0.8333333</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5          f1_macro 0.8285714</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6               ece 0.1373674</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7             brier 0.2635723</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6               ece 0.3553087</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7             brier 0.2755633</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 8           roc_auc 1.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9 average_precision 1.0000000</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

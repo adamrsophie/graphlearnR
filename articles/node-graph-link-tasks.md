@@ -130,6 +130,7 @@ evaluate_graph_model(fit_g, graphs[sp$test])
 #> 6               ece 0.000000e+00
 #> 7             brier 5.953295e-16
 #> 8           roc_auc 1.000000e+00
+#> 9 average_precision 1.000000e+00
 head(predict(fit_g, graphs[sp$test]))
 #>   .row graph .pred_class .prob_cycle  .prob_wheel
 #> 1    1     1       cycle           1 7.298568e-12
@@ -172,6 +173,7 @@ evaluate_graph_model(fit_dp, graphs[sp$test])
 #> 6               ece 2.903740e-05
 #> 7             brier 9.443834e-09
 #> 8           roc_auc 1.000000e+00
+#> 9 average_precision 1.000000e+00
 ```
 
 ## Link prediction
@@ -280,6 +282,7 @@ evaluate_graph_model(fit_e, ge)
 #> 6               ece 4.698913e-04
 #> 7             brier 6.453759e-06
 #> 8           roc_auc 1.000000e+00
+#> 9 average_precision 1.000000e+00
 ```
 
 ## Training options

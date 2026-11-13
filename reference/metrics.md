@@ -65,8 +65,8 @@ metric_ari(truth, cluster)
 - score:
 
   Predicted score or probability of the positive class (or a probability
-  matrix with one column per class for `metric_roc_auc()` and
-  `metric_ece()`).
+  matrix with one column per class for `metric_roc_auc()`,
+  `metric_average_precision()` and `metric_ece()`).
 
 - prob:
 
@@ -107,7 +107,8 @@ A numeric scalar.
 
 - `metric_average_precision()`: \\\sum_n (R_n - R\_{n-1}) P_n\\ over
   distinct score thresholds (the definition used by scikit-learn), not
-  the trapezoidal area under the precision-recall curve.
+  the trapezoidal area under the precision-recall curve. A probability
+  matrix gives the macro one-vs-rest average, as for ROC-AUC.
 
 - `metric_ece()`: expected calibration error with equal width bins on
   the top predicted probability.

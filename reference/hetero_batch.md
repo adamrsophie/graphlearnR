@@ -2,8 +2,11 @@
 
 Concatenates graphs with the same node and relation types. Within each
 node type, indices of graph `k` are shifted by the node counts of that
-type in graphs `1, ..., k - 1`; `batch[[type]]` records graph
-membership.
+type in graphs `1, ..., k - 1`; `batch[[type]]` records graph membership
+and `edge_batch[[relation]]` the graph of each edge.
+[`unbatch()`](https://adamrsophie.github.io/graphlearnR/reference/graph_batch.md)
+rebuilds the input graphs, including node identifiers, labels, masks,
+edge features, times and labels, and each graph's metadata.
 
 ## Usage
 
@@ -28,4 +31,6 @@ hg <- dataset_synthetic_hetero(seed = 1)
 hb <- hetero_batch(list(hg, hg))
 hb$num_nodes
 #> NULL
+length(unbatch(hb))
+#> [1] 2
 ```

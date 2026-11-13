@@ -132,6 +132,7 @@ evaluate_graph_model(fit, graphs[sp$test])
 #> 6               ece 1.609325e-06
 #> 7             brier 5.983525e-12
 #> 8           roc_auc 1.000000e+00
+#> 9 average_precision 1.000000e+00
 ```
 
 The constant node features of these graphs carry no information; the

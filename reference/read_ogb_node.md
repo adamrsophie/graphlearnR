@@ -71,8 +71,13 @@ dataset stores each undirected edge once (`add_inverse_edge` in OGB's
 stored. Molecule datasets carry categorical atom and bond codes in their
 feature columns (OGB's `AtomEncoder` and `BondEncoder` inputs); they are
 kept as numbers, so one hot encode or embed them before training.
-Evaluate with the official split and metric (ROC AUC for `ogbg-molhiv`,
-accuracy for `ogbn-arxiv`) before comparing with the OGB leaderboards.
+Evaluate with the official split and metric
+([`ogb_evaluate()`](https://adamrsophie.github.io/graphlearnR/reference/ogb_evaluate.md):
+ROC AUC for `ogbg-molhiv`, average precision for `ogbg-molpcba`,
+accuracy for the node datasets) before comparing with the OGB
+leaderboards. The multi task `ogbg-molpcba` labels have missing entries;
+train on them with `loss = "bce_masked"` (see
+[`train_graph_model()`](https://adamrsophie.github.io/graphlearnR/reference/train_graph_model.md)).
 Link property prediction datasets store their splits as PyTorch files
 and are not supported.
 

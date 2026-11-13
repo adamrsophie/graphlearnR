@@ -108,4 +108,5 @@ if (torch::torch_is_installed()) {
 #> 6               ece 0.1445739
 #> 7             brier 0.2138200
 #> 8           roc_auc 1.0000000
+#> 9 average_precision 1.0000000
 ```
