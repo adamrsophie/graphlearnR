@@ -209,7 +209,14 @@ toy <- read_ogb_graph(system.file("extdata", "ogbg-toy", package = "graphlearnR"
 length(toy)
 #> [1] 2
 toy$metadata$split
-#> NULL
+#> $train
+#> [1] 1
+#> 
+#> $val
+#> [1] 2
+#> 
+#> $test
+#> integer(0)
 toy[[1]]
 #> <graph_data> undirected graph: 3 nodes, 4 edges (2 undirected pairs)
 #>   node features [3 x 2]

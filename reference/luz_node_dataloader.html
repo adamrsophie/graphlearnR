@@ -110,6 +110,11 @@ on the masked nodes, and message passing still uses the whole graph.</p>
 <dt id="arg-mask">mask<a class="anchor" aria-label="anchor" href="#arg-mask"></a></dt>
 <dd><p><code>"train"</code>, <code>"val"</code> or <code>"test"</code>.</p></dd>
 
+
+<dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
+<dd><p>For <code>luz_node_module</code>: a model whose forward takes
+<code>(x, edge_index, edge_weight = )</code>, for example from <code><a href="gnn_model.html">gnn_model()</a></code>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>

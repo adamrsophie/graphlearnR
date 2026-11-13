@@ -14,7 +14,7 @@ articles:
   node-graph-link-tasks: node-graph-link-tasks.html
   sampling-and-scale: sampling-and-scale.html
   temporal-graphs: temporal-graphs.html
-last_built: 2026-11-13T10:10Z
+last_built: 2026-11-13T10:35Z
 urls:
   reference: https://adamrsophie.github.io/graphlearnR/reference
   article: https://adamrsophie.github.io/graphlearnR/articles

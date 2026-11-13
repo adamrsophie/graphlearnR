@@ -94,7 +94,15 @@ ds <- read_ogb_graph(system.file("extdata", "ogbg-toy", package = "graphlearnR")
 ds
 #> <graph_dataset> 2 graphs
 ds$metadata$split
-#> NULL
+#> $train
+#> [1] 1
+#> 
+#> $val
+#> [1] 2
+#> 
+#> $test
+#> integer(0)
+#> 
 if (FALSE) { # \dontrun{
 hiv <- download_ogb("ogbg-molhiv")
 } # }

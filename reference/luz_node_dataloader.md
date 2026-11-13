@@ -29,6 +29,12 @@ luz_node_module(model)
 
   `"train"`, `"val"` or `"test"`.
 
+- model:
+
+  For `luz_node_module`: a model whose forward takes
+  `(x, edge_index, edge_weight = )`, for example from
+  [`gnn_model()`](https://adamrsophie.github.io/graphlearnR/reference/gnn_model.md).
+
 ## Value
 
 `luz_node_dataloader()`: a torch dataloader. `luz_node_module`: an
