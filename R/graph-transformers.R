@@ -270,8 +270,13 @@ batch_distances <- function(edge_index, batch, max_dist, device) {
 #' node's clipped degree, added to the features), `num_layers`
 #' [graph_transformer_layer()]s with shortest path attention bias, a final
 #' layer norm, and either a node level linear head or global pooling and an
-#' MLP head. Shortest path distances are computed in R for each batch, which
-#' costs \eqn{O(\sum_g n_g (n_g + e_g))} per forward pass.
+#' MLP head. Shortest path distances are computed in R for each new batch,
+#' which costs \eqn{O(\sum_g n_g (n_g + e_g))}; the distances of the 64 most
+#' recent distinct batches are cached in the model, so repeated batches (for
+#' example full batch training) reuse them. Edge features are not used by
+#' this model; for edge aware attention use [transformer_conv()] with
+#' `edge_dim`, which also gives a sparse, neighborhood local alternative to
+#' dense attention.
 #'
 #' The forward signature matches [gnn_model()], so the model works with
 #' [train_graph_model()].
@@ -303,6 +308,10 @@ graph_transformer_model <- nn_module(
                         num_layers = num_layers, heads = heads, max_dist = max_dist,
                         max_degree = max_degree, dropout = dropout, pool = pool)
     self$input <- nn_linear(input_dim, hidden_dim)
+    # Shortest path distances of recently seen batches, so repeated batches
+    # (every epoch of full batch training, for example) are not recomputed.
+    self$dist_cache <- new.env(parent = emptyenv())
+    self$dist_cache$entries <- list()
     self$degree_emb <- nn_embedding(max_degree + 1L, hidden_dim)
     self$layers <- nn_module_list(lapply(seq_len(num_layers), function(i) {
       graph_transformer_layer(hidden_dim, heads, max_dist, dropout)
@@ -316,7 +325,7 @@ graph_transformer_model <- nn_module(
     if (is.null(batch)) batch <- torch_ones(n, dtype = torch_long(), device = x$device)
     deg <- scatter_count(edge_index[2L, ], n)$to(dtype = torch_long())$clamp(max = self$config$max_degree)
     h <- self$input(x) + self$degree_emb(deg + 1L)
-    dist <- batch_distances(edge_index, batch, self$config$max_dist, x$device)
+    dist <- self$distances(edge_index, batch, x$device)
     for (layer in seq_along(self$layers)) h <- self$layers[[layer]](h, batch, dist)
     h <- self$ln(h)
     if (return_embedding) return(h)
@@ -327,5 +336,20 @@ graph_transformer_model <- nn_module(
         max = global_max_pool(h, batch, num_graphs))
     }
     self$head(h)
+  },
+  distances = function(edge_index, batch, device) {
+    ei <- as_r_array(edge_index)
+    b <- as.integer(as_r_array(batch))
+    cache <- self$dist_cache
+    for (e in cache$entries) {
+      if (length(e$b) == length(b) && length(e$ei) == length(ei) && identical(e$ei, ei) && identical(e$b, b)) {
+        return(e$dist$to(device = device))
+      }
+    }
+    dist <- batch_distances(edge_index, batch, self$config$max_dist, device)
+    # ponytail: linear scan over at most 64 cached batches; key by a hash if
+    # many distinct batches repeat.
+    cache$entries <- c(list(list(ei = ei, b = b, dist = dist)), cache$entries)[seq_len(min(64L, length(cache$entries) + 1L))]
+    dist
   }
 )
