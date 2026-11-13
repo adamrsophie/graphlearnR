@@ -1,5 +1,5 @@
 # graphlearnR side of the comparison with PyTorch Geometric.
-# Writes the random graphs and the SAGE and GCN weights, checks nothing,
+# Writes the random graphs and the SAGE, GCN and PNA weights, checks nothing,
 # and times one forward and backward pass per layer with the same settings
 # as compare-pyg.py. Usage: Rscript benchmarks/pyg/compare-r.R <dir> <threads>
 suppressPackageStartupMessages({
@@ -40,6 +40,22 @@ for (n in sizes) {
     wcsv(as.matrix(layers$gcn$lin$weight$detach()), "gcn_lin_weight.csv")
     wcsv(as.matrix(layers$sage(tt$x, tt$edge_index)$detach()), "sage_out_r.csv")
     wcsv(as.matrix(layers$gcn(tt$x, tt$edge_index)$detach()), "gcn_out_r.csv")
+    # PNA with every scaler: once with mean, min, max and sum, and once with
+    # std alone, whose treatment of zero variance may differ between
+    # implementations.
+    deg <- pna_degree(g)
+    wcsv(deg, "pna_deg.csv")
+    scal <- c("identity", "amplification", "attenuation", "linear", "inverse_linear")
+    for (v in list(list(name = "pna", aggr = c("mean", "min", "max", "sum")),
+                   list(name = "pna_std", aggr = "std"))) {
+      torch_manual_seed(2)
+      p <- pna_conv(32, 64, deg = deg, aggregators = v$aggr, scalers = scal)
+      for (part in c("pre", "post", "lin")) {
+        wcsv(as.matrix(p[[part]]$weight$detach()), sprintf("%s_%s_weight.csv", v$name, part))
+        wcsv(as.numeric(as.array(p[[part]]$bias$detach())), sprintf("%s_%s_bias.csv", v$name, part))
+      }
+      wcsv(as.matrix(p(tt$x, tt$edge_index)$detach()), sprintf("%s_out_r.csv", v$name))
+    }
   }
   for (a in names(layers)) {
     f <- function() layers[[a]](tt$x, tt$edge_index)$sum()$backward()
