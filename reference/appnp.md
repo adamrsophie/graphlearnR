@@ -72,7 +72,7 @@ if (torch::torch_is_installed()) {
 #> 3   precision_macro 0.8750000
 #> 4      recall_macro 0.8333333
 #> 5          f1_macro 0.8285714
-#> 6               ece 0.3721573
-#> 7             brier 0.2920158
+#> 6               ece 0.1434930
+#> 7             brier 0.2777134
 #> 8           roc_auc 1.0000000
 ```

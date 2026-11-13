@@ -169,9 +169,9 @@ c(last_train = max(fst$windows$train), first_val = min(fst$windows$val),
 #> last_train  first_val first_test 
 #>         56         57         68
 rbind(model = fst$test_metrics, naive = fst$baseline_metrics)
-#>               mse        mae
-#> model 0.009564201 0.07995599
-#> naive 0.013751859 0.09503502
+#>              mse        mae
+#> model 0.00956420 0.07995598
+#> naive 0.01375186 0.09503502
 ```
 
 To bring your own data, build the graph with any of the constructors and

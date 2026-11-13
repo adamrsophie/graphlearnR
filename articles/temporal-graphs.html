@@ -5,6 +5,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Temporal and dynamic graphs • graphlearnR</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="icon" sizes="any" href="../favicon.ico">
+<link rel="manifest" href="../site.webmanifest">
 <!-- katex math --><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script><script src="../katex-auto.js"></script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
@@ -84,8 +89,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Temporal and dynamic graphs</h1>
+      <img src="../logo.svg" class="logo" alt=""><h1>Temporal and dynamic graphs</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/adamrsophie/graphlearnR/blob/main/vignettes/temporal-graphs.Rmd" class="external-link"><code>vignettes/temporal-graphs.Rmd</code></a></small>
@@ -266,9 +270,9 @@ reported next to the model.</p>
 <span><span class="co">#&gt; last_train  first_val first_test </span></span>
 <span><span class="co">#&gt;         56         57         68</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>model <span class="op">=</span> <span class="va">fst</span><span class="op">$</span><span class="va">test_metrics</span>, naive <span class="op">=</span> <span class="va">fst</span><span class="op">$</span><span class="va">baseline_metrics</span><span class="op">)</span></span>
-<span><span class="co">#&gt;               mse        mae</span></span>
-<span><span class="co">#&gt; model 0.009564201 0.07995599</span></span>
-<span><span class="co">#&gt; naive 0.013751859 0.09503502</span></span></code></pre></div>
+<span><span class="co">#&gt;              mse        mae</span></span>
+<span><span class="co">#&gt; model 0.00956420 0.07995598</span></span>
+<span><span class="co">#&gt; naive 0.01375186 0.09503502</span></span></code></pre></div>
 <p>To bring your own data, build the graph with any of the constructors
 and pass the array to <code><a href="../reference/spatiotemporal_signal.html">spatiotemporal_signal()</a></code>, which checks
 that the node dimension matches.</p>
