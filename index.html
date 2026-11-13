@@ -210,6 +210,17 @@
 <p>Every layer is checked for permutation equivariance, against a dense or reference formula, and with finite difference gradients in double precision. Pooled models are checked for permutation invariance and batched forward passes against separate ones. Splits, samplers and temporal code are checked for leakage. Continuous integration runs <code>R CMD check</code> on Linux, macOS and Windows.</p>
 </div>
 <div class="section level2">
+<h2 id="known-limitations">Known limitations<a class="anchor" aria-label="anchor" href="#known-limitations"></a>
+</h2>
+<ul>
+<li>Neighbor and negative sampling run in R on the CPU. On graphs that fit in memory, full batch training is faster than sampled training.</li>
+<li>The graph transformer uses dense attention within each graph, so memory grows with the square of the largest graph.</li>
+<li>There is no compiled code and no sparse matrix multiplication fast path; aggregation uses torch scatter operations.</li>
+<li>CPU and Apple MPS results agree in tests on an Apple M2; CUDA has not been tested.</li>
+<li>Not yet included: luz and tidymodels integration, Chebyshev, APPNP and PNA layers, cluster based samplers, memory based temporal models, and OGB loaders.</li>
+</ul>
+</div>
+<div class="section level2">
 <h2 id="related-work">Related work<a class="anchor" aria-label="anchor" href="#related-work"></a>
 </h2>
 <p>graphlearnR follows the layer designs of <a href="https://pyg.org" class="external-link">PyTorch Geometric</a> (Fey and Lenssen 2019). In R, <a href="https://r.igraph.org" class="external-link">igraph</a> and <a href="https://tidygraph.data-imaginist.com" class="external-link">tidygraph</a> cover graph analysis and manipulation, and graphlearnR converts from both. It is part of a series of R packages by the same author with <a href="https://github.com/adamrsophie/symcompR" class="external-link">symcompR</a> and <a href="https://github.com/adamrsophie/z3r" class="external-link">z3r</a>.</p>

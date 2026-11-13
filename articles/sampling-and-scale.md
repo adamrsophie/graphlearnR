@@ -114,15 +114,15 @@ fit
 #>   final train loss 0.0594, val loss 0.0169, val accuracy 0.9944
 #>   best epoch 13
 evaluate_graph_model(fit, big)
-#>              metric       value
-#> 1          accuracy 0.994444444
-#> 2 balanced_accuracy 0.994444444
-#> 3   precision_macro 0.994535519
-#> 4      recall_macro 0.994444444
-#> 5          f1_macro 0.994444059
-#> 6               ece 0.006840451
-#> 7             brier 0.012466965
-#> 8           roc_auc 0.997037037
+#>              metric      value
+#> 1          accuracy 0.99444444
+#> 2 balanced_accuracy 0.99444444
+#> 3   precision_macro 0.99453552
+#> 4      recall_macro 0.99444444
+#> 5          f1_macro 0.99444406
+#> 6               ece 0.00684045
+#> 7             brier 0.01246696
+#> 8           roc_auc 0.99703704
 ```
 
 Prediction and evaluation run on the full graph, so the reported numbers
@@ -159,9 +159,13 @@ negative_sampling(rbind(1:3, 1:3), num_src = 5, num_dst = 4, num_samples = 4,
 - Throughput depends mostly on the number of sampled edges, which is
   about `batch_size * prod(fanouts)`. Start with fanouts like
   `c(10, 10)` and lower them if memory is tight.
-- Sampling runs in R on the CPU; the model runs on whichever device you
-  pass as `device`. For very large graphs, keep the graph in memory once
-  and let the loader slice it, rather than building many graph copies.
+- Sampling runs in R on the CPU. On graphs that fit in memory, full
+  batch training is usually faster: on a GitHub runner, an 8,000 node
+  graph took 0.16 s per full batch epoch and 1.0 s per sampled epoch.
+  Sample when the full graph does not fit.
+- The model runs on whichever device you pass as `device`. For very
+  large graphs, keep the graph in memory once and let the loader slice
+  it, rather than building many graph copies.
 - The `benchmarks/` folder of the source repository has timing scripts
   for layers and for full batch against sampled training. Their results
   are produced on GitHub Actions runners and reported with the hardware

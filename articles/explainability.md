@@ -72,7 +72,7 @@ ig <- explain_integrated_gradients(fit, g, target = 1, steps = 64)
 sum(ig$node_feature)
 #> [1] 9.833233
 ig$completeness_gap
-#> [1] 0.006706327
+#> [1] 0.006706059
 ```
 
 ## Edge attributions
@@ -93,7 +93,7 @@ head(eg$edges[order(-abs(eg$edges$attribution)), ])
 #> 20   20   12  1   0.5910739
 #> 12   12    7  1   0.4951163
 #> 10   10    6  1   0.4866577
-#> 8     8    5  1   0.4837199
+#> 8     8    5  1   0.4837200
 ```
 
 ### Occlusion
@@ -108,11 +108,11 @@ edges but needs no gradients and is easy to interpret.
 oc <- explain_occlusion(fit, g, target = 1)
 head(oc$edges[order(-oc$edges$attribution), ])
 #>    edge from to attribution
-#> 11   22   13  1   0.6273994
-#> 10   20   12  1   0.6089315
-#> 6    12    7  1   0.5063629
+#> 11   22   13  1   0.6274004
+#> 10   20   12  1   0.6089334
+#> 6    12    7  1   0.5063639
 #> 5    10    6  1   0.4981394
-#> 4     8    5  1   0.4943409
+#> 4     8    5  1   0.4943419
 #> 9    18   11  1   0.4860201
 ```
 
@@ -160,10 +160,10 @@ head(aw[[1]])
 #>   from to      head1      head2
 #> 1    1  2 0.19154441 0.16146892
 #> 2    2  1 0.03586031 0.07413401
-#> 3    1  3 0.16340749 0.13701235
-#> 4    3  1 0.05869362 0.03081638
+#> 3    1  3 0.16340747 0.13701235
+#> 4    3  1 0.05869362 0.03081637
 #> 5    1  4 0.22324155 0.21166605
-#> 6    4  1 0.12893747 0.06319855
+#> 6    4  1 0.12893744 0.06319855
 ```
 
 ## Is the explanation any good?
@@ -181,8 +181,8 @@ drop when the important edges are removed (higher is better);
 rbind(gradient = explanation_fidelity(fit, g, eg, k = 5),
       gnn_explainer = explanation_fidelity(fit, g, gx, k = 5))
 #>               fidelity_plus fidelity_minus
-#> gradient           1.728138      -3.426292
-#> gnn_explainer     -0.303298       3.899850
+#> gradient          1.7281389      -3.426291
+#> gnn_explainer    -0.3032961       3.899852
 ```
 
 ### Stability

@@ -226,7 +226,7 @@ gp$edge_index <- matrix(inv[g$edge_index], nrow = 2)
 out <- as.array(layer(tt$x, tt$edge_index))
 out_p <- as.array(layer(graph_tensors(gp)$x, graph_tensors(gp)$edge_index))
 max(abs(out_p - out[perm, ]))
-#> [1] 0
+#> [1] 1.490116e-08
 ```
 
 ## Pooling

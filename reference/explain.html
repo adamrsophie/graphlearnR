@@ -192,13 +192,13 @@ prediction while staying sparse (Ying et al. 2019).</p></li>
 <span class="r-in"><span>  <span class="va">ex</span> <span class="op">&lt;-</span> <span class="fu">explain_edges</span><span class="op">(</span><span class="va">fit</span>, <span class="va">g</span>, target <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">edges</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">edges</span><span class="op">$</span><span class="va">attribution</span><span class="op">)</span><span class="op">)</span>, <span class="op">]</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     edge from to attribution</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 32    32   32  1 -0.05562937</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 20    20   12  1  0.04393630</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16    16    9  1 -0.04008571</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 22    22   13  1  0.03602337</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 106  106   34 20 -0.02254511</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 26    26   18  1  0.02136113</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    edge from to attribution</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 30   30   22  1  0.02839359</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2     2    2  1  0.02666070</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 32   32   32  1 -0.02286108</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20   20   12  1  0.01886897</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8     8    5  1  0.01818509</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14   14    8  1  0.01773273</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

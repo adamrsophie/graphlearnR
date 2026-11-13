@@ -191,15 +191,15 @@ context but no gradient signal of their own.</p>
 <span><span class="co">#&gt;   final train loss 0.0594, val loss 0.0169, val accuracy 0.9944</span></span>
 <span><span class="co">#&gt;   best epoch 13</span></span>
 <span><span class="fu"><a href="../reference/evaluate_graph_model.html">evaluate_graph_model</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">big</span><span class="op">)</span></span>
-<span><span class="co">#&gt;              metric       value</span></span>
-<span><span class="co">#&gt; 1          accuracy 0.994444444</span></span>
-<span><span class="co">#&gt; 2 balanced_accuracy 0.994444444</span></span>
-<span><span class="co">#&gt; 3   precision_macro 0.994535519</span></span>
-<span><span class="co">#&gt; 4      recall_macro 0.994444444</span></span>
-<span><span class="co">#&gt; 5          f1_macro 0.994444059</span></span>
-<span><span class="co">#&gt; 6               ece 0.006840451</span></span>
-<span><span class="co">#&gt; 7             brier 0.012466965</span></span>
-<span><span class="co">#&gt; 8           roc_auc 0.997037037</span></span></code></pre></div>
+<span><span class="co">#&gt;              metric      value</span></span>
+<span><span class="co">#&gt; 1          accuracy 0.99444444</span></span>
+<span><span class="co">#&gt; 2 balanced_accuracy 0.99444444</span></span>
+<span><span class="co">#&gt; 3   precision_macro 0.99453552</span></span>
+<span><span class="co">#&gt; 4      recall_macro 0.99444444</span></span>
+<span><span class="co">#&gt; 5          f1_macro 0.99444406</span></span>
+<span><span class="co">#&gt; 6               ece 0.00684045</span></span>
+<span><span class="co">#&gt; 7             brier 0.01246696</span></span>
+<span><span class="co">#&gt; 8           roc_auc 0.99703704</span></span></code></pre></div>
 <p>Prediction and evaluation run on the full graph, so the reported
 numbers do not depend on the sampling.</p>
 </div>
@@ -234,10 +234,13 @@ sets.</p>
 <li>Throughput depends mostly on the number of sampled edges, which is
 about <code>batch_size * prod(fanouts)</code>. Start with fanouts like
 <code>c(10, 10)</code> and lower them if memory is tight.</li>
-<li>Sampling runs in R on the CPU; the model runs on whichever device
-you pass as <code>device</code>. For very large graphs, keep the graph
-in memory once and let the loader slice it, rather than building many
-graph copies.</li>
+<li>Sampling runs in R on the CPU. On graphs that fit in memory, full
+batch training is usually faster: on a GitHub runner, an 8,000 node
+graph took 0.16 s per full batch epoch and 1.0 s per sampled epoch.
+Sample when the full graph does not fit.</li>
+<li>The model runs on whichever device you pass as <code>device</code>.
+For very large graphs, keep the graph in memory once and let the loader
+slice it, rather than building many graph copies.</li>
 <li>The <code>benchmarks/</code> folder of the source repository has
 timing scripts for layers and for full batch against sampled training.
 Their results are produced on GitHub Actions runners and reported with
