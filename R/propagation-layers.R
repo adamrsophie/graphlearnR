@@ -12,6 +12,11 @@
 #' are weighted in degrees, so the operator is the symmetric Laplacian for
 #' undirected graphs.
 #'
+#' Input `x` is N by F; output N by F'. Edge input: `edge_weight` only.
+#' Cost: \eqn{K - 1} sparse propagations, \eqn{O(K E F)}, plus
+#' \eqn{O(K N F F')} for the transforms; memory holds the K terms
+#' \eqn{T_k X} (\eqn{K N F}).
+#'
 #' @param in_features,out_features Feature sizes.
 #' @param K Number of Chebyshev terms (filter order plus one).
 #' @param bias Learn an additive bias.
@@ -65,6 +70,11 @@ cheb_conv <- nn_module(
 #' for `K` steps, with \eqn{\hat A} the GCN propagation matrix (self loops
 #' added, symmetric normalization). It has no parameters. As `K` grows the
 #' result approaches \eqn{\alpha (I - (1 - \alpha)\hat A)^{-1} X}.
+#'
+#' Input and output are N by F (the feature size is unchanged). Edge input:
+#' `edge_weight`. Cost \eqn{O(K E F)} time and \eqn{O(E + N F)} memory per
+#' pass (each step only needs the previous one), plus the autograd graph of
+#' the K steps during training.
 #'
 #' `appnp_model()` is the full APPNP model: an MLP predicts per node and the
 #' predictions are then propagated. It can be passed to
@@ -136,8 +146,8 @@ appnp_model <- nn_module(
 #' Principal neighborhood aggregation (PNA)
 #'
 #' The PNA layer of Corso, Cavalleri, Beaini, Liò and Veličković (2020), in
-#' a single tower form modeled on PyTorch Geometric's `PNAConv` (not
-#' numerically compared with it). For node \eqn{i}
+#' the single tower form of PyTorch Geometric's `PNAConv` (one pre and one
+#' post layer, `divide_input = FALSE`). For node \eqn{i}
 #' with in degree \eqn{d_i}:
 #'
 #' 1. messages \eqn{m_{ji} = U [x_i \Vert x_j \Vert E e_{ji}]} (the edge term
@@ -159,6 +169,17 @@ appnp_model <- nn_module(
 #'
 #' `pna_degree()` computes the in degree histogram `deg` from training
 #' graphs: element \eqn{d + 1} counts nodes with in degree \eqn{d}.
+#'
+#' Input `x` is N by F; output N by F'. No self loops are added; edge input
+#' is `edge_attr` when `edge_dim` is set. Cost: \eqn{O(E F^2)} for the
+#' message transform, \eqn{O(a E F)} for `a` aggregators, and
+#' \eqn{O(N a s F F')} for the post transform with `s` scalers; memory holds
+#' E by F messages and the N by \eqn{(a s + 1) F} concatenation.
+#'
+#' The benchmark workflow (`benchmarks/pyg/`) copies the weights of a layer
+#' with the mean, min, max and sum aggregators and all five scalers into
+#' PyTorch Geometric's `PNAConv` (one tower, one pre and post layer) and
+#' checks that the outputs agree.
 #'
 #' @param in_features,out_features Feature sizes.
 #' @param deg Degree histogram from `pna_degree()`.
