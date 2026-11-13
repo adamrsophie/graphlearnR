@@ -98,6 +98,20 @@ passes against separate ones. Splits, samplers and temporal code are checked
 for leakage. Continuous integration runs `R CMD check` on Linux, macOS and
 Windows.
 
+## Known limitations
+
+* Neighbor and negative sampling run in R on the CPU. On graphs that fit in
+  memory, full batch training is faster than sampled training.
+* The graph transformer uses dense attention within each graph, so memory
+  grows with the square of the largest graph.
+* There is no compiled code and no sparse matrix multiplication fast path;
+  aggregation uses torch scatter operations.
+* CPU and Apple MPS results agree in tests on an Apple M2; CUDA has not been
+  tested.
+* Not yet included: luz and tidymodels integration, Chebyshev, APPNP and PNA
+  layers, cluster based samplers, memory based temporal models, and OGB
+  loaders.
+
 ## Related work
 
 graphlearnR follows the layer designs of
