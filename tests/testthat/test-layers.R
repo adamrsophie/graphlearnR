@@ -7,7 +7,10 @@ layer_cases <- function(f_in, f_out) {
     gin = function() gin_conv(graph_mlp(c(f_in, 4, f_out))),
     gat = function() gat_conv(f_in, f_out, heads = 2),
     gatv2 = function() gatv2_conv(f_in, f_out, heads = 2, concat = FALSE),
-    transformer = function() transformer_conv(f_in, f_out, heads = 2)
+    transformer = function() transformer_conv(f_in, f_out, heads = 2),
+    cheb = function() cheb_conv(f_in, f_out, K = 3),
+    pna = function() pna_conv(f_in, f_out, deg = c(1, 3, 4, 2),
+                              scalers = c("identity", "amplification", "attenuation", "linear"))
   )
 }
 
@@ -164,7 +167,9 @@ test_that("input gradients match central finite differences", {
     gcn = function() gcn_conv(2, 3),
     graph_conv = function() graph_conv(2, 3),
     gat = function() gat_conv(2, 3, heads = 1),
-    gin = function() gin_conv(graph_mlp(c(2, 3), activation = torch::nn_tanh))
+    gin = function() gin_conv(graph_mlp(c(2, 3), activation = torch::nn_tanh)),
+    cheb = function() cheb_conv(2, 3, K = 3),
+    pna = function() pna_conv(2, 3, deg = c(1, 3, 4, 2), aggregators = c("mean", "sum", "std"))
   )
   for (nm in names(makers)) {
     r <- numeric_grad_check(makers[[nm]], g)

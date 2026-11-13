@@ -11,9 +11,10 @@ tgn_model(
   time_dim = 16L,
   embedding_dim = 32L,
   edge_dim = 0L,
-  embedding = c("time", "graph_sum"),
+  embedding = c("time", "graph_sum", "graph_attention"),
   num_neighbors = 10L,
-  node_embedding = TRUE
+  node_embedding = TRUE,
+  heads = 2L
 )
 
 train_tgn(
@@ -37,13 +38,16 @@ train_tgn(
 
 \item{edge_dim}{Number of event features (\code{0} for none).}
 
-\item{embedding}{\code{"time"} or \code{"graph_sum"}.}
+\item{embedding}{\code{"time"}, \code{"graph_sum"} or \code{"graph_attention"}.}
 
-\item{num_neighbors}{Neighbors used by \code{"graph_sum"}.}
+\item{num_neighbors}{Most recent partners used by the graph embeddings.}
 
 \item{node_embedding}{Add a learned static embedding per node to
 \eqn{z_i} (useful without node features; makes the model
 transductive).}
+
+\item{heads}{Attention heads for \code{"graph_attention"}; \code{embedding_dim}
+must be divisible by it.}
 
 \item{model}{A \code{tgn_model}.}
 
@@ -85,15 +89,22 @@ batch's own events never inform its predictions.
 last update, \eqn{z_i = W [s_i, \phi(t - t_i^{last})]}
 (\code{embedding = "time"}), plus, with \code{embedding = "graph_sum"}, the mean
 of \eqn{W' [s_j, \phi(t - t_{ij})]} over the \code{num_neighbors} most recent
-earlier interaction partners \eqn{j}.
+earlier interaction partners \eqn{j}. With
+\code{embedding = "graph_attention"} (the paper's best variant), multi head
+attention runs over those partners with query
+\eqn{W_Q [s_i, \phi(0)]}, keys and values
+\eqn{W_{K,V} [s_j, \phi(t - t_{ij}), e_{ij}]}, and
+\eqn{z_i = \mathrm{MLP}([\tilde h_i, s_i, \phi(t - t_i^{last})])},
+\eqn{\tilde h_i} the attention output (zero without partners); the
+weights of the last call are kept in \code{model$last_attention}.
 \item An MLP scores \eqn{[z_{src}, z_{dst}]}; the loss is binary cross entropy
 against one random destination per event.
 }
 
 \eqn{\phi(\Delta t) = \cos(\omega \Delta t + b)} is the learnable time
 encoding of TGAT (Xu et al. 2020). Memory is detached between batches
-(truncated backpropagation over one batch). The graph attention embedding
-and the other message aggregators of the paper are not implemented.
+(truncated backpropagation over one batch). Only one embedding layer
+(one hop) and the "last" message aggregator are implemented.
 }
 \examples{
 if (torch::torch_is_installed()) {

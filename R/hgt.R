@@ -14,7 +14,15 @@
 #' with \eqn{\beta = \mathrm{sigmoid}(\text{skip})} a learned gate per type
 #' (the skip term is used only when input and output sizes match). Node types
 #' without incoming edges get \eqn{A_{\tau}(0)} plus the skip term.
-#' Relative temporal encoding from the paper is not implemented.
+#'
+#' With `temporal_encoding = TRUE`, the relative temporal encoding of the
+#' paper is added to each source representation before the key and value
+#' projections: for an edge with relative time \eqn{\Delta t} (the
+#' relation's `edge_time`, see [hetero_graph_data()]),
+#' \eqn{\hat x_s = x_s + \mathrm{Linear}(\mathrm{Base}(\Delta t))} with
+#' \eqn{\mathrm{Base}(\Delta t)_{2i} = \sin(\Delta t / 10000^{2i/F})} and
+#' \eqn{\mathrm{Base}(\Delta t)_{2i+1} = \cos(\Delta t / 10000^{2i/F})}.
+#' Relations without `edge_time` use \eqn{\Delta t = 0}.
 #'
 #' Cost is \eqn{O(E H D^2)} for the relation transforms plus
 #' \eqn{O(N F F')} for the type projections; the layer keeps an E by heads
@@ -25,8 +33,10 @@
 #' @param in_features Input size, the same for every node type.
 #' @param out_features Output size; must be divisible by `heads`.
 #' @param heads Number of attention heads.
-#' @return An `nn_module` called as `layer(x_dict, edge_index_dict)` that
-#'   returns a named list of node feature tensors.
+#' @param temporal_encoding Use the relative temporal encoding.
+#' @return An `nn_module` called as
+#'   `layer(x_dict, edge_index_dict, edge_time_dict = NULL)` that returns a
+#'   named list of node feature tensors.
 #' @references Hu, Dong, Wang and Sun (2020) Heterogeneous graph transformer.
 #'   Proceedings of The Web Conference.
 #' @examples
@@ -40,7 +50,8 @@
 #' @export
 hgt_conv <- nn_module(
   "hgt_conv",
-  initialize = function(node_types, relations, in_features, out_features, heads = 2L) {
+  initialize = function(node_types, relations, in_features, out_features, heads = 2L,
+                        temporal_encoding = FALSE) {
     heads <- check_count(heads, "heads", 1L)
     if (out_features %% heads != 0L) stopf("`out_features` must be divisible by `heads`.")
     self$node_types <- node_types
@@ -62,8 +73,20 @@ hgt_conv <- nn_module(
     self$w_msg <- nn_parameter(eye + 0.1 * torch_randn(R, heads, D, D))
     self$mu <- nn_parameter(torch_ones(R, heads))
     self$last_attention <- NULL
+    self$temporal_encoding <- temporal_encoding
+    if (temporal_encoding) {
+      i <- (seq_len(in_features) - 1L) %/% 2L
+      self$rte_freq <- torch_tensor(1 / 10000^(2 * i / in_features))
+      self$rte_cos <- torch_tensor(seq_len(in_features) %% 2L == 0L)
+      self$rte_lin <- nn_linear(in_features, in_features)
+    }
   },
-  forward = function(x_dict, edge_index_dict) {
+  rte = function(dt) {
+    a <- dt$unsqueeze(2L) * self$rte_freq$to(device = dt$device)
+    base <- torch_where(self$rte_cos$to(device = dt$device), torch_cos(a), torch_sin(a))
+    self$rte_lin(base)
+  },
+  forward = function(x_dict, edge_index_dict, edge_time_dict = NULL) {
     H <- self$heads
     D <- self$dim
     proj <- function(lin) {
@@ -92,8 +115,17 @@ hgt_conv <- nn_module(
         if (is.null(ei) || ei$size(2L) == 0L || is.null(k[[s]])) next
         src <- ei[1L, ]
         dst <- ei[2L, ]
-        kj <- torch_einsum("ehd,hdf->ehf", list(k[[s]]$index_select(1L, src), self$w_att[r, , , ]))
-        vj <- torch_einsum("ehd,hdf->ehf", list(v[[s]]$index_select(1L, src), self$w_msg[r, , , ]))
+        if (self$temporal_encoding) {
+          dt <- edge_time_dict[[key]] %||% torch_zeros(ei$size(2L), device = ei$device)
+          xs <- x_dict[[s]]$index_select(1L, src) + self$rte(dt$to(dtype = x_dict[[s]]$dtype))
+          ks <- self$k_lin[[s]](xs)$view(c(-1L, H, D))
+          vs <- self$v_lin[[s]](xs)$view(c(-1L, H, D))
+        } else {
+          ks <- k[[s]]$index_select(1L, src)
+          vs <- v[[s]]$index_select(1L, src)
+        }
+        kj <- torch_einsum("ehd,hdf->ehf", list(ks, self$w_att[r, , , ]))
+        vj <- torch_einsum("ehd,hdf->ehf", list(vs, self$w_msg[r, , , ]))
         qi <- q[[d]]$index_select(1L, dst)
         scores[[length(scores) + 1L]] <- (kj * qi)$sum(dim = -1L) * self$mu[r, ] / sqrt(D)
         msgs[[length(msgs) + 1L]] <- vj

@@ -123,6 +123,9 @@ That is the GraphSAGE update, which graphlearnR also provides as
 | `transformer_conv()` | scaled dot product attention over neighbors | optional features |
 | `nn_conv()` | $W_1 h_i + \sum_j \Theta(e_{ji}) h_j$ (edge conditioned) | features, required |
 | `rgcn_conv()` | $W_0 h_i + \sum_r \operatorname{mean}_{j \in \mathcal{N}_r(i)} W_r h_j$ | relation type, required |
+| `cheb_conv()` | $\sum_{k=1}^{K} T_{k-1}(\hat L) X W_k$, Chebyshev polynomials of the scaled Laplacian | weights |
+| `pna_conv()` | several aggregators times degree scalers, then an MLP | optional features |
+| `appnp()` | $H \leftarrow (1 - \alpha) \hat A H + \alpha X$, $K$ times, no parameters | weights |
 
 Every layer takes `(x, edge_index, ...)` and returns new node features.
 
@@ -137,6 +140,27 @@ layers <- list(
 )
 sapply(layers, function(l) dim(l(tt$x, tt$edge_index)))
 ```
+
+`cheb_conv()` is a spectral filter that reaches `K - 1` hops in one layer.
+`pna_conv()` (principal neighborhood aggregation) combines mean, min, max
+and standard deviation of the messages and rescales them by the node's
+degree relative to the training graphs, so it needs their degree histogram
+from `pna_degree()`. `appnp()` has no weights: it smooths predictions by
+personalized PageRank, and `appnp_model()` puts it after an MLP.
+
+```{r}
+dim(cheb_conv(34, 8, K = 3)(tt$x, tt$edge_index))
+dim(pna_conv(34, 8, deg = pna_degree(g))(tt$x, tt$edge_index))
+g_appnp <- split_nodes(dataset_karate(), seed = 1)
+torch_manual_seed(1)
+fit_appnp <- train_graph_model(appnp_model(34, 16, 2, K = 10, alpha = 0.1), g_appnp,
+                               "node_classification", epochs = 100, seed = 1)
+evaluate_graph_model(fit_appnp, g_appnp)[1, ]
+```
+
+The tests compare ChebConv with the dense Chebyshev recursion, APPNP with
+the closed form $\alpha (I - (1 - \alpha)\hat A)^{-1} X$, and PNA with an
+explicit loop over each node's messages.
 
 Attention layers keep the coefficients of their last forward pass. Within
 each target node they sum to one.
@@ -208,7 +232,9 @@ max(abs(out_p - out[perm, ]))
 Graph level models reduce node features to one vector per graph.
 `global_add_pool()`, `global_mean_pool()`, and `global_max_pool()` take the
 `batch` vector; `global_attention_pool()` learns a gate; `topk_pool()` keeps
-the highest scoring fraction of nodes in each graph.
+the highest scoring fraction of nodes in each graph, and `sag_pool()`
+(SAGPool) does the same with scores from a graph convolution, so a node's
+score depends on its neighbors.
 
 ```{r}
 b <- graph_batch(dataset_synthetic_graphs(4, seed = 1))

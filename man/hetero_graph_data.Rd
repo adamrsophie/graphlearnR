@@ -17,7 +17,10 @@ node count, or a list with any of \code{x}, \code{y}, \code{num_nodes}, \code{no
 \item{edges}{Named list, one entry per relation. Name an entry
 \code{"src__relation__dst"} and give a 2 by E (or E by 2) matrix, or give a
 list with \code{edge_index} and optional \code{src}, \code{rel}, \code{dst}, \code{edge_attr},
-\code{edge_weight}, \code{edge_y}.}
+\code{edge_weight}, \code{edge_y}, \code{edge_time}. \code{edge_time} is a relative time
+per edge (for example the target's year minus the source's), used by
+the relative temporal encoding of \code{\link[=hgt_conv]{hgt_conv()}}; reverse relations get
+its negative.}
 
 \item{metadata}{Named list of free metadata.}
 

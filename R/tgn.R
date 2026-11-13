@@ -15,22 +15,31 @@
 #'    last update, \eqn{z_i = W [s_i, \phi(t - t_i^{last})]}
 #'    (`embedding = "time"`), plus, with `embedding = "graph_sum"`, the mean
 #'    of \eqn{W' [s_j, \phi(t - t_{ij})]} over the `num_neighbors` most recent
-#'    earlier interaction partners \eqn{j}.
+#'    earlier interaction partners \eqn{j}. With
+#'    `embedding = "graph_attention"` (the paper's best variant), multi head
+#'    attention runs over those partners with query
+#'    \eqn{W_Q [s_i, \phi(0)]}, keys and values
+#'    \eqn{W_{K,V} [s_j, \phi(t - t_{ij}), e_{ij}]}, and
+#'    \eqn{z_i = \mathrm{MLP}([\tilde h_i, s_i, \phi(t - t_i^{last})])},
+#'    \eqn{\tilde h_i} the attention output (zero without partners); the
+#'    weights of the last call are kept in `model$last_attention`.
 #' 3. An MLP scores \eqn{[z_{src}, z_{dst}]}; the loss is binary cross entropy
 #'    against one random destination per event.
 #'
 #' \eqn{\phi(\Delta t) = \cos(\omega \Delta t + b)} is the learnable time
 #' encoding of TGAT (Xu et al. 2020). Memory is detached between batches
-#' (truncated backpropagation over one batch). The graph attention embedding
-#' and the other message aggregators of the paper are not implemented.
+#' (truncated backpropagation over one batch). Only one embedding layer
+#' (one hop) and the "last" message aggregator are implemented.
 #'
 #' @param num_nodes Number of nodes.
 #' @param memory_dim Memory size.
 #' @param time_dim Size of the time encoding.
 #' @param embedding_dim Embedding size.
 #' @param edge_dim Number of event features (`0` for none).
-#' @param embedding `"time"` or `"graph_sum"`.
-#' @param num_neighbors Neighbors used by `"graph_sum"`.
+#' @param embedding `"time"`, `"graph_sum"` or `"graph_attention"`.
+#' @param num_neighbors Most recent partners used by the graph embeddings.
+#' @param heads Attention heads for `"graph_attention"`; `embedding_dim`
+#'   must be divisible by it.
 #' @param node_embedding Add a learned static embedding per node to
 #'   \eqn{z_i} (useful without node features; makes the model
 #'   transductive).
@@ -51,8 +60,8 @@
 tgn_model <- nn_module(
   "tgn_model",
   initialize = function(num_nodes, memory_dim = 32L, time_dim = 16L, embedding_dim = 32L,
-                        edge_dim = 0L, embedding = c("time", "graph_sum"), num_neighbors = 10L,
-                        node_embedding = TRUE) {
+                        edge_dim = 0L, embedding = c("time", "graph_sum", "graph_attention"),
+                        num_neighbors = 10L, node_embedding = TRUE, heads = 2L) {
     self$num_nodes <- check_count(num_nodes, "num_nodes", 1L)
     self$memory_dim <- memory_dim
     self$edge_dim <- edge_dim
@@ -66,6 +75,16 @@ tgn_model <- nn_module(
     self$emb_self <- nn_linear(memory_dim + time_dim, embedding_dim)
     if (self$embedding == "graph_sum") {
       self$emb_nbr <- nn_linear(memory_dim + time_dim, embedding_dim, bias = FALSE)
+    }
+    if (self$embedding == "graph_attention") {
+      self$heads <- check_count(heads, "heads", 1L)
+      if (embedding_dim %% heads != 0L) stopf("`embedding_dim` must be divisible by `heads`.")
+      self$att_q <- nn_linear(memory_dim + time_dim, embedding_dim)
+      self$att_k <- nn_linear(memory_dim + time_dim + edge_dim, embedding_dim)
+      self$att_v <- nn_linear(memory_dim + time_dim + edge_dim, embedding_dim)
+      self$att_out <- nn_sequential(nn_linear(embedding_dim + memory_dim + time_dim,
+                                              embedding_dim), nn_relu(),
+                                    nn_linear(embedding_dim, embedding_dim))
     }
     if (node_embedding) self$static <- nn_embedding(num_nodes, embedding_dim)
     self$decoder <- nn_sequential(nn_linear(2L * embedding_dim, embedding_dim), nn_relu(),
@@ -109,7 +128,11 @@ tgn_model <- nn_module(
     dev <- mem$device
     ni <- torch_tensor(nodes, dtype = torch_long(), device = dev)
     dt <- torch_tensor(t - last_t[nodes], dtype = torch_float(), device = dev)
-    z <- self$emb_self(torch_cat(list(mem$index_select(1L, ni), self$time_encode(dt)), dim = 2L))
+    if (self$embedding == "graph_attention") {
+      z <- self$attend(mem, ni, dt, t, nbrs)
+    } else {
+      z <- self$emb_self(torch_cat(list(mem$index_select(1L, ni), self$time_encode(dt)), dim = 2L))
+    }
     if (self$embedding == "graph_sum" && !is.null(nbrs) && length(nbrs$query)) {
       qi <- torch_tensor(nbrs$query, dtype = torch_long(), device = dev)
       ji <- torch_tensor(nbrs$neighbor, dtype = torch_long(), device = dev)
@@ -120,22 +143,54 @@ tgn_model <- nn_module(
     if (!is.null(self$static)) z <- z + self$static(ni)
     z
   },
+  attend = function(mem, ni, dt, t, nbrs) {
+    dev <- mem$device
+    m <- ni$size(1L)
+    H <- self$heads
+    C <- self$att_q$out_features %/% H
+    s_q <- mem$index_select(1L, ni)
+    q <- self$att_q(torch_cat(list(s_q, self$time_encode(torch_zeros(m, device = dev))), dim = 2L))
+    agg <- torch_zeros(m, H * C, device = dev)
+    self$last_attention <- NULL
+    if (!is.null(nbrs) && length(nbrs$query)) {
+      qi <- torch_tensor(nbrs$query, dtype = torch_long(), device = dev)
+      ji <- torch_tensor(nbrs$neighbor, dtype = torch_long(), device = dev)
+      dtn <- torch_tensor(t[nbrs$query] - nbrs$t, dtype = torch_float(), device = dev)
+      parts <- list(mem$index_select(1L, ji), self$time_encode(dtn))
+      if (self$edge_dim > 0L) parts[[3L]] <- torch_tensor(nbrs$edge_attr, dtype = torch_float(), device = dev)
+      kv <- torch_cat(parts, dim = 2L)
+      k <- self$att_k(kv)$view(c(-1L, H, C))
+      v <- self$att_v(kv)$view(c(-1L, H, C))
+      a <- (q$view(c(-1L, H, C))$index_select(1L, qi) * k)$sum(dim = -1L) / sqrt(C)
+      a <- scatter_softmax(a, qi, m)
+      self$last_attention <- list(query = nbrs$query, neighbor = nbrs$neighbor, alpha = a$detach())
+      agg <- scatter_sum((v * a$unsqueeze(-1L))$reshape(c(-1L, H * C)), qi, m)
+    }
+    self$att_out(torch_cat(list(agg, s_q, self$time_encode(dt)), dim = 2L))
+  },
   score = function(z_src, z_dst) {
     self$decoder(torch_cat(list(z_src, z_dst), dim = 2L))$squeeze(-1L)
   }
 )
 
 # Most recent partners per node, kept in R as events arrive.
-tgn_neighbor_store <- function(n, k) {
-  list(nb = matrix(0L, n, k), t = matrix(NA_real_, n, k), k = k)
+tgn_neighbor_store <- function(n, k, edge_dim = 0L) {
+  list(nb = matrix(0L, n, k), t = matrix(NA_real_, n, k), k = k,
+       e = if (edge_dim > 0L) array(0, c(n, k, edge_dim)))
 }
 
-tgn_store_add <- function(store, src, dst, t) {
+tgn_store_add <- function(store, src, dst, t, edge_attr = NULL) {
+  k <- store$k
   for (i in seq_along(src)) {
     for (pr in list(c(src[i], dst[i]), c(dst[i], src[i]))) {
       a <- pr[1L]
-      store$nb[a, ] <- c(pr[2L], store$nb[a, -store$k])
-      store$t[a, ] <- c(t[i], store$t[a, -store$k])
+      store$nb[a, ] <- c(pr[2L], store$nb[a, ])[seq_len(k)]
+      store$t[a, ] <- c(t[i], store$t[a, ])[seq_len(k)]
+      if (!is.null(store$e)) {
+        d <- dim(store$e)[3L]
+        cur <- matrix(store$e[a, , ], k, d)
+        store$e[a, , ] <- rbind(edge_attr[i, ], cur)[seq_len(k), , drop = FALSE]
+      }
     }
   }
   store
@@ -145,7 +200,13 @@ tgn_store_query <- function(store, nodes) {
   nb <- store$nb[nodes, , drop = FALSE]
   tm <- store$t[nodes, , drop = FALSE]
   ok <- which(nb > 0L, arr.ind = TRUE)
-  list(query = ok[, 1L], neighbor = nb[ok], t = tm[ok])
+  out <- list(query = ok[, 1L], neighbor = nb[ok], t = tm[ok])
+  if (!is.null(store$e)) {
+    n <- nrow(store$nb)
+    flat <- matrix(store$e, n * store$k, dim(store$e)[3L])
+    out$edge_attr <- flat[(ok[, 2L] - 1L) * n + nodes[ok[, 1L]], , drop = FALSE]
+  }
+  out
 }
 
 #' @rdname tgn_model
@@ -192,7 +253,7 @@ train_tgn <- function(model, split, epochs = 10L, batch_size = 200L, lr = 1e-3, 
                else model$update_memory(state$mem, state$last_t, state$pending)
         q <- c(ev$src, ev$dst, negs[idx])
         tq <- rep(ev$t, 3L)
-        nb <- if (model$embedding == "graph_sum") tgn_store_query(state$store, q)
+        nb <- if (model$embedding != "time") tgn_store_query(state$store, q)
         z <- model$embed(cur$mem, cur$last_t, q, tq, nb)
         k <- length(idx)
         zs <- z[1:k, ]
@@ -215,14 +276,16 @@ train_tgn <- function(model, split, epochs = 10L, batch_size = 200L, lr = 1e-3, 
       state$mem <- r$cur$mem$detach()
       state$last_t <- r$cur$last_t
       state$pending <- ev
-      if (model$embedding == "graph_sum") state$store <- tgn_store_add(state$store, ev$src, ev$dst, ev$t)
+      if (model$embedding != "time") {
+        state$store <- tgn_store_add(state$store, ev$src, ev$dst, ev$t, ev$edge_attr)
+      }
     }
     list(state = state, loss = if (length(losses)) mean(losses) else NA_real_,
          scores = if (length(scores)) do.call(rbind, scores))
   }
   fresh <- function() list(mem = torch_zeros(n, model$memory_dim, device = dev),
                            last_t = rep(min(split$train$t, 0), n), pending = NULL,
-                           store = tgn_neighbor_store(n, model$num_neighbors))
+                           store = tgn_neighbor_store(n, model$num_neighbors, model$edge_dim))
   metrics <- function(sc) {
     if (is.null(sc)) return(c(roc_auc = NA_real_, average_precision = NA_real_))
     y <- c(rep(TRUE, nrow(sc)), rep(FALSE, nrow(sc)))

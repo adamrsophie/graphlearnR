@@ -16,6 +16,8 @@ First release.
 
 ## Message passing and layers
 
+- `cheb_conv()` (ChebConv), `pna_conv()` with `pna_degree()` (PNA), `appnp()`
+  and `appnp_model()` (APPNP), and `sag_pool()` (SAGPool).
 - Scatter aggregations (sum, mean, max, min, std, softmax) and
   `message_passing()` for custom layers.
 - Layers: GraphSAGE, GCN, GraphConv, GIN and GINE, GAT, GATv2, graph
@@ -56,7 +58,10 @@ First release.
 - Event based temporal graphs, snapshots, strictly causal temporal neighbors,
   a graph GRU, spatiotemporal forecasting, and dynamic link prediction with
   baselines.
-- `tgn_model()` and `train_tgn()`: temporal graph networks with node memory.
+- `tgn_model()` and `train_tgn()`: temporal graph networks with node memory
+  and time, graph sum, or graph attention embeddings.
+- `hgt_conv(temporal_encoding = TRUE)` and the `edge_time` field of
+  heterogeneous relations add HGT's relative temporal encoding.
 - `graph_ode_block()` and `graph_ode_model()`: GRAND style continuous depth
   diffusion with fixed step Runge-Kutta or Euler integration.
 - Laplacian and random walk positional encodings, shortest path distances,

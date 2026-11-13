@@ -185,3 +185,84 @@ test_that("diffpool_model is permutation invariant and trains", {
   back <- load_graph_fit(path)
   expect_equal(predict(back, gs[sp$test])$.pred_class, predict(fit, gs[sp$test])$.pred_class)
 })
+
+test_that("hgt relative temporal encoding equals the explicit formula", {
+  skip_if_no_torch()
+  torch::torch_manual_seed(7)
+  hg <- tiny_hetero()
+  hg$edges$a__r1__b$edge_time <- c(1, 3, 0.5)
+  hg$edges$b__r3__a$edge_time <- c(-2, 4)
+  validate_hetero_graph(hg)
+  rels <- names(hg$edges)
+  layer <- hgt_conv(hg$node_types, rels, 2, 2, heads = 1, temporal_encoding = TRUE)
+  layer$eval()
+  ht <- hetero_tensors(hg)
+  out <- layer(ht$x, ht$edge_index, ht$edge_time)
+  W <- function(lin) list(w = as_mat(lin$weight), b = as.numeric(as.array(lin$bias$detach())))
+  ap <- function(p, v) as.vector(p$w %*% v + p$b)
+  base <- function(dt) c(sin(dt), cos(dt))  # F = 2: frequency 1 for both entries
+  rte <- function(dt) ap(W(layer$rte_lin), base(dt))
+  watt <- as.array(layer$w_att$detach())
+  wmsg <- as.array(layer$w_msg$detach())
+  mu <- as_mat(layer$mu)
+  skip <- as.numeric(as.array(layer$skip$detach()))
+  for (ti in seq_along(hg$node_types)) {
+    d <- hg$node_types[ti]
+    xd <- hg$nodes[[d]]$x
+    ref <- t(vapply(seq_len(nrow(xd)), function(t) {
+      sc <- numeric(0)
+      msgs <- list()
+      for (r in seq_along(rels)) {
+        p <- strsplit(rels[r], "__")[[1]]
+        if (p[3] != d) next
+        e_r <- hg$edges[[rels[r]]]
+        for (e in which(e_r$edge_index[2, ] == t)) {
+          dt <- if (is.null(e_r$edge_time)) 0 else e_r$edge_time[e]
+          xs <- hg$nodes[[p[1]]]$x[e_r$edge_index[1, e], ] + rte(dt)
+          k <- ap(W(layer$k_lin[[p[1]]]), xs) %*% watt[r, 1, , ]
+          q <- ap(W(layer$q_lin[[d]]), xd[t, ])
+          sc <- c(sc, sum(k * q) * mu[r, 1] / sqrt(2))
+          msgs[[length(msgs) + 1]] <- as.vector(ap(W(layer$v_lin[[p[1]]]), xs) %*% wmsg[r, 1, , ])
+        }
+      }
+      agg <- if (length(sc)) {
+        al <- exp(sc - max(sc)) / sum(exp(sc - max(sc)))
+        Reduce(`+`, Map(`*`, al, msgs))
+      } else c(0, 0)
+      a <- ap(W(layer$a_lin[[d]]), agg * stats::pnorm(agg))
+      beta <- 1 / (1 + exp(-skip[ti]))
+      beta * a + (1 - beta) * xd[t, ]
+    }, numeric(2)))
+    expect_equal(as_mat(out[[d]]), ref, tolerance = 1e-5, info = d)
+  }
+  # changing an edge time changes the output of its target
+  hg2 <- hg
+  hg2$edges$a__r1__b$edge_time <- c(5, 3, 0.5)
+  out2 <- layer(ht$x, ht$edge_index, hetero_tensors(hg2)$edge_time)
+  expect_false(isTRUE(all.equal(as_mat(out2$b), as_mat(out$b))))
+})
+
+test_that("edge_time follows reverse relations, batching and subsets", {
+  skip_if_no_torch()
+  hg <- tiny_hetero()
+  hg$edges$a__r1__b$edge_time <- c(1, 3, 0.5)
+  hr <- add_reverse_relations(hg)
+  rk <- hr$edges$a__r1__b$reverse
+  expect_equal(hr$edges[[rk]]$edge_time, -c(1, 3, 0.5))
+  hb <- hetero_batch(list(hg, hg))
+  expect_equal(hb$edges$a__r1__b$edge_time, rep(c(1, 3, 0.5), 2))
+  bad <- hg
+  bad$edges$a__r1__b$edge_time <- 1:2
+  expect_error(validate_hetero_graph(bad), "edge_time")
+  hs <- add_reverse_relations(dataset_synthetic_hetero(seed = 4))
+  for (k in names(hs$edges)) {
+    hs$edges[[k]]$edge_time <- withr::with_seed(1, stats::runif(ncol(hs$edges[[k]]$edge_index), 0, 5))
+  }
+  torch::torch_manual_seed(2)
+  m <- hetero_gnn_model(hs, hidden_dim = 8, output_dim = 3, target_type = "drug", conv = "hgt",
+                        temporal_encoding = TRUE, dropout = 0)
+  fit <- train_graph_model(m, hs, "node_classification", target_type = "drug", epochs = 20,
+                           lr = 0.01, seed = 1)
+  h <- fit$history$train_loss
+  expect_lt(tail(h, 1), h[1])
+})

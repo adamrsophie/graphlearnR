@@ -160,9 +160,27 @@ fit_tgn$test_metrics
 
 Each event is scored against one random destination. The synthetic stream
 repeats earlier pairs often, so memory and the learned node embeddings
-(`node_embedding = TRUE`, the default) carry most of the signal. The graph
-attention embedding and the other message aggregators of the paper are not
-implemented.
+(`node_embedding = TRUE`, the default) carry most of the signal.
+
+The embedding can also look at each node's most recent partners. With
+`embedding = "graph_attention"`, the variant the TGN paper found best,
+multi head attention runs over the `num_neighbors` latest partners; keys
+and values combine the partner's memory, the time since that interaction
+and the event features, and the query comes from the node's own memory.
+Only partners from earlier batches are visible, for the same reason as
+above.
+
+```{r, eval = has_torch}
+torch_manual_seed(1)
+tgn_att <- tgn_model(stream$num_nodes, memory_dim = 32, time_dim = 8, embedding_dim = 32,
+                     embedding = "graph_attention", num_neighbors = 5, heads = 2)
+fit_att <- train_tgn(tgn_att, sp_t, epochs = 10, batch_size = 50, lr = 0.01, seed = 1)
+fit_att$test_metrics
+```
+
+The implementation has one embedding layer (one hop) and keeps the most
+recent message per node; the paper's other message aggregators are not
+included.
 
 ## The recurrent cell
 

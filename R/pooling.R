@@ -101,38 +101,73 @@ topk_pool <- nn_module(
     self$weight <- nn_parameter(torch_randn(in_features) / sqrt(in_features))
   },
   forward = function(x, edge_index, batch = NULL) {
-    n <- x$size(1L)
-    a <- pool_args(x, batch, NULL)
     score <- torch_matmul(x, self$weight) / self$weight$norm()
-    b <- as.integer(as_r_array(a$batch))
-    s <- as.numeric(as_r_array(score))
-    perm <- unlist(lapply(split(seq_len(n), factor(b, levels = seq_len(a$num_graphs))),
-                          function(idx) {
-      if (!length(idx)) return(integer())
-      k <- ceiling(self$ratio * length(idx))
-      idx[order(-s[idx])][seq_len(k)]
-    }), use.names = FALSE)
-    perm_t <- torch_tensor(perm, dtype = torch_long(), device = x$device)
-    xs <- x$index_select(1L, perm_t) * torch_tanh(score$index_select(1L, perm_t))$unsqueeze(2L)
-    new_id <- integer(n)
-    new_id[perm] <- seq_along(perm)
-    ei <- as_r_array(edge_index)
-    keep <- if (length(ei)) new_id[ei[1L, ]] > 0L & new_id[ei[2L, ]] > 0L else logical()
-    ei_new <- if (any(keep)) {
-      rbind(new_id[ei[1L, keep]], new_id[ei[2L, keep]])
-    } else {
-      matrix(integer(), 2L, 0L)
-    }
-    list(
-      x = xs,
-      edge_index = if (ncol(ei_new)) torch_tensor(ei_new, dtype = torch_long(), device = x$device)
-                   else torch_empty(2L, 0L, dtype = torch_long(), device = x$device),
-      batch = torch_tensor(b[perm], dtype = torch_long(), device = x$device),
-      perm = perm,
-      score = score
-    )
+    topk_select(x, score, edge_index, batch, self$ratio)
   }
 )
+
+#' @rdname topk_pool
+#' @param gnn For `sag_pool()`, the layer that scores nodes: `"graph_conv"`,
+#'   `"gcn"` or `"sage"`, or a module mapping `(x, edge_index)` to one score
+#'   per node.
+#' @details `sag_pool()` is self attention graph pooling (SAGPool, Lee, Lee
+#'   and Kang 2019): the scores come from a graph convolution,
+#'   \eqn{y = \mathrm{GNN}(X, A)}, so they depend on the neighborhood; the
+#'   rest is as in `topk_pool()`.
+#' @export
+sag_pool <- nn_module(
+  "sag_pool",
+  initialize = function(in_features, ratio = 0.5, gnn = "graph_conv") {
+    if (ratio <= 0 || ratio > 1) stopf("`ratio` must be in (0, 1].")
+    self$ratio <- ratio
+    self$gnn <- if (is.character(gnn)) {
+      switch(match.arg(gnn, c("graph_conv", "gcn", "sage")),
+        graph_conv = graph_conv(in_features, 1L),
+        gcn = gcn_conv(in_features, 1L),
+        sage = sage_conv(in_features, 1L)
+      )
+    } else {
+      gnn
+    }
+  },
+  forward = function(x, edge_index, batch = NULL) {
+    score <- self$gnn(x, edge_index)$view(-1L)
+    topk_select(x, score, edge_index, batch, self$ratio)
+  }
+)
+
+# Keep the top ceiling(ratio * n_g) nodes of each graph by score.
+topk_select <- function(x, score, edge_index, batch, ratio) {
+  n <- x$size(1L)
+  a <- pool_args(x, batch, NULL)
+  b <- as.integer(as_r_array(a$batch))
+  s <- as.numeric(as_r_array(score))
+  perm <- unlist(lapply(split(seq_len(n), factor(b, levels = seq_len(a$num_graphs))),
+                        function(idx) {
+    if (!length(idx)) return(integer())
+    k <- ceiling(ratio * length(idx))
+    idx[order(-s[idx])][seq_len(k)]
+  }), use.names = FALSE)
+  perm_t <- torch_tensor(perm, dtype = torch_long(), device = x$device)
+  xs <- x$index_select(1L, perm_t) * torch_tanh(score$index_select(1L, perm_t))$unsqueeze(2L)
+  new_id <- integer(n)
+  new_id[perm] <- seq_along(perm)
+  ei <- as_r_array(edge_index)
+  keep <- if (length(ei)) new_id[ei[1L, ]] > 0L & new_id[ei[2L, ]] > 0L else logical()
+  ei_new <- if (any(keep)) {
+    rbind(new_id[ei[1L, keep]], new_id[ei[2L, keep]])
+  } else {
+    matrix(integer(), 2L, 0L)
+  }
+  list(
+    x = xs,
+    edge_index = if (ncol(ei_new)) torch_tensor(ei_new, dtype = torch_long(), device = x$device)
+                 else torch_empty(2L, 0L, dtype = torch_long(), device = x$device),
+    batch = torch_tensor(b[perm], dtype = torch_long(), device = x$device),
+    perm = perm,
+    score = score
+  )
+}
 
 #' Dense adjacency and differentiable pooling
 #'

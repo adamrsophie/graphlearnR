@@ -75,6 +75,9 @@ reference:
 - title: Layers and pooling
   contents:
   - gnn-layers
+  - cheb_conv
+  - appnp
+  - pna_conv
   - graph_mlp
   - global-pooling
   - global_attention_pool

@@ -62,11 +62,11 @@ evaluate_graph_model(fit_l)                 # AUC, AP, MRR, Hits@k
 | Conversion | igraph, edge lists with arbitrary identifiers, dense and sparse adjacency matrices, torch tensors on any device |
 | Batching | `graph_batch()` and `unbatch()`, lazy and on disk datasets, transforms |
 | Message passing | vectorized scatter sum, mean, max, min, std, softmax; a general `message_passing()` for custom layers |
-| Layers | GraphSAGE, GCN, GraphConv, GIN and GINE, GAT, GATv2, transformer convolution, NNConv, RGCN; GRAND style graph neural ODE blocks; global, top-k and DiffPool pooling |
+| Layers | GraphSAGE, GCN, GraphConv, GIN and GINE, GAT, GATv2, transformer convolution, NNConv, RGCN, ChebConv, PNA; APPNP propagation; GRAND style graph neural ODE blocks; global, top-k, SAGPool and DiffPool pooling |
 | Training | node, edge, link and graph classification and regression; full batch, neighbor sampled, Cluster-GCN or GraphSAINT batches; early stopping, schedulers, checkpoints, reproducibility record |
 | Splits | stratified node splits, link splits without leakage, edge label, group, scaffold and temporal splits; negative sampling |
-| Heterogeneous graphs | typed nodes and relations, reverse relations, typed sampling, relation specific link splits, heterogeneous GNNs including RGCN and the heterogeneous graph transformer (HGT) |
-| Temporal graphs | event streams, causal neighborhoods, snapshots, graph GRU, spatiotemporal forecasting, dynamic link prediction with baselines, temporal graph networks (TGN) with node memory |
+| Heterogeneous graphs | typed nodes and relations, reverse relations, typed sampling, relation specific link splits, heterogeneous GNNs including RGCN and the heterogeneous graph transformer (HGT) with relative temporal encoding |
+| Temporal graphs | event streams, causal neighborhoods, snapshots, graph GRU, spatiotemporal forecasting, dynamic link prediction with baselines, temporal graph networks (TGN) with node memory and graph attention |
 | Graph transformers | Laplacian and random walk encodings, shortest path distances, Graphormer style model |
 | Molecules | graphs from atoms and bonds with element and bond order features, scaffold splits, synthetic molecules; TU loaders for MUTAG and similar sets |
 | Explainability | saliency, integrated gradients, edge gradients, occlusion, GNNExplainer, attention weights, explanation subgraphs, fidelity and stability |
@@ -111,8 +111,9 @@ times were of the same order as PyG's. Scripts are in `benchmarks/pyg`.
   grows with the square of the largest graph.
 * There is no compiled code and no sparse matrix multiplication fast path;
   aggregation uses torch scatter operations.
-* CPU and Apple MPS results agree in tests on an Apple M2; CUDA has not been
-  tested.
+* CPU and Apple MPS results agree in tests on an Apple M2. CUDA has not been
+  tested: no CUDA hardware was available, and GitHub hosted runners have no
+  GPU. The device tests skip without an accelerator.
 * DiffPool and the graph transformer build dense per graph matrices, so
   their memory grows with the square of the largest graph in a batch.
 * graphlearnR does not parse SMILES or compute chemical scaffolds; use a
@@ -121,15 +122,14 @@ times were of the same order as PyG's. Scripts are in `benchmarks/pyg`.
   simulation tool, not a trainable neural ODE layer.
 * `graph_ode_block()` integrates with a fixed number of steps; it is not an
   adaptive solver.
-* TGN uses the time projection or graph sum embedding with last message
-  aggregation; the graph attention embedding is not implemented.
+* TGN has one embedding layer (one hop) and last message aggregation.
 * OGB link property datasets (ogbl) ship splits as PyTorch files and are
   not readable; node (ogbn) and graph (ogbg) datasets are.
 * The sibling bridges are tested in continuous integration on Linux only;
   the z3r bridge is tested locally, because the Z3 on the runners is older
   than z3r needs.
-* Not yet included: Chebyshev, APPNP and PNA layers, HGT's relative
-  temporal encoding, and a parsnip engine.
+* There is no parsnip engine, because graph models need the whole graph at
+  prediction time.
 
 ## Related work
 

@@ -2,14 +2,21 @@
 % Please edit documentation in R/pooling.R
 \name{topk_pool}
 \alias{topk_pool}
+\alias{sag_pool}
 \title{Top-k pooling (hierarchical, experimental)}
 \usage{
 topk_pool(in_features, ratio = 0.5)
+
+sag_pool(in_features, ratio = 0.5, gnn = "graph_conv")
 }
 \arguments{
 \item{in_features}{Node feature size.}
 
 \item{ratio}{Fraction of nodes kept per graph.}
+
+\item{gnn}{For \code{sag_pool()}, the layer that scores nodes: \code{"graph_conv"},
+\code{"gcn"} or \code{"sage"}, or a module mapping \verb{(x, edge_index)} to one score
+per node.}
 }
 \value{
 An \code{nn_module} returning a list with \code{x}, \code{edge_index}, \code{batch},
@@ -20,4 +27,10 @@ Graph U-Net style pooling (Gao and Ji 2019): nodes are scored by
 \eqn{y = X p / \lVert p \rVert}, the top \code{ceiling(ratio * n_g)} nodes of
 each graph are kept, their features are scaled by \eqn{\tanh(y)} and the
 edges between kept nodes are retained.
+}
+\details{
+\code{sag_pool()} is self attention graph pooling (SAGPool, Lee, Lee
+and Kang 2019): the scores come from a graph convolution,
+\eqn{y = \mathrm{GNN}(X, A)}, so they depend on the neighborhood; the
+rest is as in \code{topk_pool()}.
 }

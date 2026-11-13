@@ -4,7 +4,14 @@
 \alias{hgt_conv}
 \title{Heterogeneous graph transformer convolution}
 \usage{
-hgt_conv(node_types, relations, in_features, out_features, heads = 2L)
+hgt_conv(
+  node_types,
+  relations,
+  in_features,
+  out_features,
+  heads = 2L,
+  temporal_encoding = FALSE
+)
 }
 \arguments{
 \item{node_types}{Character vector of node types.}
@@ -16,10 +23,13 @@ hgt_conv(node_types, relations, in_features, out_features, heads = 2L)
 \item{out_features}{Output size; must be divisible by \code{heads}.}
 
 \item{heads}{Number of attention heads.}
+
+\item{temporal_encoding}{Use the relative temporal encoding.}
 }
 \value{
-An \code{nn_module} called as \code{layer(x_dict, edge_index_dict)} that
-returns a named list of node feature tensors.
+An \code{nn_module} called as
+\code{layer(x_dict, edge_index_dict, edge_time_dict = NULL)} that returns a
+named list of node feature tensors.
 }
 \description{
 One layer of the heterogeneous graph transformer (HGT, Hu et al. 2020).
@@ -36,9 +46,17 @@ relations. The update is
 with \eqn{\beta = \mathrm{sigmoid}(\text{skip})} a learned gate per type
 (the skip term is used only when input and output sizes match). Node types
 without incoming edges get \eqn{A_{\tau}(0)} plus the skip term.
-Relative temporal encoding from the paper is not implemented.
 }
 \details{
+With \code{temporal_encoding = TRUE}, the relative temporal encoding of the
+paper is added to each source representation before the key and value
+projections: for an edge with relative time \eqn{\Delta t} (the
+relation's \code{edge_time}, see \code{\link[=hetero_graph_data]{hetero_graph_data()}}),
+\eqn{\hat x_s = x_s + \mathrm{Linear}(\mathrm{Base}(\Delta t))} with
+\eqn{\mathrm{Base}(\Delta t)_{2i} = \sin(\Delta t / 10000^{2i/F})} and
+\eqn{\mathrm{Base}(\Delta t)_{2i+1} = \cos(\Delta t / 10000^{2i/F})}.
+Relations without \code{edge_time} use \eqn{\Delta t = 0}.
+
 Cost is \eqn{O(E H D^2)} for the relation transforms plus
 \eqn{O(N F F')} for the type projections; the layer keeps an E by heads
 attention tensor per target type in \code{last_attention}.

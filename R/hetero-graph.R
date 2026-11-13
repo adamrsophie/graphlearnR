@@ -18,7 +18,10 @@
 #' @param edges Named list, one entry per relation. Name an entry
 #'   `"src__relation__dst"` and give a 2 by E (or E by 2) matrix, or give a
 #'   list with `edge_index` and optional `src`, `rel`, `dst`, `edge_attr`,
-#'   `edge_weight`, `edge_y`.
+#'   `edge_weight`, `edge_y`, `edge_time`. `edge_time` is a relative time
+#'   per edge (for example the target's year minus the source's), used by
+#'   the relative temporal encoding of [hgt_conv()]; reverse relations get
+#'   its negative.
 #' @param metadata Named list of free metadata.
 #' @param validate Run [validate_hetero_graph()].
 #' @return An object of class `hetero_graph_data`.
@@ -65,7 +68,9 @@ hetero_graph_data <- function(nodes, edges, metadata = list(), validate = TRUE) 
                       edge_index = normalize_edge_index(v$edge_index),
                       edge_attr = as_feature_matrix(v$edge_attr, "edge_attr"),
                       edge_weight = if (!is.null(v$edge_weight)) as.double(v$edge_weight),
-                      edge_y = v$edge_y, reverse = v$reverse, reverse_of = v$reverse_of)
+                      edge_y = v$edge_y,
+                      edge_time = if (!is.null(v$edge_time)) as.double(v$edge_time),
+                      reverse = v$reverse, reverse_of = v$reverse_of)
   }
   for (t in names(nl)) {
     nd <- nl[[t]]
@@ -122,7 +127,7 @@ validate_hetero_graph <- function(hg) {
         add("Relation `%s`: target indices must be in 1:%d (type `%s`).", key, nd, e$dst)
       }
     }
-    for (f in c("edge_attr", "edge_weight", "edge_y")) {
+    for (f in c("edge_attr", "edge_weight", "edge_y", "edge_time")) {
       if (!is.null(e[[f]]) && n_rows(e[[f]]) != ncol(ei)) {
         add("Relation `%s`: `%s` has %d entries for %d edges.", key, f, n_rows(e[[f]]), ncol(ei))
       }
@@ -198,7 +203,8 @@ add_reverse_relations <- function(hg, prefix = "rev_") {
     hg$edges[[rkey]] <- list(src = e$dst, rel = paste0(prefix, e$rel), dst = e$src,
                              edge_index = e$edge_index[2:1, , drop = FALSE],
                              edge_attr = e$edge_attr, edge_weight = e$edge_weight,
-                             edge_y = NULL, reverse = NULL, reverse_of = key)
+                             edge_y = NULL, edge_time = if (!is.null(e$edge_time)) -e$edge_time,
+                             reverse = NULL, reverse_of = key)
     hg$edges[[key]]$reverse <- rkey
   }
   hg
@@ -292,6 +298,7 @@ hetero_tensors <- function(hg, device = NULL) {
     edge_index = lapply(hg$edges, function(e) ei(e$edge_index)),
     edge_attr = lapply(hg$edges, function(e) ft(e$edge_attr)),
     edge_weight = lapply(hg$edges, function(e) ft(e$edge_weight)),
+    edge_time = lapply(hg$edges, function(e) ft(e$edge_time)),
     num_nodes = num_nodes(hg), node_types = hg$node_types,
     relations = edge_types(hg), device = dev
   )
@@ -333,6 +340,7 @@ hetero_batch <- function(graphs) {
     list(src = e1$src, rel = e1$rel, dst = e1$dst, edge_index = ei,
          edge_attr = bind_rows_values(lapply(graphs, function(g) g$edges[[k]]$edge_attr)),
          edge_weight = bind_rows_values(lapply(graphs, function(g) g$edges[[k]]$edge_weight)),
+         edge_time = bind_rows_values(lapply(graphs, function(g) g$edges[[k]]$edge_time)),
          reverse = e1$reverse, reverse_of = e1$reverse_of)
   })
   hb <- hetero_graph_data(nodes, edges, metadata = list(num_graphs = length(graphs)))
@@ -417,7 +425,7 @@ sample_hetero_neighbors <- function(hg, seeds, fanouts, seed = NULL) {
                                              local[[e$dst]][e$edge_index[2L, ids]])
                       else matrix(integer(), 2L, 0L),
          edge_attr = take_rows(e$edge_attr, ids), edge_weight = take_rows(e$edge_weight, ids),
-         reverse = e$reverse, reverse_of = e$reverse_of)
+         edge_time = take_rows(e$edge_time, ids), reverse = e$reverse, reverse_of = e$reverse_of)
   })
   out <- hetero_graph_data(nodes, edges, metadata = hg$metadata)
   out$n_id <- n_id
@@ -483,6 +491,7 @@ subset_relation <- function(e, cols) {
   e$edge_attr <- take_rows(e$edge_attr, cols)
   e$edge_weight <- take_rows(e$edge_weight, cols)
   e$edge_y <- take_rows(e$edge_y, cols)
+  e$edge_time <- take_rows(e$edge_time, cols)
   e
 }
 
@@ -565,6 +574,8 @@ hetero_conv <- nn_module(
 #' @param aggr Neighbor aggregation inside each relation.
 #' @param relation_aggr Combination across relations, `"sum"` or `"mean"`.
 #' @param num_bases Basis count for `"rgcn"`.
+#' @param temporal_encoding For `"hgt"`, use the relative temporal encoding
+#'   with the relations' `edge_time`.
 #' @return An `nn_module` of class `hetero_gnn`, called as `model(ht)` with
 #'   `ht` from [hetero_tensors()]; it returns a named list of per type
 #'   outputs.
@@ -572,7 +583,7 @@ hetero_conv <- nn_module(
 hetero_gnn_model <- function(hg, hidden_dim = 64L, output_dim = NULL, target_type = NULL,
                              num_layers = 2L, conv = c("sage", "graph_conv", "gat", "rgcn", "hgt"),
                              heads = 2L, dropout = 0.5, aggr = "mean",
-                             relation_aggr = "sum", num_bases = NULL) {
+                             relation_aggr = "sum", num_bases = NULL, temporal_encoding = FALSE) {
   conv <- match.arg(conv)
   if (!is.null(output_dim) && is.null(target_type)) stopf("Give `target_type` with `output_dim`.")
   if (!is.null(target_type) && !target_type %in% hg$node_types) {
@@ -589,7 +600,7 @@ hetero_gnn_model <- function(hg, hidden_dim = 64L, output_dim = NULL, target_typ
                   output_dim = output_dim, target_type = target_type,
                   num_layers = as.integer(num_layers), conv = conv, heads = as.integer(heads),
                   dropout = dropout, aggr = aggr, relation_aggr = relation_aggr,
-                  num_bases = num_bases))
+                  num_bases = num_bases, temporal_encoding = temporal_encoding))
 }
 
 hetero_gnn <- nn_module(
@@ -608,7 +619,8 @@ hetero_gnn <- nn_module(
       }))
     } else if (config$conv == "hgt") {
       self$layers <- nn_module_list(lapply(seq_len(config$num_layers), function(i) {
-        hgt_conv(sc$node_types, sc$keys, h, h, heads = config$heads)
+        hgt_conv(sc$node_types, sc$keys, h, h, heads = config$heads,
+                 temporal_encoding = isTRUE(config$temporal_encoding))
       }))
     } else {
       self$layers <- nn_module_list(lapply(seq_len(config$num_layers), function(i) {
@@ -654,6 +666,8 @@ hetero_gnn <- nn_module(
         h <- lapply(stats::setNames(sc$node_types, sc$node_types), function(t) {
           H$narrow(1L, ptr[[t]] + 1L, n[[t]])
         })
+      } else if (self$config$conv == "hgt") {
+        h <- conv(h, ht$edge_index, ht$edge_time)
       } else {
         h <- conv(h, ht$edge_index)
       }

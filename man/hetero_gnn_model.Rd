@@ -15,7 +15,8 @@ hetero_gnn_model(
   dropout = 0.5,
   aggr = "mean",
   relation_aggr = "sum",
-  num_bases = NULL
+  num_bases = NULL,
+  temporal_encoding = FALSE
 )
 }
 \arguments{
@@ -41,6 +42,9 @@ relations, feature sizes, node counts); its data are not stored.}
 \item{relation_aggr}{Combination across relations, \code{"sum"} or \code{"mean"}.}
 
 \item{num_bases}{Basis count for \code{"rgcn"}.}
+
+\item{temporal_encoding}{For \code{"hgt"}, use the relative temporal encoding
+with the relations' \code{edge_time}.}
 }
 \value{
 An \code{nn_module} of class \code{hetero_gnn}, called as \code{model(ht)} with
