@@ -8,11 +8,12 @@ level linear head or global pooling and an MLP head. Shortest path
 distances are computed in R for each new batch, which costs \\O(\sum_g
 n_g (n_g + e_g))\\; the distances of the 64 most recent distinct batches
 are cached in the model, so repeated batches (for example full batch
-training) reuse them. Edge features are not used by this model; for edge
-aware attention use
+training) reuse them. With `edge_dim`, every layer adds a learned per
+head bias from the features of direct edges (see
+[`graph_transformer_layer()`](https://adamrsophie.github.io/graphlearnR/reference/graph_transformer_layer.md));
 [`transformer_conv()`](https://adamrsophie.github.io/graphlearnR/reference/gnn-layers.md)
-with `edge_dim`, which also gives a sparse, neighborhood local
-alternative to dense attention.
+with `edge_dim` is a sparse, neighborhood local alternative to this
+dense attention.
 
 ## Usage
 
@@ -26,7 +27,8 @@ graph_transformer_model(
   max_dist = 5L,
   max_degree = 10L,
   dropout = 0.1,
-  pool = "mean"
+  pool = "mean",
+  edge_dim = NULL
 )
 ```
 
@@ -67,6 +69,11 @@ graph_transformer_model(
 - pool:
 
   `NULL` for node level output, or `"mean"`, `"sum"`, `"max"`.
+
+- edge_dim:
+
+  Edge feature size for edge biased attention, or `NULL` to ignore edge
+  features.
 
 ## Value
 

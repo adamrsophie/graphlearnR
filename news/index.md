@@ -138,9 +138,22 @@ First release.
 
 ### Models, evaluation and data (additions)
 
+- [`edge_conv()`](https://adamrsophie.github.io/graphlearnR/reference/gnn-layers.md)
+  (EdgeConv of dynamic graph CNNs, max over \[x_i, x_j - x_i\]
+  messages).
+- HAN: `hetero_gnn_model(conv = "han")` with semantic attention across
+  relations (`hetero_conv(aggr = "semantic")`), and
+  [`add_metapath()`](https://adamrsophie.github.io/graphlearnR/reference/add_metapath.md)
+  to compose relations into metapaths.
+- [`gps_layer()`](https://adamrsophie.github.io/graphlearnR/reference/gps_layer.md):
+  GPS graph transformer layer (local message passing plus masked global
+  attention per graph).
 - [`meta_layer()`](https://adamrsophie.github.io/graphlearnR/reference/meta_layer.md)
   composes edge, node and graph level updates (graph network block, as
   PyG’s `MetaLayer`).
+- [`evolve_gcn_cell()`](https://adamrsophie.github.io/graphlearnR/reference/evolve_gcn_cell.md)
+  (EvolveGCN-O: GCN weights evolve with a GRU across snapshots), usable
+  in `train_dynamic_link_model(cell = "evolve")`.
 - [`predict()`](https://rdrr.io/r/stats/predict.html) for temporal fits:
   TGN continues from its stored memory and neighbor store, dynamic link
   models score from earlier snapshots, and spatiotemporal models
@@ -171,7 +184,9 @@ First release.
 - The reproducibility record keeps exact split members and all training
   settings.
 - [`graph_transformer_model()`](https://adamrsophie.github.io/graphlearnR/reference/graph_transformer_model.md)
-  caches shortest path distances of recent batches.
+  caches shortest path distances of recent batches and, with `edge_dim`,
+  adds a learned attention bias from edge features (Graphormer’s edge
+  encoding for direct edges).
 - [`scatter_std()`](https://adamrsophie.github.io/graphlearnR/reference/scatter.md)
   (and the PNA `std` aggregator) now returns 0 for empty and constant
   groups, as PyTorch Geometric’s `StdAggregation`; PNA layers are

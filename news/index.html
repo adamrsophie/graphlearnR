@@ -134,7 +134,14 @@
 <div class="section level3">
 <h3 id="models-evaluation-and-data-additions-0-1-0">Models, evaluation and data (additions)<a class="anchor" aria-label="anchor" href="#models-evaluation-and-data-additions-0-1-0"></a></h3>
 <ul><li>
+<code><a href="../reference/gnn-layers.html">edge_conv()</a></code> (EdgeConv of dynamic graph CNNs, max over [x_i, x_j - x_i] messages).</li>
+<li>HAN: <code>hetero_gnn_model(conv = "han")</code> with semantic attention across relations (<code>hetero_conv(aggr = "semantic")</code>), and <code><a href="../reference/add_metapath.html">add_metapath()</a></code> to compose relations into metapaths.</li>
+<li>
+<code><a href="../reference/gps_layer.html">gps_layer()</a></code>: GPS graph transformer layer (local message passing plus masked global attention per graph).</li>
+<li>
 <code><a href="../reference/meta_layer.html">meta_layer()</a></code> composes edge, node and graph level updates (graph network block, as PyG’s <code>MetaLayer</code>).</li>
+<li>
+<code><a href="../reference/evolve_gcn_cell.html">evolve_gcn_cell()</a></code> (EvolveGCN-O: GCN weights evolve with a GRU across snapshots), usable in <code>train_dynamic_link_model(cell = "evolve")</code>.</li>
 <li>
 <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> for temporal fits: TGN continues from its stored memory and neighbor store, dynamic link models score from earlier snapshots, and spatiotemporal models forecast from given origins; temporal fits can be saved and loaded.</li>
 <li>Heterogeneous node tasks train on typed neighbor samples with <code>fanouts</code> and <code>batch_size</code>.</li>
@@ -146,7 +153,7 @@
 <li>igraph conversion keeps feature names, label matrices, edge masks, graph labels, graph attributes and metadata; <code><a href="../reference/graph_batch.html">unbatch()</a></code> rebuilds heterogeneous batches.</li>
 <li>The reproducibility record keeps exact split members and all training settings.</li>
 <li>
-<code><a href="../reference/graph_transformer_model.html">graph_transformer_model()</a></code> caches shortest path distances of recent batches.</li>
+<code><a href="../reference/graph_transformer_model.html">graph_transformer_model()</a></code> caches shortest path distances of recent batches and, with <code>edge_dim</code>, adds a learned attention bias from edge features (Graphormer’s edge encoding for direct edges).</li>
 <li>
 <code><a href="../reference/scatter.html">scatter_std()</a></code> (and the PNA <code>std</code> aggregator) now returns 0 for empty and constant groups, as PyTorch Geometric’s <code>StdAggregation</code>; PNA layers are compared with PyG’s <code>PNAConv</code> in the benchmark workflow.</li>
 </ul></div>

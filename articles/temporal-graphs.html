@@ -270,9 +270,9 @@ reported next to the model.</p>
 <span><span class="co">#&gt; last_train  first_val first_test </span></span>
 <span><span class="co">#&gt;         56         57         68</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>model <span class="op">=</span> <span class="va">fst</span><span class="op">$</span><span class="va">test_metrics</span>, naive <span class="op">=</span> <span class="va">fst</span><span class="op">$</span><span class="va">baseline_metrics</span><span class="op">)</span></span>
-<span><span class="co">#&gt;               mse        mae</span></span>
-<span><span class="co">#&gt; model 0.009564201 0.07995599</span></span>
-<span><span class="co">#&gt; naive 0.013751859 0.09503502</span></span></code></pre></div>
+<span><span class="co">#&gt;              mse        mae</span></span>
+<span><span class="co">#&gt; model 0.00956420 0.07995598</span></span>
+<span><span class="co">#&gt; naive 0.01375186 0.09503502</span></span></code></pre></div>
 <p>To bring your own data, build the graph with any of the constructors
 and pass the array to <code><a href="../reference/spatiotemporal_signal.html">spatiotemporal_signal()</a></code>, which checks
 that the node dimension matches.</p>

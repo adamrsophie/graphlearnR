@@ -98,7 +98,8 @@ snapshot <code>k + 1</code>.</p>
 <span>  lr <span class="op">=</span> <span class="fl">0.01</span>,</span>
 <span>  neg_ratio <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  device <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  device <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cell <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"gru"</span>, <span class="st">"evolve"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -137,6 +138,11 @@ first 70 percent of transitions).</p></dd>
 
 <dt id="arg-device">device<a class="anchor" aria-label="anchor" href="#arg-device"></a></dt>
 <dd><p>Device.</p></dd>
+
+
+<dt id="arg-cell">cell<a class="anchor" aria-label="anchor" href="#arg-cell"></a></dt>
+<dd><p><code>"gru"</code> for a <code><a href="graph_gru_cell.html">graph_gru_cell()</a></code> (node states evolve) or
+<code>"evolve"</code> for an <code><a href="evolve_gcn_cell.html">evolve_gcn_cell()</a></code> (GCN weights evolve, EvolveGCN-O).</p></dd>
 
 </dl></div>
     <div class="section level2">

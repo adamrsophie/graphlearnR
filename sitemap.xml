@@ -20,6 +20,7 @@
 <url><loc>https://adamrsophie.github.io/graphlearnR/authors.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/index.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/news/index.html</loc></url>
+<url><loc>https://adamrsophie.github.io/graphlearnR/reference/add_metapath.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/add_reverse_relations.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/add_self_loops_tensor.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/aggregate_jax.html</loc></url>
@@ -41,6 +42,7 @@
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/evaluate_embeddings.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/evaluate_graph_model.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/evaluate_predictions.html</loc></url>
+<url><loc>https://adamrsophie.github.io/graphlearnR/reference/evolve_gcn_cell.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/explain.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/explanation_fidelity.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/explanation_subgraph.html</loc></url>
@@ -49,6 +51,7 @@
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/global_attention_pool.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/gnn-layers.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/gnn_model.html</loc></url>
+<url><loc>https://adamrsophie.github.io/graphlearnR/reference/gps_layer.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/graph-queries.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/graph-transforms.html</loc></url>
 <url><loc>https://adamrsophie.github.io/graphlearnR/reference/graph_batch.html</loc></url>

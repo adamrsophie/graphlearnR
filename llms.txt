@@ -268,6 +268,7 @@ Scatter aggregation and the general message passing operator.
   [`gatv2_conv()`](https://adamrsophie.github.io/graphlearnR/reference/gnn-layers.md)
   [`transformer_conv()`](https://adamrsophie.github.io/graphlearnR/reference/gnn-layers.md)
   [`nn_conv()`](https://adamrsophie.github.io/graphlearnR/reference/gnn-layers.md)
+  [`edge_conv()`](https://adamrsophie.github.io/graphlearnR/reference/gnn-layers.md)
   [`rgcn_conv()`](https://adamrsophie.github.io/graphlearnR/reference/gnn-layers.md)
   : Graph neural network layers
 - [`cheb_conv()`](https://adamrsophie.github.io/graphlearnR/reference/cheb_conv.md)
@@ -389,6 +390,8 @@ Leakage safe splits for every task.
   : Relation table of a heterogeneous graph
 - [`add_reverse_relations()`](https://adamrsophie.github.io/graphlearnR/reference/add_reverse_relations.md)
   : Add reverse relations
+- [`add_metapath()`](https://adamrsophie.github.io/graphlearnR/reference/add_metapath.md)
+  : Add a metapath relation
 - [`to_homogeneous()`](https://adamrsophie.github.io/graphlearnR/reference/to_homogeneous.md)
   : Convert a heterogeneous graph to a homogeneous one
 - [`hetero_tensors()`](https://adamrsophie.github.io/graphlearnR/reference/hetero_tensors.md)
@@ -424,6 +427,8 @@ Leakage safe splits for every task.
   : Spatiotemporal signals on a fixed graph
 - [`graph_gru_cell()`](https://adamrsophie.github.io/graphlearnR/reference/graph_gru_cell.md)
   : Recurrent graph convolution cell
+- [`evolve_gcn_cell()`](https://adamrsophie.github.io/graphlearnR/reference/evolve_gcn_cell.md)
+  : Evolving GCN cell (EvolveGCN-O)
 - [`temporal_gnn_model()`](https://adamrsophie.github.io/graphlearnR/reference/temporal_gnn_model.md)
   : Recurrent temporal GNN
 - [`train_spatiotemporal_model()`](https://adamrsophie.github.io/graphlearnR/reference/train_spatiotemporal_model.md)
@@ -450,6 +455,8 @@ Leakage safe splits for every task.
   : Graph transformer layer with structural attention bias
 - [`graph_transformer_model()`](https://adamrsophie.github.io/graphlearnR/reference/graph_transformer_model.md)
   : Graphormer style graph transformer
+- [`gps_layer()`](https://adamrsophie.github.io/graphlearnR/reference/gps_layer.md)
+  : GPS layer: local message passing plus global attention
 
 ## Explainability
 

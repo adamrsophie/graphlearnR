@@ -80,6 +80,8 @@ nn_conv(
   bias = TRUE
 )
 
+edge_conv(edge_conv_nn, aggr = "max")
+
 rgcn_conv(
   in_features,
   out_features,
@@ -174,6 +176,11 @@ rgcn_conv(
   `in_features * out_features` (`nn_conv`). When `NULL`, a two layer MLP
   with 32 hidden units is built from `edge_dim`.
 
+- edge_conv_nn:
+
+  For `edge_conv`, the module \\h\_\Theta\\ applied to \\\[x_i \Vert
+  x_j - x_i\]\\ (input size twice the node feature size).
+
 - num_relations:
 
   Number of relation types; `edge_type` holds codes `1:num_relations`.
@@ -201,6 +208,7 @@ An `nn_module`.
 | `transformer_conv` | \\W_r x_i + \sum_j \alpha\_{ij} (W_v x_j + W_e e\_{ji})\\ | `edge_attr` | none added |
 | `nn_conv` | \\W x_i + \mathrm{aggr}\_j x_j \Theta(e\_{ji})\\ | `edge_attr` (required) | none added |
 | `rgcn_conv` | \\W_0 x_i + \sum_r \frac{1}{\|N_r(i)\|}\sum\_{j \in N_r(i)} W_r x_j\\ | `edge_type` (required) | none added |
+| `edge_conv` | \\\max_j h\_\Theta(\[x_i \Vert x_j - x_i\])\\ | none | none added |
 
 Normalization, attention and cost per forward pass (N nodes, E edges,
 input size F, output size F', H heads, R relations):
@@ -216,14 +224,15 @@ input size F, output size F', H heads, R relations):
 | `transformer_conv` | scaled dot product softmax over incoming edges, per head | \\O(EHF' + NFHF')\\ | \\E H F'\\ and \\E H\\ |
 | `nn_conv` | `aggr` (mean by default) | \\O(E F F')\\ | \\E F F'\\ edge specific weights, the largest |
 | `rgcn_conv` | mean per relation | \\O(EF' + RNFF')\\ | \\R F F'\\ weights (or bases) |
+| `edge_conv` | `aggr` (max by default) | \\O(E)\\ calls of \\h\_\Theta\\ on 2F inputs | E rows of \\h\_\Theta\\ output |
 
 All layers are permutation equivariant: permuting node rows and
 relabeling `edge_index` permutes the output rows the same way.
 
 The formulas follow the PyTorch Geometric layers of the same names
 (`SAGEConv`, `GCNConv`, `GraphConv`, `GINConv`/`GINEConv`, `GATConv`,
-`GATv2Conv`, `TransformerConv`, `NNConv`, `RGCNConv`) for the options
-exposed here; options not listed are not implemented.
+`GATv2Conv`, `TransformerConv`, `NNConv`, `RGCNConv`, `EdgeConv`) for
+the options exposed here; options not listed are not implemented.
 
 Attention layers keep the coefficients of their last forward pass in
 `layer$last_attention` (a list with `edge_index` and an E by heads
@@ -241,7 +250,8 @@ networks. Brody, Alon and Yahav (2022) How attentive are graph attention
 networks? Shi et al. (2021) Masked label prediction. Gilmer et al.
 (2017) Neural message passing for quantum chemistry. Schlichtkrull et
 al. (2018) Modeling relational data with graph convolutional networks.
-Morris et al. (2019) Weisfeiler and Leman go neural.
+Morris et al. (2019) Weisfeiler and Leman go neural. Wang et al. (2019)
+Dynamic graph CNN for learning on point clouds.
 
 ## Examples
 

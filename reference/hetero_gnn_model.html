@@ -84,7 +84,7 @@ head for <code>target_type</code>.</p>
 <span>  output_dim <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  target_type <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  num_layers <span class="op">=</span> <span class="fl">2L</span>,</span>
-<span>  conv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sage"</span>, <span class="st">"graph_conv"</span>, <span class="st">"gat"</span>, <span class="st">"rgcn"</span>, <span class="st">"hgt"</span><span class="op">)</span>,</span>
+<span>  conv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sage"</span>, <span class="st">"graph_conv"</span>, <span class="st">"gat"</span>, <span class="st">"rgcn"</span>, <span class="st">"hgt"</span>, <span class="st">"han"</span><span class="op">)</span>,</span>
 <span>  heads <span class="op">=</span> <span class="fl">2L</span>,</span>
 <span>  dropout <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  aggr <span class="op">=</span> <span class="st">"mean"</span>,</span>
@@ -124,7 +124,7 @@ relations, feature sizes, node counts); its data are not stored.</p></dd>
 
 
 <dt id="arg-heads">heads<a class="anchor" aria-label="anchor" href="#arg-heads"></a></dt>
-<dd><p>Attention heads for <code>"gat"</code>.</p></dd>
+<dd><p>Attention heads for <code>"gat"</code>, <code>"han"</code> and <code>"hgt"</code>.</p></dd>
 
 
 <dt id="arg-dropout">dropout<a class="anchor" aria-label="anchor" href="#arg-dropout"></a></dt>
@@ -164,6 +164,11 @@ averaged per relation.</p></li>
 relation, combined with <code><a href="hetero_conv.html">hetero_conv()</a></code>. <code>"gat"</code> gives relation specific
 attention (a heterogeneous GAT in the sense of PyG's <code>to_hetero</code> applied
 to <code>GATConv</code>; it is not HAN or HGT).</p></li>
+<li><p><code>conv = "han"</code>: HAN (Wang et al. 2019): node level attention per
+relation (<code>gat_conv</code>) and semantic attention across the relations
+arriving at a type (<code>hetero_conv(aggr = "semantic")</code>). HAN uses
+metapath relations; add them with <code><a href="add_metapath.html">add_metapath()</a></code> (all relations of
+<code>hg</code> are used, so the plain relations take part too).</p></li>
 <li><p><code>conv = "hgt"</code>: heterogeneous graph transformer layers, see
 <code><a href="hgt_conv.html">hgt_conv()</a></code>; attention is normalized over all incoming relations of a
 node.</p></li>

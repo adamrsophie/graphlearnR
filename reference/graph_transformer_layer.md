@@ -9,7 +9,13 @@ then \\h = h + \mathrm{FFN}(\mathrm{LN}(h))\\.
 ## Usage
 
 ``` r
-graph_transformer_layer(dim, heads = 4L, max_dist = 5L, dropout = 0.1)
+graph_transformer_layer(
+  dim,
+  heads = 4L,
+  max_dist = 5L,
+  dropout = 0.1,
+  edge_dim = NULL
+)
 ```
 
 ## Arguments
@@ -30,18 +36,28 @@ graph_transformer_layer(dim, heads = 4L, max_dist = 5L, dropout = 0.1)
 
   Dropout probability.
 
+- edge_dim:
+
+  Edge feature size for the edge bias, or `NULL`.
+
 ## Value
 
-An `nn_module` called as `layer(x, batch, dist)` where `dist` is a `B`
-by `L` by `L` long tensor of clipped distances (padding uses
-`max_dist + 2`).
+An `nn_module` called as
+`layer(x, batch, dist, edge_index = NULL, edge_attr = NULL)` where
+`dist` is a `B` by `L` by `L` long tensor of clipped distances (padding
+uses `max_dist + 2`); `edge_index` and `edge_attr` are needed with
+`edge_dim`.
 
 ## Details
 
-Graphormer's edge encoding along shortest paths is not implemented.
-Memory is \\O(B L^2 H)\\ for `B` graphs of at most `L` nodes and `H`
-heads, so this layer suits small graphs such as molecules; for large
-graphs use the sparse
+With `edge_dim`, edge features enter the attention as a learned bias per
+head: for an edge \\j \to i\\ with features \\e\_{ji}\\, the score of
+query \\i\\ and key \\j\\ gets \\w_h^\top e\_{ji}\\ (summed over
+parallel edges). This is Graphormer's edge encoding for paths of length
+one; its averaging of edge features along longer shortest paths is not
+implemented. Memory is \\O(B L^2 H)\\ for `B` graphs of at most `L`
+nodes and `H` heads, so this layer suits small graphs such as molecules;
+for large graphs use the sparse
 [`transformer_conv()`](https://adamrsophie.github.io/graphlearnR/reference/gnn-layers.md).
 
 The layer is permutation equivariant: distances and attention are

@@ -8,7 +8,12 @@ features.
 ## Usage
 
 ``` r
-hetero_conv(convs, aggr = c("sum", "mean"))
+hetero_conv(
+  convs,
+  aggr = c("sum", "mean", "semantic"),
+  dim = NULL,
+  semantic_dim = 128L
+)
 ```
 
 ## Arguments
@@ -20,11 +25,34 @@ hetero_conv(convs, aggr = c("sum", "mean"))
 
 - aggr:
 
-  `"sum"` or `"mean"` over relations.
+  `"sum"`, `"mean"` or `"semantic"` over relations.
+
+- dim:
+
+  Output size of the layers, needed for `"semantic"`.
+
+- semantic_dim:
+
+  Hidden size of the semantic attention.
 
 ## Value
 
 An `nn_module` called as `module(x_dict, edge_index_dict)`.
+
+## Details
+
+With `aggr = "semantic"`, relations arriving at a node type are combined
+by the semantic attention of HAN (Wang et al. 2019): relation \\r\\ gets
+the score \\w_r = \frac{1}{N}\sum_i q^\top \tanh(W z_i^{r} + b)\\ (one
+\\q, W, b\\ per target type), \\\beta = \mathrm{softmax}(w)\\, and the
+output is \\\sum_r \beta_r z^{r}\\. The last weights are kept in
+`module$last_semantic_attention` for inspection (they show how the layer
+weighted relations, not causal importance).
+
+## References
+
+Wang et al. (2019) Heterogeneous graph attention network. The Web
+Conference (WWW).
 
 ## Examples
 

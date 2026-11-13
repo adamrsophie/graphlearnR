@@ -21,7 +21,8 @@ train_dynamic_link_model(
   lr = 0.01,
   neg_ratio = 1,
   seed = NULL,
-  device = NULL
+  device = NULL,
+  cell = c("gru", "evolve")
 )
 ```
 
@@ -59,6 +60,14 @@ train_dynamic_link_model(
 - device:
 
   Device.
+
+- cell:
+
+  `"gru"` for a
+  [`graph_gru_cell()`](https://adamrsophie.github.io/graphlearnR/reference/graph_gru_cell.md)
+  (node states evolve) or `"evolve"` for an
+  [`evolve_gcn_cell()`](https://adamrsophie.github.io/graphlearnR/reference/evolve_gcn_cell.md)
+  (GCN weights evolve, EvolveGCN-O).
 
 ## Value
 

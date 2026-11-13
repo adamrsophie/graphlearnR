@@ -198,7 +198,7 @@ str(f1$reproducibility, max.level = 1)
 #>  $ versions       : Named chr [1:3] "4.6.2" "0.1.0" "0.17.0"
 #>   ..- attr(*, "names")= chr [1:3] "R" "graphlearnR" "torch"
 #>  $ platform       : chr "x86_64-pc-linux-gnu"
-#>  $ time           : chr "2026-11-13 15:18:19 UTC"
+#>  $ time           : chr "2026-11-13 16:19:15 UTC"
 ```
 
 ## A checklist for papers and reports

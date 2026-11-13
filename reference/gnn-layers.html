@@ -154,6 +154,8 @@ the usual neighborhood.</p>
 <span>  bias <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu">edge_conv</span><span class="op">(</span><span class="va">edge_conv_nn</span>, aggr <span class="op">=</span> <span class="st">"max"</span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu">rgcn_conv</span><span class="op">(</span></span>
 <span>  <span class="va">in_features</span>,</span>
 <span>  <span class="va">out_features</span>,</span>
@@ -250,6 +252,12 @@ E by <code>in_features * out_features</code> (<code>nn_conv</code>). When <code>
 MLP with 32 hidden units is built from <code>edge_dim</code>.</p></dd>
 
 
+<dt id="arg-edge-conv-nn">edge_conv_nn<a class="anchor" aria-label="anchor" href="#arg-edge-conv-nn"></a></dt>
+<dd><p>For <code>edge_conv</code>, the module \(h_\Theta\) applied
+to \([x_i \Vert x_j - x_i]\) (input size twice the node feature
+size).</p></dd>
+
+
 <dt id="arg-num-relations">num_relations<a class="anchor" aria-label="anchor" href="#arg-num-relations"></a></dt>
 <dd><p>Number of relation types; <code>edge_type</code> holds codes
 <code>1:num_relations</code>.</p></dd>
@@ -267,12 +275,12 @@ for a full weight per relation).</p></dd>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
 
-<table class="table table"><tr><td>Layer</td><td>Update for node \(i\)</td><td>Edge input</td><td>Self loops</td></tr><tr><td><code>sage_conv</code></td><td>\(W_1 \mathrm{aggr}_{j} w_{ji} x_j + W_2 x_i\)</td><td><code>edge_weight</code></td><td>none added</td></tr><tr><td><code>gcn_conv</code></td><td>\(\sum_j \frac{w_{ji}}{\sqrt{d_j d_i}} W x_j + b\)</td><td><code>edge_weight</code></td><td>added to nodes without one</td></tr><tr><td><code>graph_conv</code></td><td>\(W_1 \sum_j w_{ji} x_j + W_2 x_i\)</td><td><code>edge_weight</code></td><td>none added</td></tr><tr><td><code>gin_conv</code></td><td>\(\mathrm{MLP}((1+\epsilon) x_i + \sum_j x_j)\)</td><td><code>edge_attr</code> (GINE), <code>edge_weight</code></td><td>none added</td></tr><tr><td><code>gat_conv</code></td><td>\(\sum_j \alpha_{ij} W x_j\), \(\alpha\) from \(a^\top [W x_i \Vert W x_j]\)</td><td><code>edge_attr</code></td><td>replaced: existing removed, one per node added</td></tr><tr><td><code>gatv2_conv</code></td><td>\(\sum_j \alpha_{ij} W_s x_j\), \(\alpha\) from \(a^\top \mathrm{LeakyReLU}(W_s x_j + W_t x_i)\)</td><td><code>edge_attr</code></td><td>as <code>gat_conv</code></td></tr><tr><td><code>transformer_conv</code></td><td>\(W_r x_i + \sum_j \alpha_{ij} (W_v x_j + W_e e_{ji})\)</td><td><code>edge_attr</code></td><td>none added</td></tr><tr><td><code>nn_conv</code></td><td>\(W x_i + \mathrm{aggr}_j x_j \Theta(e_{ji})\)</td><td><code>edge_attr</code> (required)</td><td>none added</td></tr><tr><td><code>rgcn_conv</code></td><td>\(W_0 x_i + \sum_r \frac{1}{|N_r(i)|}\sum_{j \in N_r(i)} W_r x_j\)</td><td><code>edge_type</code> (required)</td><td>none added</td></tr></table><p>Normalization, attention and cost per forward pass (N nodes, E edges,
-input size F, output size F', H heads, R relations):</p><table class="table table"><tr><td>Layer</td><td>Normalization or attention</td><td>Time</td><td>Extra memory</td></tr><tr><td><code>sage_conv</code></td><td><code>aggr</code> (mean by default) over incoming edges; optional L2 row normalization</td><td>\(O(EF + NFF')\)</td><td>\(E F\) messages</td></tr><tr><td><code>gcn_conv</code></td><td>symmetric \(D^{-1/2}(A+I)D^{-1/2}\), weighted in degree</td><td>\(O(EF' + NFF')\)</td><td>\(E F'\) messages</td></tr><tr><td><code>graph_conv</code></td><td>none (sum by default)</td><td>\(O(EF + NFF')\)</td><td>\(E F\)</td></tr><tr><td><code>gin_conv</code></td><td>none (sum)</td><td>\(O(EF)\) plus the MLP</td><td>\(E F\)</td></tr><tr><td><code>gat_conv</code>, <code>gatv2_conv</code></td><td>softmax of attention scores over the incoming edges of each node, per head</td><td>\(O(EHF' + NFHF')\)</td><td>\(E H F'\) messages and \(E H\) coefficients</td></tr><tr><td><code>transformer_conv</code></td><td>scaled dot product softmax over incoming edges, per head</td><td>\(O(EHF' + NFHF')\)</td><td>\(E H F'\) and \(E H\)</td></tr><tr><td><code>nn_conv</code></td><td><code>aggr</code> (mean by default)</td><td>\(O(E F F')\)</td><td>\(E F F'\) edge specific weights, the largest</td></tr><tr><td><code>rgcn_conv</code></td><td>mean per relation</td><td>\(O(EF' + RNFF')\)</td><td>\(R F F'\) weights (or bases)</td></tr></table><p>All layers are permutation equivariant: permuting node
+<table class="table table"><tr><td>Layer</td><td>Update for node \(i\)</td><td>Edge input</td><td>Self loops</td></tr><tr><td><code>sage_conv</code></td><td>\(W_1 \mathrm{aggr}_{j} w_{ji} x_j + W_2 x_i\)</td><td><code>edge_weight</code></td><td>none added</td></tr><tr><td><code>gcn_conv</code></td><td>\(\sum_j \frac{w_{ji}}{\sqrt{d_j d_i}} W x_j + b\)</td><td><code>edge_weight</code></td><td>added to nodes without one</td></tr><tr><td><code>graph_conv</code></td><td>\(W_1 \sum_j w_{ji} x_j + W_2 x_i\)</td><td><code>edge_weight</code></td><td>none added</td></tr><tr><td><code>gin_conv</code></td><td>\(\mathrm{MLP}((1+\epsilon) x_i + \sum_j x_j)\)</td><td><code>edge_attr</code> (GINE), <code>edge_weight</code></td><td>none added</td></tr><tr><td><code>gat_conv</code></td><td>\(\sum_j \alpha_{ij} W x_j\), \(\alpha\) from \(a^\top [W x_i \Vert W x_j]\)</td><td><code>edge_attr</code></td><td>replaced: existing removed, one per node added</td></tr><tr><td><code>gatv2_conv</code></td><td>\(\sum_j \alpha_{ij} W_s x_j\), \(\alpha\) from \(a^\top \mathrm{LeakyReLU}(W_s x_j + W_t x_i)\)</td><td><code>edge_attr</code></td><td>as <code>gat_conv</code></td></tr><tr><td><code>transformer_conv</code></td><td>\(W_r x_i + \sum_j \alpha_{ij} (W_v x_j + W_e e_{ji})\)</td><td><code>edge_attr</code></td><td>none added</td></tr><tr><td><code>nn_conv</code></td><td>\(W x_i + \mathrm{aggr}_j x_j \Theta(e_{ji})\)</td><td><code>edge_attr</code> (required)</td><td>none added</td></tr><tr><td><code>rgcn_conv</code></td><td>\(W_0 x_i + \sum_r \frac{1}{|N_r(i)|}\sum_{j \in N_r(i)} W_r x_j\)</td><td><code>edge_type</code> (required)</td><td>none added</td></tr><tr><td><code>edge_conv</code></td><td>\(\max_j h_\Theta([x_i \Vert x_j - x_i])\)</td><td>none</td><td>none added</td></tr></table><p>Normalization, attention and cost per forward pass (N nodes, E edges,
+input size F, output size F', H heads, R relations):</p><table class="table table"><tr><td>Layer</td><td>Normalization or attention</td><td>Time</td><td>Extra memory</td></tr><tr><td><code>sage_conv</code></td><td><code>aggr</code> (mean by default) over incoming edges; optional L2 row normalization</td><td>\(O(EF + NFF')\)</td><td>\(E F\) messages</td></tr><tr><td><code>gcn_conv</code></td><td>symmetric \(D^{-1/2}(A+I)D^{-1/2}\), weighted in degree</td><td>\(O(EF' + NFF')\)</td><td>\(E F'\) messages</td></tr><tr><td><code>graph_conv</code></td><td>none (sum by default)</td><td>\(O(EF + NFF')\)</td><td>\(E F\)</td></tr><tr><td><code>gin_conv</code></td><td>none (sum)</td><td>\(O(EF)\) plus the MLP</td><td>\(E F\)</td></tr><tr><td><code>gat_conv</code>, <code>gatv2_conv</code></td><td>softmax of attention scores over the incoming edges of each node, per head</td><td>\(O(EHF' + NFHF')\)</td><td>\(E H F'\) messages and \(E H\) coefficients</td></tr><tr><td><code>transformer_conv</code></td><td>scaled dot product softmax over incoming edges, per head</td><td>\(O(EHF' + NFHF')\)</td><td>\(E H F'\) and \(E H\)</td></tr><tr><td><code>nn_conv</code></td><td><code>aggr</code> (mean by default)</td><td>\(O(E F F')\)</td><td>\(E F F'\) edge specific weights, the largest</td></tr><tr><td><code>rgcn_conv</code></td><td>mean per relation</td><td>\(O(EF' + RNFF')\)</td><td>\(R F F'\) weights (or bases)</td></tr><tr><td><code>edge_conv</code></td><td><code>aggr</code> (max by default)</td><td>\(O(E)\) calls of \(h_\Theta\) on 2F inputs</td><td>E rows of \(h_\Theta\) output</td></tr></table><p>All layers are permutation equivariant: permuting node
 rows and relabeling <code>edge_index</code> permutes the output rows the same way.</p>
 <p>The formulas follow the PyTorch Geometric layers of the same names
 (<code>SAGEConv</code>, <code>GCNConv</code>, <code>GraphConv</code>, <code>GINConv</code>/<code>GINEConv</code>, <code>GATConv</code>,
-<code>GATv2Conv</code>, <code>TransformerConv</code>, <code>NNConv</code>, <code>RGCNConv</code>) for the options
+<code>GATv2Conv</code>, <code>TransformerConv</code>, <code>NNConv</code>, <code>RGCNConv</code>, <code>EdgeConv</code>) for the options
 exposed here; options not listed are not implemented.</p>
 <p>Attention layers keep the coefficients of their last forward pass
 in <code>layer$last_attention</code> (a list with <code>edge_index</code> and an E by heads
@@ -290,7 +298,8 @@ Alon and Yahav (2022) How attentive are graph attention networks? Shi et
 al. (2021) Masked label prediction. Gilmer et al. (2017) Neural message
 passing for quantum chemistry. Schlichtkrull et al. (2018) Modeling
 relational data with graph convolutional networks. Morris et al. (2019)
-Weisfeiler and Leman go neural.</p>
+Weisfeiler and Leman go neural. Wang et al. (2019) Dynamic graph CNN for
+learning on point clouds.</p>
     </div>
 
     <div class="section level2">

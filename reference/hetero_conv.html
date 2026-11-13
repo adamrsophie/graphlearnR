@@ -78,7 +78,12 @@ features.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">hetero_conv</span><span class="op">(</span><span class="va">convs</span>, aggr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sum"</span>, <span class="st">"mean"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">hetero_conv</span><span class="op">(</span></span>
+<span>  <span class="va">convs</span>,</span>
+<span>  aggr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sum"</span>, <span class="st">"mean"</span>, <span class="st">"semantic"</span><span class="op">)</span>,</span>
+<span>  dim <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  semantic_dim <span class="op">=</span> <span class="fl">128L</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -91,12 +96,35 @@ features.</p>
 
 
 <dt id="arg-aggr">aggr<a class="anchor" aria-label="anchor" href="#arg-aggr"></a></dt>
-<dd><p><code>"sum"</code> or <code>"mean"</code> over relations.</p></dd>
+<dd><p><code>"sum"</code>, <code>"mean"</code> or <code>"semantic"</code> over relations.</p></dd>
+
+
+<dt id="arg-dim">dim<a class="anchor" aria-label="anchor" href="#arg-dim"></a></dt>
+<dd><p>Output size of the layers, needed for <code>"semantic"</code>.</p></dd>
+
+
+<dt id="arg-semantic-dim">semantic_dim<a class="anchor" aria-label="anchor" href="#arg-semantic-dim"></a></dt>
+<dd><p>Hidden size of the semantic attention.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>An <code>nn_module</code> called as <code>module(x_dict, edge_index_dict)</code>.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>With <code>aggr = "semantic"</code>, relations arriving at a node type are combined
+by the semantic attention of HAN (Wang et al. 2019): relation \(r\)
+gets the score \(w_r = \frac{1}{N}\sum_i q^\top \tanh(W z_i^{r} + b)\)
+(one \(q, W, b\) per target type), \(\beta = \mathrm{softmax}(w)\),
+and the output is \(\sum_r \beta_r z^{r}\). The last weights are kept
+in <code>module$last_semantic_attention</code> for inspection (they show how the
+layer weighted relations, not causal importance).</p>
+    </div>
+    <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Wang et al. (2019) Heterogeneous graph attention network.
+The Web Conference (WWW).</p>
     </div>
 
     <div class="section level2">

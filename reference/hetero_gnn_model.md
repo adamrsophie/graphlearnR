@@ -14,7 +14,7 @@ hetero_gnn_model(
   output_dim = NULL,
   target_type = NULL,
   num_layers = 2L,
-  conv = c("sage", "graph_conv", "gat", "rgcn", "hgt"),
+  conv = c("sage", "graph_conv", "gat", "rgcn", "hgt", "han"),
   heads = 2L,
   dropout = 0.5,
   aggr = "mean",
@@ -53,7 +53,7 @@ hetero_gnn_model(
 
 - heads:
 
-  Attention heads for `"gat"`.
+  Attention heads for `"gat"`, `"han"` and `"hgt"`.
 
 - dropout:
 
@@ -95,6 +95,14 @@ it returns a named list of per type outputs.
   `"gat"` gives relation specific attention (a heterogeneous GAT in the
   sense of PyG's `to_hetero` applied to `GATConv`; it is not HAN or
   HGT).
+
+- `conv = "han"`: HAN (Wang et al. 2019): node level attention per
+  relation (`gat_conv`) and semantic attention across the relations
+  arriving at a type (`hetero_conv(aggr = "semantic")`). HAN uses
+  metapath relations; add them with
+  [`add_metapath()`](https://adamrsophie.github.io/graphlearnR/reference/add_metapath.md)
+  (all relations of `hg` are used, so the plain relations take part
+  too).
 
 - `conv = "hgt"`: heterogeneous graph transformer layers, see
   [`hgt_conv()`](https://adamrsophie.github.io/graphlearnR/reference/hgt_conv.md);

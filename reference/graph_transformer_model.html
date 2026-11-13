@@ -6,20 +6,20 @@ layer norm, and either a node level linear head or global pooling and an
 MLP head. Shortest path distances are computed in R for each new batch,
 which costs \(O(\sum_g n_g (n_g + e_g))\); the distances of the 64 most
 recent distinct batches are cached in the model, so repeated batches (for
-example full batch training) reuse them. Edge features are not used by
-this model; for edge aware attention use transformer_conv() with
-edge_dim, which also gives a sparse, neighborhood local alternative to
-dense attention."><meta property="og:description" content="Input projection plus centrality encoding (a learned embedding of each
+example full batch training) reuse them. With edge_dim, every layer adds
+a learned per head bias from the features of direct edges (see
+graph_transformer_layer()); transformer_conv() with edge_dim is a
+sparse, neighborhood local alternative to this dense attention."><meta property="og:description" content="Input projection plus centrality encoding (a learned embedding of each
 node's clipped degree, added to the features), num_layers
 graph_transformer_layer()s with shortest path attention bias, a final
 layer norm, and either a node level linear head or global pooling and an
 MLP head. Shortest path distances are computed in R for each new batch,
 which costs \(O(\sum_g n_g (n_g + e_g))\); the distances of the 64 most
 recent distinct batches are cached in the model, so repeated batches (for
-example full batch training) reuse them. Edge features are not used by
-this model; for edge aware attention use transformer_conv() with
-edge_dim, which also gives a sparse, neighborhood local alternative to
-dense attention."><meta property="og:image" content="https://adamrsophie.github.io/graphlearnR/logo.svg"></head><body>
+example full batch training) reuse them. With edge_dim, every layer adds
+a learned per head bias from the features of direct edges (see
+graph_transformer_layer()); transformer_conv() with edge_dim is a
+sparse, neighborhood local alternative to this dense attention."><meta property="og:image" content="https://adamrsophie.github.io/graphlearnR/logo.svg"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -91,10 +91,10 @@ layer norm, and either a node level linear head or global pooling and an
 MLP head. Shortest path distances are computed in R for each new batch,
 which costs \(O(\sum_g n_g (n_g + e_g))\); the distances of the 64 most
 recent distinct batches are cached in the model, so repeated batches (for
-example full batch training) reuse them. Edge features are not used by
-this model; for edge aware attention use <code><a href="gnn-layers.html">transformer_conv()</a></code> with
-<code>edge_dim</code>, which also gives a sparse, neighborhood local alternative to
-dense attention.</p>
+example full batch training) reuse them. With <code>edge_dim</code>, every layer adds
+a learned per head bias from the features of direct edges (see
+<code><a href="graph_transformer_layer.html">graph_transformer_layer()</a></code>); <code><a href="gnn-layers.html">transformer_conv()</a></code> with <code>edge_dim</code> is a
+sparse, neighborhood local alternative to this dense attention.</p>
     </div>
 
     <div class="section level2">
@@ -108,7 +108,8 @@ dense attention.</p>
 <span>  max_dist <span class="op">=</span> <span class="fl">5L</span>,</span>
 <span>  max_degree <span class="op">=</span> <span class="fl">10L</span>,</span>
 <span>  dropout <span class="op">=</span> <span class="fl">0.1</span>,</span>
-<span>  pool <span class="op">=</span> <span class="st">"mean"</span></span>
+<span>  pool <span class="op">=</span> <span class="st">"mean"</span>,</span>
+<span>  edge_dim <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -150,6 +151,11 @@ dense attention.</p>
 
 <dt id="arg-pool">pool<a class="anchor" aria-label="anchor" href="#arg-pool"></a></dt>
 <dd><p><code>NULL</code> for node level output, or <code>"mean"</code>, <code>"sum"</code>, <code>"max"</code>.</p></dd>
+
+
+<dt id="arg-edge-dim">edge_dim<a class="anchor" aria-label="anchor" href="#arg-edge-dim"></a></dt>
+<dd><p>Edge feature size for edge biased attention, or <code>NULL</code>
+to ignore edge features.</p></dd>
 
 </dl></div>
     <div class="section level2">

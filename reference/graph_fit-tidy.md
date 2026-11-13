@@ -60,5 +60,5 @@ if (torch::torch_is_installed() && requireNamespace("generics", quietly = TRUE))
   generics::glance(fit)
 }
 #>                  task epochs best_epoch train_loss best_val_loss parameters
-#> 1 node_classification     20         20  0.6691499     0.6362948        370
+#> 1 node_classification     20         20  0.5814682     0.4743198        370
 ```
