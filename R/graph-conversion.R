@@ -11,7 +11,10 @@
 #' and `e_1`, `e_2`, ... on edges, labels as `y` and `edge_y`, weights as
 #' `weight`, and the original identifiers as `node_id`. With the default
 #' arguments, `from_igraph()` reads these back, so the round trip keeps node
-#' order, identifiers, features, labels, weights, types and direction.
+#' order, identifiers, features and their column names, node, edge and
+#' graph labels (multi target label matrices as `y_1`, `y_2`, ...), weights,
+#' types, node and edge masks, `graph_attr`, `metadata` and direction.
+#' Graph level fields are stored as igraph graph attributes.
 #'
 #' For undirected graphs `to_igraph()` writes each undirected pair once.
 #'
@@ -69,21 +72,49 @@ from_igraph <- function(ig, x_attrs = NULL, y_attr = "y", edge_attrs = NULL,
   opt_v <- function(a) if (!is.null(a) && a %in% vattr) igraph::vertex_attr(ig, a)
   opt_e <- function(a) if (!is.null(a) && a %in% eattr) igraph::edge_attr(ig, a)
   masks <- lapply(c("train_mask", "val_mask", "test_mask"), opt_v)
+  gattr <- igraph::graph_attr_names(ig)
+  opt_g <- function(a) if (a %in% gattr) igraph::graph_attr(ig, a)
+  # Multi target labels written by to_igraph() as name_1, name_2, ...
+  label <- function(a, getter, have) {
+    if (is.null(a)) return(NULL)
+    k <- opt_g(paste0(a, "_ncol"))
+    if (!is.null(k)) return(vapply(seq_len(k), function(j) as.double(getter(ig, paste0(a, "_", j))),
+                                   numeric(if (identical(getter, igraph::vertex_attr)) n else nrow(el))))
+    if (a %in% have) getter(ig, a)
+  }
+  x <- get_cols(x_attrs, igraph::vertex_attr)
+  if (!is.null(x) && !is.null(opt_g("x_names")) && ncol(x) == length(opt_g("x_names"))) {
+    colnames(x) <- opt_g("x_names")
+  }
+  ea <- get_cols(edge_attrs, igraph::edge_attr)
+  if (!is.null(ea) && !is.null(opt_g("e_names")) && ncol(ea) == length(opt_g("e_names"))) {
+    colnames(ea) <- opt_g("e_names")
+  }
 
-  graph_data(
-    x = get_cols(x_attrs, igraph::vertex_attr),
+  g <- graph_data(
+    x = x,
     edge_index = if (nrow(el)) t(el) else NULL,
-    y = opt_v(y_attr),
-    edge_attr = get_cols(edge_attrs, igraph::edge_attr),
+    y = label(y_attr, igraph::vertex_attr, vattr),
+    edge_attr = ea,
     edge_weight = opt_e(weight_attr),
-    edge_y = opt_e(edge_y_attr),
+    edge_y = label(edge_y_attr, igraph::edge_attr, eattr),
+    graph_y = opt_g("graph_y"),
+    graph_attr = opt_g("graph_attr"),
     num_nodes = n,
     directed = directed,
     node_ids = ids,
     node_type = opt_v("node_type"),
     edge_type = opt_e("edge_type"),
-    train_mask = masks[[1L]], val_mask = masks[[2L]], test_mask = masks[[3L]]
+    train_mask = masks[[1L]], val_mask = masks[[2L]], test_mask = masks[[3L]],
+    metadata = opt_g("metadata") %||% list()
   )
+  # Edge masks are given per input edge; for undirected graphs both stored
+  # directions of a pair take the mask of the pair.
+  for (a in c("edge_train_mask", "edge_val_mask", "edge_test_mask")) {
+    m <- opt_e(a)
+    if (!is.null(m)) g[[a]] <- if (directed) m else m[g$edge_pair]
+  }
+  g
 }
 
 #' @rdname from_igraph
@@ -101,8 +132,19 @@ to_igraph <- function(g) {
     for (j in seq_len(ncol(g$x))) {
       ig <- igraph::set_vertex_attr(ig, paste0("x_", j), value = g$x[, j])
     }
+    if (!is.null(colnames(g$x))) ig <- igraph::set_graph_attr(ig, "x_names", colnames(g$x))
   }
-  for (a in c("y", "node_type", "train_mask", "val_mask", "test_mask")) {
+  set_label <- function(ig, setter, name, v) {
+    # A label matrix (multi target) becomes columns name_1, name_2, ...
+    if (is.matrix(v)) {
+      for (j in seq_len(ncol(v))) ig <- setter(ig, paste0(name, "_", j), value = v[, j])
+      igraph::set_graph_attr(ig, paste0(name, "_ncol"), ncol(v))
+    } else {
+      setter(ig, name, value = v)
+    }
+  }
+  if (!is.null(g$y)) ig <- set_label(ig, igraph::set_vertex_attr, "y", g$y)
+  for (a in c("node_type", "train_mask", "val_mask", "test_mask")) {
     if (!is.null(g[[a]])) ig <- igraph::set_vertex_attr(ig, a, value = g[[a]])
   }
   if (ncol(ei)) {
@@ -111,11 +153,20 @@ to_igraph <- function(g) {
         ig <- igraph::set_edge_attr(ig, paste0("e_", j),
                                     value = g$edge_attr[keep, j])
       }
+      if (!is.null(colnames(g$edge_attr))) ig <- igraph::set_graph_attr(ig, "e_names", colnames(g$edge_attr))
     }
     if (!is.null(g$edge_weight)) ig <- igraph::set_edge_attr(ig, "weight", value = g$edge_weight[keep])
-    if (!is.null(g$edge_y)) ig <- igraph::set_edge_attr(ig, "edge_y", value = take_rows(g$edge_y, keep))
+    if (!is.null(g$edge_y)) ig <- set_label(ig, igraph::set_edge_attr, "edge_y", take_rows(g$edge_y, keep))
     if (!is.null(g$edge_type)) ig <- igraph::set_edge_attr(ig, "edge_type", value = g$edge_type[keep])
+    for (a in c("edge_train_mask", "edge_val_mask", "edge_test_mask")) {
+      if (!is.null(g[[a]])) ig <- igraph::set_edge_attr(ig, a, value = g[[a]][keep])
+    }
   }
+  # Graph level fields travel as graph attributes.
+  for (a in c("graph_y", "graph_attr")) {
+    if (!is.null(g[[a]])) ig <- igraph::set_graph_attr(ig, a, g[[a]])
+  }
+  if (length(g$metadata)) ig <- igraph::set_graph_attr(ig, "metadata", g$metadata)
   ig
 }
 

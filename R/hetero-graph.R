@@ -335,7 +335,10 @@ hetero_tensors <- function(hg, device = NULL) {
 #'
 #' Concatenates graphs with the same node and relation types. Within each
 #' node type, indices of graph `k` are shifted by the node counts of that
-#' type in graphs `1, ..., k - 1`; `batch[[type]]` records graph membership.
+#' type in graphs `1, ..., k - 1`; `batch[[type]]` records graph membership
+#' and `edge_batch[[relation]]` the graph of each edge. [unbatch()] rebuilds
+#' the input graphs, including node identifiers, labels, masks, edge
+#' features, times and labels, and each graph's metadata.
 #'
 #' @param graphs A list of `hetero_graph_data` objects.
 #' @return A `hetero_graph_data` of class `hetero_graph_batch`.
@@ -343,6 +346,7 @@ hetero_tensors <- function(hg, device = NULL) {
 #' hg <- dataset_synthetic_hetero(seed = 1)
 #' hb <- hetero_batch(list(hg, hg))
 #' hb$num_nodes
+#' length(unbatch(hb))
 #' @export
 hetero_batch <- function(graphs) {
   types <- graphs[[1L]]$node_types
@@ -386,6 +390,12 @@ hetero_batch <- function(graphs) {
   hb <- hetero_graph_data(nodes, edges, metadata = list(num_graphs = length(graphs)))
   hb$n_id <- n_id
   hb$original_node_ids <- original_node_ids
+  # What unbatch() needs to rebuild each graph exactly.
+  hb$edge_batch <- lapply(stats::setNames(keys, keys), function(k) {
+    rep.int(seq_along(graphs), vapply(graphs, function(g) ncol(g$edges[[k]]$edge_index), integer(1)))
+  })
+  hb$graph_metadata <- lapply(graphs, function(g) g$metadata)
+  hb$graph_n_id <- lapply(graphs, function(g) g$n_id)
   hb$batch <- lapply(stats::setNames(types, types), function(t) rep.int(seq_along(graphs), counts[t, ]))
   hb$num_graphs <- length(graphs)
   class(hb) <- c("hetero_graph_batch", class(hb))
@@ -892,6 +902,9 @@ predict_hetero_links <- function(object, new_data, pairs, type) {
 #' @export
 dataset_synthetic_hetero <- function(num_drugs = 60L, num_proteins = 80L, num_classes = 3L,
                                      seed = NULL) {
+  if (num_classes < 2L || num_proteins < 4L * num_classes || num_drugs < num_classes) {
+    stopf("Use at least 2 classes, 4 proteins per class and 1 drug per class.")
+  }
   with_optional_seed(seed, {
     dcls <- sample(rep_len(seq_len(num_classes), num_drugs))
     pfam <- sample(rep_len(seq_len(num_classes), num_proteins))
@@ -920,4 +933,33 @@ dataset_synthetic_hetero <- function(num_drugs = 60L, num_proteins = 80L, num_cl
                  protein__interacts__protein = cbind(pp, pp[2:1, , drop = FALSE])),
     metadata = list(name = "synthetic_drug_protein", source = "simulated", seed = seed)
   )
+}
+
+hetero_unbatch <- function(hb) {
+  types <- hb$node_types
+  keys <- names(hb$edges)
+  lapply(seq_len(hb$num_graphs), function(j) {
+    rows <- lapply(stats::setNames(types, types), function(t) which(hb$batch[[t]] == j))
+    off <- vapply(rows, function(r) if (length(r)) r[1L] - 1L else 0L, integer(1))
+    nodes <- lapply(stats::setNames(types, types), function(t) {
+      nd <- hb$nodes[[t]]
+      r <- rows[[t]]
+      list(x = take_rows(nd$x, r), y = take_rows(nd$y, r), num_nodes = length(r),
+           train_mask = take_rows(nd$train_mask, r), val_mask = take_rows(nd$val_mask, r),
+           test_mask = take_rows(nd$test_mask, r), node_ids = hb$original_node_ids[[t]][[j]])
+    })
+    edges <- lapply(stats::setNames(keys, keys), function(k) {
+      e <- hb$edges[[k]]
+      c <- which(hb$edge_batch[[k]] == j)
+      ei <- e$edge_index[, c, drop = FALSE]
+      list(src = e$src, rel = e$rel, dst = e$dst,
+           edge_index = rbind(ei[1L, ] - off[[e$src]], ei[2L, ] - off[[e$dst]]),
+           edge_attr = take_rows(e$edge_attr, c), edge_weight = take_rows(e$edge_weight, c),
+           edge_time = take_rows(e$edge_time, c), edge_y = take_rows(e$edge_y, c),
+           reverse = e$reverse, reverse_of = e$reverse_of)
+    })
+    g <- hetero_graph_data(nodes, edges, metadata = hb$graph_metadata[[j]] %||% list())
+    if (!is.null(hb$graph_n_id[[j]])) g$n_id <- hb$graph_n_id[[j]]
+    g
+  })
 }

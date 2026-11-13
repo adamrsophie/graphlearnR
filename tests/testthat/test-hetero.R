@@ -222,3 +222,27 @@ test_that("an rgcn hetero model runs when every relation is empty", {
   m <- hetero_gnn_model(hg, hidden_dim = 4, num_layers = 1, conv = "rgcn")
   expect_equal(m(hetero_tensors(hg))$a$size(1), 3)
 })
+
+test_that("unbatch rebuilds heterogeneous graphs exactly", {
+  a <- dataset_synthetic_hetero(num_drugs = 30, num_proteins = 40, seed = 1)
+  b <- dataset_synthetic_hetero(num_drugs = 24, num_proteins = 33, seed = 2)
+  b$metadata$name <- "second"
+  k <- names(a$edges)[1]
+  a$edges[[k]]$edge_y <- seq_len(ncol(a$edges[[k]]$edge_index))
+  b$edges[[k]]$edge_y <- -seq_len(ncol(b$edges[[k]]$edge_index))
+  parts <- unbatch(hetero_batch(list(a, b)))
+  for (pair in list(list(parts[[1]], a), list(parts[[2]], b))) {
+    got <- pair[[1]]; ref <- pair[[2]]
+    for (t in ref$node_types) {
+      for (f in c("x", "y", "num_nodes", "node_ids", "train_mask", "test_mask")) {
+        expect_equal(got$nodes[[t]][[f]], ref$nodes[[t]][[f]], info = paste(t, f))
+      }
+    }
+    for (r in names(ref$edges)) {
+      for (f in c("edge_index", "edge_attr", "edge_y", "edge_weight")) {
+        expect_equal(got$edges[[r]][[f]], ref$edges[[r]][[f]], info = paste(r, f))
+      }
+    }
+    expect_equal(got$metadata, ref$metadata)
+  }
+})

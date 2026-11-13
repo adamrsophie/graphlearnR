@@ -126,9 +126,11 @@ stack_graph_labels <- function(vals) {
 }
 
 #' @rdname graph_batch
-#' @param batch A `graph_batch` object.
+#' @param batch A `graph_batch` object, or a heterogeneous batch from
+#'   [hetero_batch()].
 #' @export
 unbatch <- function(batch) {
+  if (inherits(batch, "hetero_graph_batch")) return(hetero_unbatch(batch))
   if (!inherits(batch, "graph_batch")) {
     stopf("`batch` must be a graph_batch object.")
   }

@@ -13,7 +13,8 @@ unbatch(batch)
 \item{graphs}{A list of \code{graph_data} objects with the same number of node
 features, edge features and the same direction.}
 
-\item{batch}{A \code{graph_batch} object.}
+\item{batch}{A \code{graph_batch} object, or a heterogeneous batch from
+\code{\link[=hetero_batch]{hetero_batch()}}.}
 }
 \value{
 An object of class \code{c("graph_batch", "graph_data")}.

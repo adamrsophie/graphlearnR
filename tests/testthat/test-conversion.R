@@ -91,3 +91,25 @@ test_that("graph_from_adjacency reads every stored triangle and pattern matrices
   P <- Matrix::Matrix(A, sparse = TRUE) != 0
   expect_equal(num_edges(graph_from_adjacency(P)), num_edges(graph_from_adjacency(A)))
 })
+
+test_that("igraph round trip keeps names, masks, graph fields and label matrices", {
+  g <- random_graph(n = 6, m = 9, f = 2, seed = 7)
+  colnames(g$x) <- c("age", "dose")
+  g$edge_attr <- matrix(seq_len(9) / 9, ncol = 1, dimnames = list(NULL, "w"))
+  g$y <- matrix(seq_len(12) / 2, 6, 2)
+  g$graph_y <- factor("active", levels = c("active", "inactive"))
+  g$graph_attr <- c(1.5, 2)
+  g$metadata <- list(name = "toy", source = "test")
+  g$edge_train_mask <- rep(c(TRUE, FALSE, FALSE), 3)
+  g$edge_val_mask <- rep(c(FALSE, TRUE, FALSE), 3)
+  g$edge_test_mask <- rep(c(FALSE, FALSE, TRUE), 3)
+  g2 <- from_igraph(to_igraph(g))
+  for (f in c("x", "edge_attr", "y", "graph_y", "graph_attr", "metadata",
+              "edge_train_mask", "edge_val_mask", "edge_test_mask", "edge_index", "node_ids")) {
+    expect_equal(g2[[f]], g[[f]], info = f)
+  }
+  u <- graph_data(edge_index = rbind(c(1, 2), c(2, 3)), num_nodes = 3, directed = FALSE)
+  u$edge_test_mask <- u$edge_pair == 1
+  u2 <- from_igraph(to_igraph(u))
+  expect_equal(u2$edge_test_mask, u$edge_test_mask)
+})

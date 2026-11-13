@@ -15,10 +15,14 @@ A \code{hetero_graph_data} of class \code{hetero_graph_batch}.
 \description{
 Concatenates graphs with the same node and relation types. Within each
 node type, indices of graph \code{k} are shifted by the node counts of that
-type in graphs \verb{1, ..., k - 1}; \code{batch[[type]]} records graph membership.
+type in graphs \verb{1, ..., k - 1}; \code{batch[[type]]} records graph membership
+and \code{edge_batch[[relation]]} the graph of each edge. \code{\link[=unbatch]{unbatch()}} rebuilds
+the input graphs, including node identifiers, labels, masks, edge
+features, times and labels, and each graph's metadata.
 }
 \examples{
 hg <- dataset_synthetic_hetero(seed = 1)
 hb <- hetero_batch(list(hg, hg))
 hb$num_nodes
+length(unbatch(hb))
 }

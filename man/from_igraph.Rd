@@ -51,7 +51,10 @@ columns.
 and \code{e_1}, \code{e_2}, ... on edges, labels as \code{y} and \code{edge_y}, weights as
 \code{weight}, and the original identifiers as \code{node_id}. With the default
 arguments, \code{from_igraph()} reads these back, so the round trip keeps node
-order, identifiers, features, labels, weights, types and direction.
+order, identifiers, features and their column names, node, edge and
+graph labels (multi target label matrices as \code{y_1}, \code{y_2}, ...), weights,
+types, node and edge masks, \code{graph_attr}, \code{metadata} and direction.
+Graph level fields are stored as igraph graph attributes.
 
 For undirected graphs \code{to_igraph()} writes each undirected pair once.
 }
