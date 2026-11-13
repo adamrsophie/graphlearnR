@@ -296,14 +296,16 @@ graph_tensors <- function(g, device = NULL, dtype = torch_float()) {
     if (is.null(v)) {
       return(NULL)
     }
-    if (is.matrix(v)) torch_tensor(v, dtype = dtype, device = dev)
-    else torch_tensor(as.double(v), dtype = dtype, device = dev)
+    if (is.matrix(v)) {
+      if (!is.double(v)) storage.mode(v) <- "double"
+      torch_tensor(v, dtype = dtype, device = dev)
+    } else torch_tensor(as.double(v), dtype = dtype, device = dev)
   }
   lab <- function(v) {
     if (is.null(v)) {
       return(NULL)
     }
-    if (is.factor(v) || is.integer(v)) {
+    if (is.factor(v) || (is.integer(v) && !is.matrix(v))) {
       torch_tensor(as.integer(v), dtype = torch_long(), device = dev)
     } else if (is.logical(v)) {
       torch_tensor(as.double(v), dtype = dtype, device = dev)

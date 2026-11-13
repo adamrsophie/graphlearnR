@@ -11,7 +11,10 @@
 #' inductive evaluation split graphs with [split_graphs()] instead.
 #'
 #' @param g A `graph_data` object with node labels `y`.
-#' @param train,val,test Proportions (summing to at most 1) or counts.
+#' @param train,val,test Proportions (each at most 1, summing to at most 1)
+#'   or whole counts. Values that are all at most 1 are read as proportions,
+#'   so `train = 1, val = 0, test = 0` puts every labeled node in training.
+#'   With `stratify`, sizes apply within each class.
 #' @param stratify Split each class separately (factor labels only).
 #' @param seed Optional integer seed; the caller's random state is not
 #'   changed.
@@ -46,8 +49,9 @@ split_nodes <- function(g, train = 0.6, val = 0.2, test = 0.2,
 
 split_sizes <- function(m, train, val, test) {
   p <- c(train, val, test)
-  if (any(p < 0)) stopf("Split sizes must be non-negative.")
-  if (all(p <= 1) && sum(p) <= 1 + 1e-8 && any(p < 1 & p > 0)) {
+  if (any(!is.finite(p)) || any(p < 0)) stopf("Split sizes must be finite and non-negative.")
+  if (all(p <= 1)) {
+    if (sum(p) > 1 + 1e-8) stopf("Split proportions sum to %g, more than 1.", sum(p))
     s <- floor(p * m)
     rest <- min(m, round(sum(p) * m)) - sum(s)
     if (rest > 0) {
@@ -57,8 +61,43 @@ split_sizes <- function(m, train, val, test) {
     }
     return(as.integer(s))
   }
+  if (any(p != round(p))) {
+    stopf("Split sizes must be all proportions (at most 1) or all whole counts.")
+  }
   if (sum(p) > m) stopf("Requested %d items but only %d are available.", sum(p), m)
   as.integer(p)
+}
+
+# Sizes for link splits: `val` and `test` are proportions of the m units, or
+# whole counts; the training set gets the rest.
+edge_split_sizes <- function(m, val, test) {
+  if (val < 1 && test < 1) {
+    s <- split_sizes(m, 1 - val - test, val, test)
+    s[1L] <- m - s[2L] - s[3L]
+    return(s)
+  }
+  if (any(c(val, test) != round(c(val, test))) || val < 0 || test < 0) {
+    stopf("`val` and `test` must both be proportions below 1 or both be whole counts.")
+  }
+  if (val + test > m) stopf("Requested %d held out pairs but only %d exist.", val + test, m)
+  as.integer(c(m - val - test, val, test))
+}
+
+# Group link pairs into split units. Parallel copies of a pair, and for
+# undirected (or same type) relations both orientations, form one unit, so a
+# held out link never stays visible in training through a duplicate. For a
+# graph without such duplicates every pair is its own unit, in input order.
+pair_units <- function(pairs, symmetric) {
+  u <- pairs[1L, ]
+  v <- pairs[2L, ]
+  key <- if (symmetric) paste(pmin(u, v), pmax(u, v)) else paste(u, v)
+  ukey <- unique(key)
+  list(unit = match(key, ukey), first = match(ukey, key), key = ukey, symmetric = symmetric)
+}
+
+pair_keys <- function(pairs, symmetric) {
+  if (symmetric) paste(pmin(pairs[1L, ], pairs[2L, ]), pmax(pairs[1L, ], pairs[2L, ]))
+  else paste(pairs[1L, ], pairs[2L, ])
 }
 
 #' Split edges for link prediction
@@ -67,7 +106,8 @@ split_sizes <- function(m, train, val, test) {
 #' training:
 #'
 #' 1. Undirected pairs are split as units, so `(u, v)` and `(v, u)` always
-#'    land in the same set.
+#'    land in the same set. Parallel copies of a pair (multigraphs) are also
+#'    one unit, so a held out link never stays in training as a duplicate.
 #' 2. `train_graph` keeps all nodes and features but only training edges;
 #'    use it for message passing during training **and** evaluation.
 #' 3. Validation and test negatives are drawn once with
@@ -75,10 +115,12 @@ split_sizes <- function(m, train, val, test) {
 #'    Training negatives should be redrawn each epoch, excluding training
 #'    positives only, which [train_graph_model()] does.
 #'
-#' Positive pairs are returned in one direction (as given in the input).
+#' Positive pairs are returned once each, in one direction (as first given in
+#' the input).
 #'
 #' @param g A `graph_data` object.
-#' @param val,test Proportions (or counts) of pairs held out.
+#' @param val,test Proportions (both below 1) or whole counts of pairs held
+#'   out.
 #' @param neg_ratio Negatives per positive for validation and test.
 #' @param seed Optional integer seed.
 #' @return An object of class `link_split` with `train_graph`, `train_pos`,
@@ -91,9 +133,10 @@ split_sizes <- function(m, train, val, test) {
 split_edges <- function(g, val = 0.1, test = 0.1, neg_ratio = 1, seed = NULL) {
   cols <- input_edge_columns(g)
   pairs <- g$edge_index[, cols, drop = FALSE]
+  un <- pair_units(pairs, symmetric = !g$directed)
+  pairs <- pairs[, un$first, drop = FALSE]
   m <- ncol(pairs)
-  sizes <- split_sizes(m, 1 - val - test, val, test)
-  if (val < 1 && test < 1) sizes[1L] <- m - sizes[2L] - sizes[3L]
+  sizes <- edge_split_sizes(m, val, test)
   with_optional_seed(seed, {
     perm <- sample.int(m)
     code <- rep(1:3, sizes)
@@ -109,7 +152,8 @@ split_edges <- function(g, val = 0.1, test = 0.1, neg_ratio = 1, seed = NULL) {
     nv <- ceiling(neg_ratio * ncol(val_pos))
   })
   keep_pairs <- which(which_set == 1L)
-  stored <- which(g$edge_pair %in% g$edge_pair[cols[keep_pairs]])
+  stored_key <- pair_keys(g$edge_index, symmetric = !g$directed)
+  stored <- which(stored_key %in% un$key[keep_pairs])
   train_graph <- edge_subset(g, stored)
   structure(list(
     train_graph = train_graph,

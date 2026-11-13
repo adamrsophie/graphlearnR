@@ -165,3 +165,24 @@ test_that("heterogeneous batching offsets each type separately", {
   expect_equal(hb$batch$paper, rep(1:2, each = 4))
   expect_error(hetero_batch(list(a, add_reverse_relations(a))), "same node types")
 })
+
+test_that("splitting a generated reverse relation removes held out forward links", {
+  hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 2))
+  sp <- split_edges_hetero(hg, "protein__rev_targets__drug", val = 0.1, test = 0.2, seed = 2)
+  held <- paste(c(sp$val_pos[2, ], sp$test_pos[2, ]), c(sp$val_pos[1, ], sp$test_pos[1, ]))
+  fwd <- sp$train_graph$edges$drug__targets__protein$edge_index
+  expect_length(intersect(held, paste(fwd[1, ], fwd[2, ])), 0L)
+})
+
+test_that("same type relations split both orientations together", {
+  hg <- dataset_synthetic_hetero(seed = 2)
+  sp <- split_edges_hetero(hg, "protein__interacts__protein", val = 0.1, test = 0.2, seed = 2)
+  key <- function(m) paste(pmin(m[1, ], m[2, ]), pmax(m[1, ], m[2, ]))
+  held <- key(cbind(sp$val_pos, sp$test_pos))
+  tr <- sp$train_graph$edges$protein__interacts__protein$edge_index
+  expect_length(intersect(held, key(tr)), 0L)
+  expect_length(intersect(held, key(sp$train_pos)), 0L)
+  neg <- cbind(sp$val_neg, sp$test_neg)
+  expect_true(all(neg[1, ] != neg[2, ]))
+  expect_length(intersect(key(neg), key(sp$all_pos)), 0L)
+})

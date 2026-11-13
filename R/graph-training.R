@@ -261,6 +261,30 @@ class_levels <- function(y) {
   if (is.factor(y)) levels(y) else if (is.integer(y)) as.character(sort(unique(y))) else NULL
 }
 
+# Labels in the form the loss expects. Classification labels of any atomic
+# type become a factor whose levels are the classes, so codes always run
+# 1..C (0 based integers, gaps and doubles included); `levels` fixes the
+# class set when it is known from the whole dataset. Regression labels
+# become double, keeping matrix dimensions.
+prep_labels <- function(y, classif, levels = NULL, what = "labels") {
+  if (is.null(y)) return(NULL)
+  if (classif) {
+    if (is.matrix(y)) stopf("Classification %s must be a vector, not a matrix.", what)
+    if (!is.atomic(y)) stopf("Classification %s must be a factor or an atomic vector.", what)
+    if (is.null(levels)) {
+      levels <- if (is.factor(y)) levels(y) else as.character(sort(unique(y[!is.na(y)])))
+    }
+    out <- factor(as.character(y), levels = levels)
+    bad <- !is.na(y) & is.na(out)
+    if (any(bad)) stopf("Classification %s contain classes not seen in training: %s.", what,
+                        paste(unique(as.character(y[bad])), collapse = ", "))
+    return(out)
+  }
+  if (!is.numeric(y) && !is.logical(y)) stopf("Regression %s must be numeric.", what)
+  if (!is.double(y)) storage.mode(y) <- "double"
+  y
+}
+
 # ---- node tasks -------------------------------------------------------------
 
 node_task_runner <- function(model, data, task, dev, fanouts, batch_size, seed, target_type,
@@ -273,10 +297,7 @@ node_task_runner <- function(model, data, task, dev, fanouts, batch_size, seed, 
   if (is.null(data$train_mask)) {
     stopf("Node tasks need `train_mask`; use split_nodes() first.")
   }
-  if (classif && !is.factor(data$y) && !is.integer(data$y)) {
-    stopf("Node classification needs factor or integer labels.")
-  }
-  if (!classif && !is.numeric(data$y)) stopf("Node regression needs numeric labels.")
+  data$y <- prep_labels(data$y, classif, what = "node labels")
   tt <- graph_tensors(data, dev)
   train_idx <- tensor_which(tt$train_mask)
   val_idx <- if (!is.null(tt$val_mask) && any(data$val_mask)) tensor_which(tt$val_mask)
@@ -299,7 +320,7 @@ node_task_runner <- function(model, data, task, dev, fanouts, batch_size, seed, 
   list(
     default_loss = if (classif) "cross_entropy" else "mse",
     metric_name = if (classif) "accuracy" else "rmse",
-    levels = if (classif) class_levels(data$y),
+    levels = if (classif) levels(data$y),
     train_epoch = function(epoch, opt, loss_fn, grad_clip) {
       if (!is.null(subgraph_loader)) {
         return(subgraph_epoch(model, subgraph_loader, epoch, dev, opt, loss_fn, grad_clip))
@@ -370,6 +391,19 @@ node_metric <- function(classif) {
 
 # ---- graph tasks ------------------------------------------------------------
 
+# Class levels of graph labels over a whole list of graphs: the shared levels
+# when every label is a factor with the same levels, otherwise the sorted
+# union of all values.
+graph_label_levels <- function(graphs) {
+  ys <- lapply(seq_len(length(graphs)), function(i) graphs[[i]]$graph_y)
+  if (all(vapply(ys, is.factor, logical(1)))) {
+    lv <- lapply(ys, levels)
+    if (all(vapply(lv, identical, logical(1), lv[[1L]]))) return(lv[[1L]])
+  }
+  vals <- unlist(lapply(ys, function(v) if (is.factor(v)) as.character(v) else v))
+  as.character(sort(unique(vals[!is.na(vals)])))
+}
+
 as_graph_list <- function(data, what = "data") {
   if (inherits(data, "graph_data")) stopf("`%s` must be a list of graphs or a graph_dataset.", what)
   data
@@ -379,13 +413,19 @@ graph_task_runner <- function(model, data, val_data, task, dev, batch_size, seed
   classif <- task == "graph_classification"
   data <- as_graph_list(data)
   if (is.null(data[[1L]]$graph_y)) stopf("Graph tasks need `graph_y` on every graph.")
+  levels <- if (classif) graph_label_levels(data)
+  # Class codes come from the levels of the whole training set, never from
+  # the graphs that happen to share a mini-batch.
+  prep <- function(b) {
+    b$graph_y <- prep_labels(b$graph_y, classif, levels, "graph labels")
+    b
+  }
   loader <- graph_loader(data, batch_size, TRUE, seed)
   val_batches <- if (!is.null(val_data)) {
     loader_batches(graph_loader(as_graph_list(val_data, "val_data"), batch_size, FALSE))
   }
-  val_tt <- lapply(val_batches, graph_tensors, device = dev)
+  val_tt <- lapply(val_batches, function(b) graph_tensors(prep(b), device = dev))
   metric_fn <- node_metric(classif)
-  levels <- if (classif) class_levels(stack_graph_labels(lapply(seq_len(length(data)), function(i) data[[i]]$graph_y)))
   list(
     default_loss = if (classif) "cross_entropy" else "mse",
     metric_name = if (classif) "accuracy" else "rmse",
@@ -394,7 +434,7 @@ graph_task_runner <- function(model, data, val_data, task, dev, batch_size, seed
       tot <- 0
       n <- 0
       for (b in loader_batches(loader, epoch)) {
-        bt <- graph_tensors(b, dev)
+        bt <- graph_tensors(prep(b), dev)
         out <- model_forward(model, bt)
         loss <- loss_fn(out, bt$graph_y)
         # Models with auxiliary objectives (such as diffpool_model) expose them here.
@@ -460,8 +500,9 @@ edge_task_runner <- function(model, data, task, dev, decoder) {
   classif <- task == "edge_classification"
   if (is.null(data$edge_y)) stopf("Edge tasks need `edge_y`.")
   if (is.null(data$edge_train_mask)) stopf("Edge tasks need edge masks; use split_edge_labels().")
+  data$edge_y <- prep_labels(data$edge_y, classif, what = "edge labels")
   tt <- graph_tensors(data, dev)
-  levels <- if (classif) class_levels(data$edge_y)
+  levels <- if (classif) levels(data$edge_y)
   if (is.null(decoder)) {
     dim <- with_no_grad(model_forward(model, tt))$size(2L)
     out_dim <- if (classif) length(levels) else if (is.matrix(data$edge_y)) ncol(data$edge_y) else 1L

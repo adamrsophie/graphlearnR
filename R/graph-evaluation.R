@@ -180,7 +180,16 @@ metric_brier <- function(truth, prob) {
 
 #' @rdname metrics
 #' @export
-metric_mse <- function(truth, estimate) mean((truth - estimate)^2)
+metric_mse <- function(truth, estimate) {
+  check_same_length(truth, estimate)
+  mean((truth - estimate)^2)
+}
+
+check_same_length <- function(truth, estimate) {
+  if (length(truth) != length(estimate)) {
+    stopf("`truth` has %d values but `estimate` has %d.", length(truth), length(estimate))
+  }
+}
 
 #' @rdname metrics
 #' @export
@@ -188,11 +197,15 @@ metric_rmse <- function(truth, estimate) sqrt(metric_mse(truth, estimate))
 
 #' @rdname metrics
 #' @export
-metric_mae <- function(truth, estimate) mean(abs(truth - estimate))
+metric_mae <- function(truth, estimate) {
+  check_same_length(truth, estimate)
+  mean(abs(truth - estimate))
+}
 
 #' @rdname metrics
 #' @export
 metric_r2 <- function(truth, estimate) {
+  check_same_length(truth, estimate)
   1 - sum((truth - estimate)^2) / sum((truth - mean(truth))^2)
 }
 

@@ -92,7 +92,8 @@ bind_rows_values <- function(values) {
     return(do.call(rbind, values))
   }
   if (is.factor(values[[1L]])) {
-    lv <- levels(values[[1L]])
+    # Union of levels, so a class present only in a later graph is kept.
+    lv <- unique(unlist(lapply(values, function(v) if (is.factor(v)) levels(v) else unique(as.character(v)))))
     return(factor(unlist(lapply(values, as.character)), levels = lv))
   }
   unlist(values, use.names = FALSE)

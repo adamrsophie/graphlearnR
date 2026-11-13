@@ -347,8 +347,11 @@ temporal_gnn_model <- nn_module(
 #' Fits a [temporal_gnn_model()] to predict the target at step `s + horizon`
 #' from features at steps `s - lags + 1, ..., s`. Windows are split in time
 #' order: the first `train` fraction of target steps trains the model, the
-#' next `val` fraction validates, and the rest is the test period. No window
-#' used for training has a target time inside the validation or test period.
+#' next `val` fraction validates, and the rest is the test period. Windows at
+#' the end of the training and validation periods whose target is observed
+#' after the first forecast origin of the next period are dropped (a purge of
+#' `horizon - 1` windows), so no training target is later than a validation
+#' or test forecast origin.
 #'
 #' @param signal A [spatiotemporal_signal()].
 #' @param lags Input window length.
@@ -375,6 +378,11 @@ train_spatiotemporal_model <- function(signal, lags = 4L, horizon = 1L, hidden_d
   n_va <- floor(val * length(ends))
   sets <- list(train = ends[seq_len(n_tr)], val = ends[n_tr + seq_len(n_va)],
                test = ends[-seq_len(n_tr + n_va)])
+  # Purge: an earlier set may not use a target observed after the forecast
+  # origin of the next set, so drop its last `horizon - 1` windows.
+  purge <- function(a, b) if (length(b)) a[a + horizon <= min(b)] else a
+  sets$val <- purge(sets$val, sets$test)
+  sets$train <- purge(sets$train, if (length(sets$val)) sets$val else sets$test)
   tt <- graph_tensors(signal$graph, dev)
   model <- temporal_gnn_model(dim(signal$features)[3L], hidden_dim, 1L)
   model$to(device = dev)

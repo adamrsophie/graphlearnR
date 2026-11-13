@@ -71,10 +71,9 @@ validate_graph <- function(g) {
       add("`%s` must be a logical vector of length %d without NA.", m, n)
     }
   }
-  if (!is.null(g$train_mask) && !is.null(g$test_mask) &&
-      length(g$train_mask) == length(g$test_mask) &&
-      any(g$train_mask & g$test_mask)) {
-    add("`train_mask` and `test_mask` overlap.")
+  for (msg in mask_overlaps(g, c("train_mask", "val_mask", "test_mask"))) add("%s", msg)
+  for (msg in mask_overlaps(g, c("edge_train_mask", "edge_val_mask", "edge_test_mask"))) {
+    add("%s", msg)
   }
   if (!is.null(g$y) && !is.factor(g$y) && !is.numeric(g$y) && !is.logical(g$y)) {
     add("`y` must be a factor, numeric or logical.")
@@ -84,4 +83,19 @@ validate_graph <- function(g) {
                collapse = "\n"), call. = FALSE)
   }
   invisible(g)
+}
+
+# Pairwise overlap of split masks. Overlap between any two sets lets a model
+# be selected or scored on labels it was trained on.
+mask_overlaps <- function(obj, fields, prefix = "") {
+  out <- character()
+  for (i in 1:2) for (j in (i + 1L):3) {
+    a <- obj[[fields[i]]]
+    b <- obj[[fields[j]]]
+    if (is.logical(a) && is.logical(b) && length(a) == length(b) &&
+        any(a & b, na.rm = TRUE)) {
+      out <- c(out, sprintf("%s`%s` and `%s` overlap.", prefix, fields[i], fields[j]))
+    }
+  }
+  out
 }

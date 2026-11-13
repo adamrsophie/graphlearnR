@@ -79,3 +79,28 @@ test_that("global pooling over a batch matches per graph calculations", {
   expect_equal(as_mat(global_mean_pool(x, b$batch)), means, tolerance = 1e-5)
   expect_equal(as_mat(global_max_pool(x, b$batch)), maxs, tolerance = 1e-5)
 })
+
+test_that("batching keeps classes that differ between graphs", {
+  a <- graph_data(x = matrix(1, 2, 1), edge_index = rbind(1, 2), graph_y = "a")
+  b <- graph_data(x = matrix(1, 2, 1), edge_index = rbind(1, 2), graph_y = "b")
+  expect_equal(as.character(graph_batch(list(a, b))$graph_y), c("a", "b"))
+})
+
+test_that("batching rejects fields present in only some graphs", {
+  a <- graph_data(x = matrix(1, 2, 1), edge_index = rbind(1, 2))
+  b <- a
+  a$train_mask <- c(TRUE, FALSE)
+  expect_error(graph_batch(list(a, b)), "train_mask")
+  a$train_mask <- NULL
+  a$graph_attr <- 1
+  expect_error(graph_batch(list(a, b)), "graph_attr")
+})
+
+test_that("edge masks survive batching and unbatching", {
+  g <- dataset_karate()
+  g$edge_y <- factor(ifelse(g$edge_index[1, ] < g$edge_index[2, ], "up", "down"))
+  g$edge_y <- g$edge_y[match(g$edge_pair, g$edge_pair)]
+  g <- split_edge_labels(g, seed = 1)
+  back <- unbatch(graph_batch(list(g, g)))
+  expect_identical(back[[2]]$edge_test_mask, g$edge_test_mask)
+})

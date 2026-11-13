@@ -15,7 +15,8 @@
 #'   that makes sense.
 #' @param type `"frame"` (a `graph_predictions` data frame), `"class"`,
 #'   `"prob"`, `"response"` (raw model output), `"embedding"` (node
-#'   embeddings) or `"score"` (link logits).
+#'   embeddings; for graph tasks one pooled row per graph, using the model's
+#'   readout or the mean) or `"score"` (link logits).
 #' @param pairs 2 by K matrix of node pairs (link and edge tasks).
 #' @param relation Relation codes for multi relational decoders.
 #' @param batch_size Graphs per batch for graph tasks.
@@ -53,7 +54,10 @@ predict.graph_fit <- function(object, new_data = NULL,
       if (inherits(new_data, "graph_data")) new_data <- list(new_data)
       batches <- loader_batches(graph_loader(new_data, batch_size, FALSE))
       out <- torch_cat(lapply(batches, function(b) {
-        model_forward(model, graph_tensors(b, dev), return_embedding = FALSE)
+        bt <- graph_tensors(b, dev)
+        out <- model_forward(model, bt, return_embedding = type == "embedding")
+        if (type == "embedding") out <- pool_graph_embedding(model, out, bt)
+        out
       }), dim = 1L)
       return(format_predictions(out, type, object, seq_len(out$size(1L)), "graph"))
     }
@@ -85,6 +89,18 @@ predict.graph_fit <- function(object, new_data = NULL,
     out <- object$decoder(z, torch_tensor(pairs, dtype = torch_long(), device = dev), ea)
     format_predictions(out, type, object, seq_len(ncol(pairs)), "edge")
   })
+}
+
+# Graph task embeddings are one row per graph: node embeddings are pooled
+# with the model's own readout (`config$pool`, mean when it has none).
+pool_graph_embedding <- function(model, h, bt) {
+  ng <- bt$num_graphs %||% 1L
+  if (h$size(1L) == ng) return(h)
+  pool <- tryCatch(model$config$pool, error = function(e) NULL) %||% "mean"
+  switch(pool,
+    sum = global_add_pool(h, bt$batch, ng),
+    max = global_max_pool(h, bt$batch, ng),
+    global_mean_pool(h, bt$batch, ng))
 }
 
 format_predictions <- function(out, type, object, ids, id_name) {
@@ -154,15 +170,13 @@ evaluate_graph_model <- function(fit, new_data = NULL, split = c("test", "val", 
     }
     if (is.null(mask) || !any(mask)) stopf("No nodes in the %s mask.", split)
     p <- predict(fit, data, type = if (classif) "prob" else "response")
-    pred <- if (classif) p[mask, , drop = FALSE] else as.matrix(p)[mask, 1L]
-    return(evaluate_predictions(y[mask], pred, if (classif) "classification" else "regression"))
+    return(eval_rows(fit, y, p, mask, classif))
   }
   if (task %in% c("graph_classification", "graph_regression")) {
     if (inherits(data, "graph_data")) data <- list(data)
     y <- stack_graph_labels(lapply(seq_len(length(data)), function(i) data[[i]]$graph_y))
     p <- predict(fit, data, type = if (classif) "prob" else "response")
-    if (!classif && is.matrix(p) && ncol(p) == 1L) p <- p[, 1L]
-    return(evaluate_predictions(y, p, if (classif) "classification" else "regression"))
+    return(eval_rows(fit, y, p, rep(TRUE, NROW(p)), classif))
   }
   if (task == "link_prediction") {
     sp <- data
@@ -181,7 +195,22 @@ evaluate_graph_model <- function(fit, new_data = NULL, split = c("test", "val", 
   mask <- data[[paste0("edge_", split, "_mask")]]
   if (is.null(mask) || !any(mask)) stopf("No edges in the %s edge mask.", split)
   p <- predict(fit, data, type = if (classif) "prob" else "response")
-  pred <- if (classif) p[mask, , drop = FALSE] else as.matrix(p)[mask, 1L]
-  evaluate_predictions(take_rows(data$edge_y, mask), pred,
-                       if (classif) "classification" else "regression")
+  eval_rows(fit, data$edge_y, p, mask, classif)
+}
+
+# Metrics on the rows selected by `mask`. Classification truth is coded with
+# the fitted class levels; regression keeps every target column, and the
+# truth and prediction matrices must have the same shape.
+eval_rows <- function(fit, y, p, mask, classif) {
+  truth <- take_rows(y, mask)
+  if (classif) {
+    truth <- prep_labels(truth, TRUE, fit$levels %||% colnames(p))
+    return(evaluate_predictions(truth, p[mask, , drop = FALSE], "classification"))
+  }
+  pred <- as.matrix(p)[mask, , drop = FALSE]
+  truth <- as.matrix(truth)
+  if (!identical(dim(truth), dim(pred))) {
+    stopf("Regression targets have %d columns but the model predicts %d.", ncol(truth), ncol(pred))
+  }
+  evaluate_predictions(as.vector(truth), as.vector(pred), "regression")
 }

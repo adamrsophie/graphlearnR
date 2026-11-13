@@ -174,3 +174,34 @@ test_that("training input errors are informative", {
   expect_error(train_graph_model(m, g, "graph_classification"), "list of graphs")
   expect_error(train_graph_model(list(), g), "nn_module")
 })
+
+test_that("classification accepts 0 based integer and numeric labels", {
+  skip_if_no_torch()
+  g <- split_nodes(dataset_karate(), seed = 1)
+  g$y <- as.integer(g$y) - 1L
+  fit <- train_graph_model(gnn_model("gcn", 34, 8, 2), g, "node_classification",
+                           epochs = 5, seed = 1)
+  expect_equal(fit$levels, c("0", "1"))
+  ev <- evaluate_graph_model(fit, g)
+  expect_true(all(is.finite(ev$value)))
+  gs <- lapply(1:6, function(i) {
+    graph_data(x = matrix(i %% 2, 3, 1), edge_index = rbind(1:2, 2:3), graph_y = i %% 2)
+  })
+  gf <- train_graph_model(gnn_model("gin", 1, 4, 2, pool = "mean"), gs,
+                          "graph_classification", epochs = 2, batch_size = 2, seed = 1)
+  expect_equal(gf$levels, c("0", "1"))
+  expect_equal(dim(predict(gf, gs, type = "embedding")), c(6L, 4L))
+})
+
+test_that("multi target regression is evaluated column by column", {
+  skip_if_no_torch()
+  g <- split_nodes(dataset_karate(), stratify = FALSE, seed = 1)
+  g$y <- cbind(g$x[, 1], g$x[, 2] * 100)
+  fit <- train_graph_model(gnn_model("gcn", 34, 8, 2), g, "node_regression",
+                           epochs = 3, seed = 1)
+  p <- predict(fit, g, type = "response")
+  ev <- evaluate_graph_model(fit, g)
+  m <- g$test_mask
+  expect_equal(ev$value[ev$metric == "mse"],
+               mean((g$y[m, , drop = FALSE] - p[m, , drop = FALSE])^2), tolerance = 1e-6)
+})

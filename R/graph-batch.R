@@ -53,7 +53,9 @@ graph_batch <- function(graphs) {
   }
   check_same(num_node_features, "node features")
   check_same(num_edge_features, "edge features")
-  for (f in c("x", "y", "edge_weight", "edge_attr", "edge_y", "graph_y")) {
+  for (f in c("x", "y", "edge_weight", "edge_attr", "edge_y", "graph_y", "graph_attr",
+              "node_type", "edge_type", "train_mask", "val_mask", "test_mask",
+              "edge_train_mask", "edge_val_mask", "edge_test_mask")) {
     has <- vapply(graphs, function(g) !is.null(g[[f]]), logical(1))
     if (any(has) && !all(has)) {
       stopf("`%s` is present in some graphs but not in others.", f)
@@ -97,6 +99,9 @@ graph_batch <- function(graphs) {
     class = "graph_batch"
   )
   b$graph_attr <- graph_attr
+  for (f in c("edge_train_mask", "edge_val_mask", "edge_test_mask")) {
+    b[[f]] <- bind_rows_values(pick(f))
+  }
   b$num_graphs <- length(graphs)
   b$batch <- rep.int(seq_along(graphs), n)
   b$node_ptr <- node_ptr
@@ -133,7 +138,7 @@ unbatch <- function(batch) {
     gy <- batch$graph_y
     gy <- if (is.null(gy)) NULL else if (is.matrix(gy)) gy[k, ] else gy[k]
     ga <- batch$graph_attr
-    new_graph_data(
+    g <- new_graph_data(
       x = take_rows(batch$x, nodes),
       edge_index = batch$edge_index[, edges, drop = FALSE] - batch$node_ptr[k],
       y = take_rows(batch$y, nodes),
@@ -153,6 +158,10 @@ unbatch <- function(batch) {
       test_mask = take_rows(batch$test_mask, nodes),
       metadata = batch$metadata$graphs[[k]] %||% list()
     )
+    for (f in c("edge_train_mask", "edge_val_mask", "edge_test_mask")) {
+      g[[f]] <- take_rows(batch[[f]], edges)
+    }
+    g
   })
 }
 

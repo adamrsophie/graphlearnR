@@ -146,3 +146,39 @@ test_that("evaluate_predictions returns task metric tables", {
   expect_equal(lv$value[lv$metric == "hits@1"], 0.5)
   expect_error(evaluate_predictions(1, 1, "link"), "negative")
 })
+
+test_that("parallel copies of a link are split together", {
+  ei <- cbind(c(1, 2), c(2, 3), c(3, 4), c(4, 5), c(5, 6), c(6, 7), c(7, 8), c(8, 9),
+              c(9, 10), c(10, 1), c(1, 5), c(2, 7))
+  g <- graph_data(edge_index = cbind(ei, ei), num_nodes = 10, directed = TRUE)
+  sp <- split_edges(g, val = 0.25, test = 0.25, seed = 1)
+  held <- paste(c(sp$val_pos[1, ], sp$test_pos[1, ]), c(sp$val_pos[2, ], sp$test_pos[2, ]))
+  train <- paste(sp$train_graph$edge_index[1, ], sp$train_graph$edge_index[2, ])
+  expect_length(intersect(held, train), 0L)
+  expect_equal(ncol(sp$train_pos) + ncol(sp$val_pos) + ncol(sp$test_pos), 12L)
+})
+
+test_that("split sizes accept whole counts and reject mixed or invalid input", {
+  g <- dataset_karate()
+  sp <- split_edges(g, val = 5, test = 3, seed = 1)
+  expect_equal(c(ncol(sp$val_pos), ncol(sp$test_pos)), c(5L, 3L))
+  expect_true(all(split_nodes(g, train = 1, val = 0, test = 0, stratify = FALSE)$train_mask))
+  expect_error(split_nodes(g, train = 0.8, val = 0.8, test = 0, stratify = FALSE), "sum")
+  expect_error(split_nodes(g, train = 2.5, val = 1, test = 1, stratify = FALSE), "whole")
+})
+
+test_that("validation rejects any overlap between split masks", {
+  g <- split_nodes(dataset_karate(), seed = 1)
+  g$val_mask <- g$train_mask
+  expect_error(validate_graph(g), "train_mask.*val_mask.*overlap")
+})
+
+test_that("forecast windows are purged at period boundaries", {
+  sig <- dataset_synthetic_signal(num_nodes = 5, num_steps = 60, seed = 1)
+  fit <- train_spatiotemporal_model(sig, lags = 3, horizon = 4, hidden_dim = 4, epochs = 1,
+                                    seed = 1)
+  w <- fit$windows
+  expect_true(length(w$val) > 0 && length(w$test) > 0)
+  expect_true(max(w$train) + 4 <= min(w$val))
+  expect_true(max(w$val) + 4 <= min(w$test))
+})

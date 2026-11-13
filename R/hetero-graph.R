@@ -106,10 +106,13 @@ validate_hetero_graph <- function(hg) {
       }
     }
     for (m in c("train_mask", "val_mask", "test_mask")) {
-      if (!is.null(nd[[m]]) && (!is.logical(nd[[m]]) || length(nd[[m]]) != n)) {
-        add("Node type `%s`: `%s` must be logical of length %d.", t, m, n)
+      if (!is.null(nd[[m]]) && (!is.logical(nd[[m]]) || length(nd[[m]]) != n ||
+                                anyNA(nd[[m]]))) {
+        add("Node type `%s`: `%s` must be logical of length %d without NA.", t, m, n)
       }
     }
+    for (msg in mask_overlaps(nd, c("train_mask", "val_mask", "test_mask"),
+                              sprintf("Node type `%s`: ", t))) add("%s", msg)
   }
   for (key in names(hg$edges)) {
     e <- hg$edges[[key]]
@@ -283,8 +286,12 @@ hetero_tensors <- function(hg, device = NULL) {
   ft <- function(v) if (!is.null(v)) torch_tensor(v, dtype = torch_float(), device = dev)
   lab <- function(v) {
     if (is.null(v)) return(NULL)
-    if (is.factor(v) || is.integer(v)) torch_tensor(as.integer(v), dtype = torch_long(), device = dev)
-    else ft(as.double(v))
+    if (is.factor(v) || (is.integer(v) && !is.matrix(v))) {
+      torch_tensor(as.integer(v), dtype = torch_long(), device = dev)
+    } else {
+      if (!is.double(v)) storage.mode(v) <- "double"
+      ft(v)
+    }
   }
   mk <- function(v) if (!is.null(v)) torch_tensor(v, dtype = torch_bool(), device = dev)
   ei <- function(m) if (ncol(m)) torch_tensor(m, dtype = torch_long(), device = dev)
@@ -438,11 +445,14 @@ sample_hetero_neighbors <- function(hg, seeds, fanouts, seed = NULL) {
 #' Split one relation of a heterogeneous graph for link prediction
 #'
 #' Holds out edges of `relation` for validation and test. Held out edges are
-#' removed from the training graph **and from the paired reverse relation**
-#' (as recorded by [add_reverse_relations()]), so a model cannot read a
-#' held out link through its reverse edge. Negatives are typed pairs (source
-#' type, target type) drawn with [negative_sampling()], excluding every
-#' known positive of the relation.
+#' removed from the training graph **and from the paired relation** (as
+#' recorded by [add_reverse_relations()], whichever of the two keys is
+#' split), so a model cannot read a held out link through its reverse edge.
+#' Parallel copies of a pair are split as one unit. For a relation whose
+#' source and target type are the same, `(u, v)` and `(v, u)` are one unit
+#' and negatives are unordered pairs without self loops; otherwise negatives
+#' are typed pairs (source type, target type). Negatives are drawn with
+#' [negative_sampling()], excluding every known positive of the relation.
 #'
 #' @param hg A `hetero_graph_data` object.
 #' @param relation Relation key, `"src__rel__dst"`.
@@ -453,27 +463,39 @@ split_edges_hetero <- function(hg, relation, val = 0.1, test = 0.1, neg_ratio = 
                                seed = NULL) {
   if (!relation %in% names(hg$edges)) stopf("Unknown relation `%s`.", relation)
   e <- hg$edges[[relation]]
-  pairs <- e$edge_index
+  same <- identical(e$src, e$dst)
+  un <- pair_units(e$edge_index, symmetric = same)
+  pairs <- e$edge_index[, un$first, drop = FALSE]
   m <- ncol(pairs)
-  sizes <- split_sizes(m, 1 - val - test, val, test)
-  sizes[1L] <- m - sizes[2L] - sizes[3L]
+  sizes <- edge_split_sizes(m, val, test)
   ns <- hg$nodes[[e$src]]$num_nodes
   nd <- hg$nodes[[e$dst]]$num_nodes
   with_optional_seed(seed, {
     code <- integer(m)
     code[sample.int(m)] <- rep(1:3, sizes)
-    neg <- negative_sampling(pairs, num_src = ns, num_dst = nd,
-                             num_samples = ceiling(neg_ratio * (sizes[2L] + sizes[3L])),
-                             seed = if (is.null(seed)) NULL else seed + 1L)
+    nneg <- ceiling(neg_ratio * (sizes[2L] + sizes[3L]))
+    nseed <- if (is.null(seed)) NULL else seed + 1L
+    neg <- if (same) {
+      negative_sampling(pairs, num_nodes = ns, num_samples = nneg, directed = FALSE, seed = nseed)
+    } else {
+      negative_sampling(pairs, num_src = ns, num_dst = nd, num_samples = nneg, seed = nseed)
+    }
   })
   nv <- ceiling(neg_ratio * sizes[2L])
+  held_keys <- un$key[code > 1L]
   train_graph <- hg
-  train_graph$edges[[relation]] <- subset_relation(e, which(code == 1L))
-  held <- paste(pairs[1L, code > 1L], pairs[2L, code > 1L])
-  rk <- e$reverse
-  if (!is.null(rk) && rk %in% names(hg$edges)) {
+  train_graph$edges[[relation]] <- subset_relation(
+    e, which(!pair_keys(e$edge_index, same) %in% held_keys))
+  # Remove held out links from every relation paired with this one, in either
+  # direction of the pairing (`reverse` on the forward relation, `reverse_of`
+  # on a generated reverse relation).
+  partners <- unique(c(e$reverse, e$reverse_of, names(Filter(function(r) {
+    identical(r$reverse, relation) || identical(r$reverse_of, relation)
+  }, hg$edges))))
+  for (rk in setdiff(intersect(partners, names(hg$edges)), relation)) {
     r <- hg$edges[[rk]]
-    keep <- which(!paste(r$edge_index[2L, ], r$edge_index[1L, ]) %in% held)
+    flipped <- r$edge_index[2:1, , drop = FALSE]
+    keep <- which(!pair_keys(flipped, same) %in% held_keys)
     train_graph$edges[[rk]] <- subset_relation(r, keep)
   }
   structure(list(
@@ -482,7 +504,7 @@ split_edges_hetero <- function(hg, relation, val = 0.1, test = 0.1, neg_ratio = 
     val_pos = pairs[, code == 2L, drop = FALSE], val_neg = neg[, seq_len(nv), drop = FALSE],
     test_pos = pairs[, code == 3L, drop = FALSE],
     test_neg = neg[, nv + seq_len(ncol(neg) - nv), drop = FALSE],
-    all_pos = pairs, num_src = ns, num_dst = nd, seed = seed
+    all_pos = pairs, num_src = ns, num_dst = nd, same_type = same, seed = seed
   ), class = "hetero_link_split")
 }
 
@@ -692,6 +714,8 @@ hetero_node_runner <- function(model, hg, classif, dev, target_type) {
   if (is.null(nd$y) || is.null(nd$train_mask)) {
     stopf("Node type `%s` needs `y` and `train_mask`.", target_type)
   }
+  hg$nodes[[target_type]]$y <- prep_labels(nd$y, classif, what = "node labels")
+  nd <- hg$nodes[[target_type]]
   ht <- hetero_tensors(hg, dev)
   y <- ht$y[[target_type]]
   tr <- tensor_which(ht$train_mask[[target_type]])
@@ -701,7 +725,7 @@ hetero_node_runner <- function(model, hg, classif, dev, target_type) {
   list(
     default_loss = if (classif) "cross_entropy" else "mse",
     metric_name = if (classif) "accuracy" else "rmse",
-    levels = if (classif) class_levels(nd$y),
+    levels = if (classif) levels(nd$y),
     train_epoch = function(epoch, opt, loss_fn, grad_clip) {
       out <- fwd()
       loss <- loss_fn(out$index_select(1L, tr), y$index_select(1L, tr))
@@ -727,9 +751,14 @@ hetero_link_runner <- function(model, split, dev, decoder, seed) {
   list(
     default_loss = "bce", metric_name = "roc_auc", decoder = decoder,
     train_epoch = function(epoch, opt, loss_fn, grad_clip) {
-      neg <- negative_sampling(split$train_pos, num_src = split$num_src, num_dst = split$num_dst,
-                               num_samples = ncol(split$train_pos),
-                               seed = if (is.null(seed)) NULL else seed + epoch)
+      nseed <- if (is.null(seed)) NULL else seed + epoch
+      neg <- if (isTRUE(split$same_type)) {
+        negative_sampling(split$train_pos, num_nodes = split$num_src,
+                          num_samples = ncol(split$train_pos), directed = FALSE, seed = nseed)
+      } else {
+        negative_sampling(split$train_pos, num_src = split$num_src, num_dst = split$num_dst,
+                          num_samples = ncol(split$train_pos), seed = nseed)
+      }
       z <- model(ht, return_embedding = TRUE)
       sp <- score(z, train_pos)
       sn <- score(z, pt(neg))
