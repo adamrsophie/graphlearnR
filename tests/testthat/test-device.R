@@ -8,6 +8,9 @@ test_that("CPU and accelerator forward passes agree within float tolerance", {
   skip_if_no_torch()
   dev <- accelerator()
   skip_if(is.null(dev), "No CUDA or MPS device available")
+  # The virtual GPU of GitHub's macOS runners gave outputs unrelated to the CPU
+  # ones, while an Apple M2 agreed to 1e-7; check MPS on real hardware only.
+  if (dev == "mps") skip_on_ci()
   torch::torch_manual_seed(1)
   g <- random_graph(30, 90, 4, seed = 1)
   for (a in c("sage", "gcn", "gat")) {
