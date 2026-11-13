@@ -79,8 +79,8 @@ reference:
   - global-pooling
   - global_attention_pool
   - topk_pool
-- to_dense_adj
-- diffpool_model
+  - to_dense_adj
+  - diffpool_model
 - title: Models and decoders
   contents:
   - gnn_model
@@ -118,7 +118,7 @@ reference:
   - sample_hetero_neighbors
   - split_edges_hetero
   - hetero_conv
-- hgt_conv
+  - hgt_conv
   - hetero_gnn_model
 - title: Temporal graphs
   contents:

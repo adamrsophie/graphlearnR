@@ -119,7 +119,7 @@ in `model$aux_loss` after each forward pass and the trainer adds them to
 the task loss. DiffPool works on dense per graph adjacency matrices, so
 memory grows with the square of the largest graph in a batch.
 
-```{r, eval = has_torch}
+```{r}
 torch_manual_seed(3)
 dp <- diffpool_model(input_dim = 1, hidden_dim = 32, output_dim = 2, num_clusters = 4)
 fit_dp <- train_graph_model(dp, graphs[sp$train], "graph_classification",
