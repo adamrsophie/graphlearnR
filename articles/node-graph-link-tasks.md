@@ -85,13 +85,13 @@ fit_r <- train_graph_model(gnn_model("sage", 8, 32, 1), gr, "node_regression",
 evaluate_graph_model(fit_r, gr)
 #>   metric     value
 #> 1    mse 0.1869997
-#> 2   rmse 0.4324347
-#> 3    mae 0.3472295
+#> 2   rmse 0.4324346
+#> 3    mae 0.3472294
 #> 4     r2 0.7380613
 head(predict(fit_r, gr))
 #>   .row node_id    .pred
 #> 1    1       1 1.284679
-#> 2    2       2 1.486635
+#> 2    2       2 1.486636
 #> 3    3       3 1.304096
 #> 4    4       4 1.251207
 #> 5    5       5 1.615181
@@ -127,17 +127,17 @@ evaluate_graph_model(fit_g, graphs[sp$test])
 #> 3   precision_macro 1.000000e+00
 #> 4      recall_macro 1.000000e+00
 #> 5          f1_macro 1.000000e+00
-#> 6               ece 0.000000e+00
-#> 7             brier 5.953295e-16
+#> 6               ece 1.986821e-08
+#> 7             brier 2.976114e-15
 #> 8           roc_auc 1.000000e+00
 head(predict(fit_g, graphs[sp$test]))
 #>   .row graph .pred_class .prob_cycle  .prob_wheel
-#> 1    1     1       cycle           1 7.298568e-12
-#> 2    2     2       cycle           1 1.078535e-08
-#> 3    3     3       cycle           1 6.407741e-13
-#> 4    4     4       cycle           1 5.625655e-14
-#> 5    5     5       cycle           1 7.298568e-12
-#> 6    6     6       cycle           1 5.625655e-14
+#> 1    1     1       cycle           1 7.272846e-12
+#> 2    2     2       cycle           1 1.075872e-08
+#> 3    3     3       cycle           1 6.382918e-13
+#> 4    4     4       cycle           1 5.601885e-14
+#> 5    5     5       cycle           1 7.272846e-12
+#> 6    6     6       cycle           1 5.601885e-14
 ```
 
 The `pool` argument turns any architecture into a graph level model:
@@ -192,7 +192,7 @@ uses the training graph.
 ``` r
 
 predict(fit_l, pairs = rbind(c(1, 1, 60), c(2, 70, 61)), type = "prob")
-#> [1] 0.6104220 0.5000000 0.5801775
+#> [1] 0.6104219 0.5000000 0.5801774
 ```
 
 Other decoders are `link_decoder("distmult", dim = 32)`,
@@ -247,7 +247,7 @@ evaluate_graph_model(fit_e, ge)
 #> 4      recall_macro 1.000000e+00
 #> 5          f1_macro 1.000000e+00
 #> 6               ece 4.698913e-04
-#> 7             brier 6.453759e-06
+#> 7             brier 6.453770e-06
 #> 8           roc_auc 1.000000e+00
 ```
 

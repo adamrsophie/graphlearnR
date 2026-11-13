@@ -156,7 +156,7 @@ graphlearnR reports the remaining gap of the Riemann approximation.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">ig</span><span class="op">$</span><span class="va">node_feature</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 9.833233</span></span>
 <span><span class="va">ig</span><span class="op">$</span><span class="va">completeness_gap</span></span>
-<span><span class="co">#&gt; [1] 0.006706059</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0.006706327</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -177,7 +177,7 @@ returns a table.</p>
 <span><span class="co">#&gt; 20   20   12  1   0.5910739</span></span>
 <span><span class="co">#&gt; 12   12    7  1   0.4951163</span></span>
 <span><span class="co">#&gt; 10   10    6  1   0.4866577</span></span>
-<span><span class="co">#&gt; 8     8    5  1   0.4837200</span></span></code></pre></div>
+<span><span class="co">#&gt; 8     8    5  1   0.4837199</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="occlusion">Occlusion<a class="anchor" aria-label="anchor" href="#occlusion"></a>
@@ -190,11 +190,11 @@ easy to interpret.</p>
 <code class="sourceCode R"><span><span class="va">oc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/explain.html">explain_occlusion</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">g</span>, target <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">oc</span><span class="op">$</span><span class="va">edges</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="op">-</span><span class="va">oc</span><span class="op">$</span><span class="va">edges</span><span class="op">$</span><span class="va">attribution</span><span class="op">)</span>, <span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    edge from to attribution</span></span>
-<span><span class="co">#&gt; 11   22   13  1   0.6274004</span></span>
-<span><span class="co">#&gt; 10   20   12  1   0.6089334</span></span>
-<span><span class="co">#&gt; 6    12    7  1   0.5063639</span></span>
+<span><span class="co">#&gt; 11   22   13  1   0.6273994</span></span>
+<span><span class="co">#&gt; 10   20   12  1   0.6089315</span></span>
+<span><span class="co">#&gt; 6    12    7  1   0.5063629</span></span>
 <span><span class="co">#&gt; 5    10    6  1   0.4981394</span></span>
-<span><span class="co">#&gt; 4     8    5  1   0.4943419</span></span>
+<span><span class="co">#&gt; 4     8    5  1   0.4943409</span></span>
 <span><span class="co">#&gt; 9    18   11  1   0.4860201</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -237,10 +237,10 @@ to mean high influence.</p>
 <span><span class="co">#&gt;   from to      head1      head2</span></span>
 <span><span class="co">#&gt; 1    1  2 0.19154441 0.16146892</span></span>
 <span><span class="co">#&gt; 2    2  1 0.03586031 0.07413401</span></span>
-<span><span class="co">#&gt; 3    1  3 0.16340747 0.13701235</span></span>
-<span><span class="co">#&gt; 4    3  1 0.05869362 0.03081637</span></span>
+<span><span class="co">#&gt; 3    1  3 0.16340749 0.13701235</span></span>
+<span><span class="co">#&gt; 4    3  1 0.05869362 0.03081638</span></span>
 <span><span class="co">#&gt; 5    1  4 0.22324155 0.21166605</span></span>
-<span><span class="co">#&gt; 6    4  1 0.12893744 0.06319855</span></span></code></pre></div>
+<span><span class="co">#&gt; 6    4  1 0.12893747 0.06319855</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="is-the-explanation-any-good">Is the explanation any good?<a class="anchor" aria-label="anchor" href="#is-the-explanation-any-good"></a>
@@ -258,8 +258,8 @@ is better).</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>gradient <span class="op">=</span> <span class="fu"><a href="../reference/explanation_fidelity.html">explanation_fidelity</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">g</span>, <span class="va">eg</span>, k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
 <span>      gnn_explainer <span class="op">=</span> <span class="fu"><a href="../reference/explanation_fidelity.html">explanation_fidelity</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">g</span>, <span class="va">gx</span>, k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;               fidelity_plus fidelity_minus</span></span>
-<span><span class="co">#&gt; gradient          1.7281389      -3.426291</span></span>
-<span><span class="co">#&gt; gnn_explainer    -0.3032961       3.899852</span></span></code></pre></div>
+<span><span class="co">#&gt; gradient           1.728138      -3.426292</span></span>
+<span><span class="co">#&gt; gnn_explainer     -0.303298       3.899850</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="stability">Stability<a class="anchor" aria-label="anchor" href="#stability"></a>

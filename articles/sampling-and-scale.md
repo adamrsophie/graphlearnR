@@ -114,15 +114,15 @@ fit
 #>   final train loss 0.0594, val loss 0.0169, val accuracy 0.9944
 #>   best epoch 13
 evaluate_graph_model(fit, big)
-#>              metric      value
-#> 1          accuracy 0.99444444
-#> 2 balanced_accuracy 0.99444444
-#> 3   precision_macro 0.99453552
-#> 4      recall_macro 0.99444444
-#> 5          f1_macro 0.99444406
-#> 6               ece 0.00684045
-#> 7             brier 0.01246696
-#> 8           roc_auc 0.99703704
+#>              metric       value
+#> 1          accuracy 0.994444444
+#> 2 balanced_accuracy 0.994444444
+#> 3   precision_macro 0.994535519
+#> 4      recall_macro 0.994444444
+#> 5          f1_macro 0.994444059
+#> 6               ece 0.006840451
+#> 7             brier 0.012466965
+#> 8           roc_auc 0.997037037
 ```
 
 Prediction and evaluation run on the full graph, so the reported numbers
