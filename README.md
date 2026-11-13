@@ -98,7 +98,10 @@ reference formula, and with finite difference gradients in double precision.
 Pooled models are checked for permutation invariance and batched forward
 passes against separate ones. Splits, samplers and temporal code are checked
 for leakage. Continuous integration runs `R CMD check` on Linux, macOS and
-Windows.
+Windows. A benchmark workflow copies weights into PyTorch Geometric and
+checks that SAGEConv and GCNConv give the same outputs (largest difference
+6e-8 in the last run); on one 2 thread CPU runner, single layer forward
+times were of the same order as PyG's. Scripts are in `benchmarks/pyg`.
 
 ## Known limitations
 
