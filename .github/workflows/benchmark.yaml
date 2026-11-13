@@ -1,0 +1,47 @@
+name: benchmark
+
+# Runs the scripts in benchmarks/ and uploads the results. Numbers come from
+# shared GitHub runners (CPU only) and are recorded with the hardware details
+# printed by each script.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      TORCH_INSTALL: 1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2.14.0
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2.14.0
+        with:
+          extra-packages: local::., any::bench
+          needs: benchmark
+
+      - name: Check LibTorch
+        run: if (!torch::torch_is_installed()) torch::install_torch()
+        shell: Rscript {0}
+
+      - name: Run benchmarks
+        run: |
+          mkdir -p bench-out
+          for f in benchmarks/*.R; do
+            Rscript "$f" bench-out
+          done
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: benchmark-results
+          path: bench-out

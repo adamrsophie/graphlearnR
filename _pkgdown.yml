@@ -1,0 +1,146 @@
+url: https://adamrsophie.github.io/graphlearnR/
+
+template:
+  bootstrap: 5
+  light-switch: true
+  math-rendering: katex
+
+navbar:
+  structure:
+    left: [intro, reference, articles, news]
+    right: [search, lightswitch, github]
+
+home:
+  sidebar:
+    structure: [links, license, citation, authors, dev]
+
+articles:
+- title: Getting started
+  navbar: Getting started
+  contents:
+  - graphlearnR
+  - graph-data
+- title: Building and training models
+  navbar: Models
+  contents:
+  - message-passing
+  - node-graph-link-tasks
+  - sampling-and-scale
+- title: Advanced graph types
+  navbar: Advanced graph types
+  contents:
+  - heterogeneous-graphs
+  - temporal-graphs
+  - graph-transformers
+- title: Trust and evaluation
+  navbar: Trust and evaluation
+  contents:
+  - explainability
+  - evaluation-and-reproducibility
+
+reference:
+- title: Package
+  contents:
+  - graphlearnR-package
+- title: Graph data
+  desc: Create, validate, inspect, and index homogeneous graphs.
+  contents:
+  - graph_data
+  - validate_graph
+  - graph-queries
+  - to_zero_based
+- title: Conversion
+  desc: Move graphs between igraph, edge lists, adjacency matrices, and tensors.
+  contents:
+  - from_igraph
+  - graph_from_edgelist
+  - graph_from_adjacency
+  - graph_tensors
+- title: Batching and transforms
+  contents:
+  - graph_batch
+  - graph-transforms
+  - to_dense_batch
+- title: Message passing
+  desc: Scatter aggregation and the general message passing operator.
+  contents:
+  - scatter
+  - message_passing
+  - add_self_loops_tensor
+- title: Layers and pooling
+  contents:
+  - gnn-layers
+  - graph_mlp
+  - global-pooling
+  - global_attention_pool
+  - topk_pool
+- title: Models and decoders
+  contents:
+  - gnn_model
+  - link_decoder
+- title: Sampling and loaders
+  contents:
+  - sample_neighbors
+  - k_hop_subgraph
+  - node_loader
+  - negative_sampling
+  - corrupt_tails
+- title: Splits
+  desc: Leakage safe splits for every task.
+  contents:
+  - split_nodes
+  - split_edges
+  - split_edge_labels
+  - split_graphs
+- title: Training, prediction, and evaluation
+  contents:
+  - train_graph_model
+  - predict.graph_fit
+  - evaluate_graph_model
+  - evaluate_predictions
+  - save_graph_fit
+  - metrics
+- title: Heterogeneous graphs
+  contents:
+  - hetero_graph_data
+  - edge_types
+  - add_reverse_relations
+  - to_homogeneous
+  - hetero_tensors
+  - hetero_batch
+  - sample_hetero_neighbors
+  - split_edges_hetero
+  - hetero_conv
+  - hetero_gnn_model
+- title: Temporal graphs
+  contents:
+  - temporal_graph_data
+  - temporal_window
+  - split_temporal
+  - temporal_neighbors
+  - snapshot_sequence
+  - spatiotemporal_signal
+  - graph_gru_cell
+  - temporal_gnn_model
+  - train_spatiotemporal_model
+  - train_dynamic_link_model
+  - dynamic_link_baseline
+- title: Graph transformers and encodings
+  contents:
+  - positional-encodings
+  - graph_transformer_layer
+  - graph_transformer_model
+- title: Explainability
+  contents:
+  - explain
+  - explanation_fidelity
+  - attention_weights
+- title: Datasets
+  contents:
+  - graph_dataset
+  - dataset_karate
+  - dataset_sbm
+  - dataset_synthetic_graphs
+  - dataset_synthetic_hetero
+  - dataset_synthetic_temporal
+  - download-datasets

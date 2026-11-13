@@ -1,0 +1,12 @@
+.Rhistory
+.RData
+.Rproj.user
+*.Rcheck/
+graphlearnR_*.tar.gz
+.DS_Store
+docs/
+documentation/
+.gstack/
+.claude/
+tests/testthat/_problems/
+tests/testthat/testthat-problems.rds

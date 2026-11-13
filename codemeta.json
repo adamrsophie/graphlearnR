@@ -1,0 +1,75 @@
+{
+  "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+  "@type": "SoftwareSourceCode",
+  "@id": "https://github.com/adamrsophie/graphlearnR",
+  "name": "graphlearnR",
+  "description": "A native R framework for machine learning on graphs, built on the torch package without a Python dependency: graph data structures, message passing, graph neural network layers, sampling, leakage safe splits, heterogeneous and temporal graphs, graph transformers, training, evaluation, and explanations.",
+  "codeRepository": "https://github.com/adamrsophie/graphlearnR",
+  "url": "https://adamrsophie.github.io/graphlearnR/",
+  "issueTracker": "https://github.com/adamrsophie/graphlearnR/issues",
+  "license": "https://spdx.org/licenses/GPL-3.0-only.html",
+  "version": "0.1.0",
+  "softwareVersion": "0.1.0",
+  "dateCreated": "2026-11-11",
+  "dateModified": "2026-11-12",
+  "programmingLanguage": {
+    "@type": "ComputerLanguage",
+    "name": "R",
+    "url": "https://www.r-project.org"
+  },
+  "runtimePlatform": "R >= 4.3.0",
+  "operatingSystem": "OS Independent",
+  "applicationCategory": "Machine learning / graph neural networks",
+  "developmentStatus": "active",
+  "keywords": [
+    "graph neural networks",
+    "geometric deep learning",
+    "graph machine learning",
+    "message passing",
+    "torch",
+    "R"
+  ],
+  "softwareRequirements": [
+    "R >= 4.3.0",
+    "igraph",
+    "Matrix",
+    "methods",
+    "stats",
+    "tools",
+    "torch >= 0.13.0",
+    "utils",
+    "withr"
+  ],
+  "softwareSuggestions": [
+    "knitr",
+    "RSpectra",
+    "rmarkdown",
+    "testthat >= 3.0.0"
+  ],
+  "author": [
+    {
+      "@type": "Person",
+      "givenName": "Adam R",
+      "familyName": "Sophie",
+      "email": "adamrsophie@gmail.com",
+      "@id": "https://github.com/adamrsophie"
+    }
+  ],
+  "maintainer": [
+    {
+      "@type": "Person",
+      "givenName": "Adam R",
+      "familyName": "Sophie",
+      "email": "adamrsophie@gmail.com",
+      "@id": "https://github.com/adamrsophie"
+    }
+  ],
+  "copyrightHolder": [
+    {
+      "@type": "Person",
+      "@id": "https://github.com/adamrsophie",
+      "name": "Adam R Sophie"
+    }
+  ],
+  "referencePublication": "https://doi.org/10.48550/arXiv.1903.02428"
+}

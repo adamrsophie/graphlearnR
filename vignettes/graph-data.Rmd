@@ -1,0 +1,228 @@
+---
+title: "Graph data: structures, conversion, and batching"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Graph data: structures, conversion, and batching}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+has_torch <- torch::torch_is_installed()
+```
+
+```{r setup}
+library(graphlearnR)
+```
+
+Every model in graphlearnR consumes the same data structure, a `graph_data`
+object. This article explains what it stores, the rules it enforces, and how
+to get your data into it.
+
+## The data model
+
+A graph with `N` nodes and `E` stored edges has
+
+| field | shape | meaning |
+|---|---|---|
+| `x` | `N x F` matrix | node features |
+| `edge_index` | `2 x E` integer matrix | row 1 source, row 2 target, 1-based |
+| `y` | length `N` | node labels (factor or numeric) |
+| `edge_attr` | `E x D` matrix | edge features |
+| `edge_weight` | length `E` | scalar edge weights |
+| `edge_y` | length `E` | edge labels |
+| `graph_y` | length 1 | graph label |
+| `train_mask`, `val_mask`, `test_mask` | length `N` logical | node splits |
+| `node_ids` | length `N` | original identifiers |
+| `edge_pair` | length `E` | pair id of each stored edge (undirected graphs) |
+
+```{r}
+g <- graph_data(
+  x = matrix(c(1, 0, 0, 1, 1, 1), nrow = 3, byrow = TRUE),
+  edge_index = rbind(c(1, 2), c(2, 3)),
+  y = factor(c("a", "b", "a")),
+  edge_weight = c(0.5, 2)
+)
+g
+```
+
+### Indexing is 1-based
+
+Node `1` is the first row of `x`. Edge index matrices, seeds for sampling,
+node pairs for link prediction, and every returned node id use the same
+convention. The only place a 0-based index appears is at an explicit
+boundary with other software, through `to_zero_based()` and
+`from_zero_based()`.
+
+```{r}
+to_zero_based(g$edge_index)
+```
+
+### Direction
+
+An edge `(i, j)` sends a message from `i` to `j`; layers aggregate over the
+incoming edges of each node. A directed graph is stored as given.
+
+For an undirected graph, give each pair once. graphlearnR stores both
+directions next to each other and records the pair id. Edge level fields such
+as weights are copied to both directions.
+
+```{r}
+u <- graph_data(edge_index = rbind(c(1, 2), c(2, 3)), edge_weight = c(1, 5),
+                directed = FALSE)
+u$edge_index
+u$edge_weight
+u$edge_pair
+num_edges(u)
+num_edges(u, unique_pairs = TRUE)
+```
+
+Giving both directions of an undirected pair is almost always a mistake, so
+it raises a warning.
+
+```{r}
+w <- graph_data(edge_index = rbind(c(1, 2), c(2, 1)), directed = FALSE)
+```
+
+### Validation
+
+`graph_data()` validates its input and fails with a message that names the
+problem: out of range or fractional indices, missing values, mismatched
+lengths, and overlapping masks.
+
+```{r}
+try(graph_data(edge_index = rbind(1, 5), num_nodes = 3))
+try(graph_data(x = diag(2), train_mask = c(TRUE, FALSE), test_mask = c(TRUE, FALSE)))
+```
+
+`validate_graph()` runs the same checks on an object you have modified by
+hand.
+
+### Inspecting a graph
+
+```{r}
+k <- dataset_karate()
+c(nodes = num_nodes(k), edges = num_edges(k), features = num_node_features(k))
+has_self_loops(k)
+has_isolated_nodes(k)
+head(degree(k))
+```
+
+## Conversion
+
+### From and to igraph
+
+`from_igraph()` reads vertex names into `node_ids`, the `weight` edge
+attribute into `edge_weight`, and any attributes you name into features.
+
+```{r}
+ig <- igraph::make_graph("Zachary")
+igraph::V(ig)$age <- seq_len(igraph::vcount(ig))
+gi <- from_igraph(ig, x_attrs = "age")
+gi
+back <- to_igraph(gi)
+igraph::ecount(back)
+```
+
+An undirected igraph object becomes an undirected `graph_data`; the round
+trip keeps the edge count.
+
+### From an edge list
+
+Real data rarely numbers nodes `1:N`. `graph_from_edgelist()` maps arbitrary
+identifiers through an optional node table, which also supplies features and
+labels. Nodes that appear in the table but in no edge are kept as isolated
+nodes.
+
+```{r}
+edges <- data.frame(from = c("ann", "bob", "cat"), to = c("bob", "cat", "ann"),
+                    strength = c(3, 1, 2))
+nodes <- data.frame(id = c("ann", "bob", "cat", "dan"), age = c(31, 45, 27, 52),
+                    group = c("x", "y", "x", "y"))
+ge <- graph_from_edgelist(edges, nodes = nodes, feature_cols = "age",
+                          label_col = "group", weight_col = "strength")
+ge
+ge$node_ids
+edgelist_from_graph(ge)
+```
+
+### From an adjacency matrix
+
+Dense and sparse (`Matrix`) adjacency matrices both work. A symmetric matrix
+gives an undirected graph unless `directed = TRUE`. Entry `A[i, j]` is the
+edge from `i` to `j`.
+
+```{r}
+A <- Matrix::sparseMatrix(i = c(1, 2, 3), j = c(2, 3, 1), x = c(1, 2, 3), dims = c(3, 3))
+ga <- graph_from_adjacency(A)
+ga$edge_index
+adjacency_from_graph(ga)
+```
+
+### To tensors
+
+`graph_tensors()` converts every field to a torch tensor on a chosen device:
+features to floating point, indices and class labels to `long`, and masks to
+`bool`. Indices stay 1-based, which is what R torch indexing expects.
+
+```{r, eval = has_torch}
+tt <- graph_tensors(k)
+tt
+tt$edge_index$dtype
+```
+
+## Many graphs: batching
+
+Graph level tasks train on many small graphs. `graph_batch()` joins them into
+one disconnected graph: node indices are offset so no edge crosses between
+graphs, and `batch` records which graph each node belongs to.
+
+```{r}
+gs <- dataset_synthetic_graphs(3, seed = 1)
+b <- graph_batch(gs)
+b
+b$node_ptr
+table(b$batch)
+```
+
+`unbatch()` reverses the operation exactly.
+
+```{r}
+parts <- unbatch(b)
+identical(parts[[2]]$edge_index, gs[[2]]$edge_index)
+```
+
+## Datasets
+
+`graph_dataset()` wraps a list of graphs and applies an optional transform
+when a graph is accessed. `write_graph_dataset()` and `graph_dataset_disk()`
+keep large collections on disk, one file per graph, loading each on demand.
+
+```{r}
+ds <- graph_dataset(dataset_synthetic_graphs(20, seed = 2),
+                    transform = add_degree_features)
+ds
+ncol(ds[[1]]$x)
+```
+
+Public benchmark datasets are downloaded, not bundled, and their MD5 checksum
+is verified before use. `download_tu_dataset("MUTAG")` reads a TU Dortmund
+graph classification dataset and `download_planetoid_raw("cora")` reads the
+raw LINQS release of Cora; read their licenses before redistributing them.
+
+## Transforms
+
+Transforms are plain functions from a graph to a graph, so they compose with
+`compose_transforms()` or with the native pipe.
+
+```{r}
+g2 <- graph_data(x = diag(3), edge_index = rbind(c(1, 1, 2), c(2, 2, 3)))
+g2 |> coalesce_edges() |> add_self_loops() |> (\(h) h$edge_index)()
+ks <- split_nodes(dataset_karate("degree"), seed = 1)
+head(normalize_features(ks, stats_mask = ks$train_mask)$x)
+```
+
+Pass `stats_mask` to `normalize_features()` to compute centering and scaling
+statistics from training nodes only, so test information does not leak into
+the features.

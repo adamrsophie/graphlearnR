@@ -1,0 +1,154 @@
+---
+title: "Explaining graph neural network predictions"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Explaining graph neural network predictions}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>",
+                      eval = torch::torch_is_installed())
+```
+
+```{r setup}
+library(graphlearnR)
+library(torch)
+```
+
+An explanation answers: which node features and which edges made the model
+predict this? graphlearnR implements gradient based, perturbation based, and
+optimization based methods, plus two checks of explanation quality. All
+methods take a trained `graph_fit` (or a model), a graph, and a target node;
+leave `target = NULL` for a graph level model.
+
+## A model to explain
+
+```{r}
+g <- split_nodes(dataset_karate(), seed = 1)
+torch_manual_seed(1)
+fit <- train_graph_model(gnn_model("gcn", 34, 16, 2, dropout = 0), g,
+                         "node_classification", epochs = 100, seed = 1)
+evaluate_graph_model(fit, g)
+```
+
+## Feature attributions
+
+### Saliency
+
+The gradient of the selected output with respect to the input features. By
+default the output is the predicted class of the target node.
+
+```{r}
+sal <- explain_saliency(fit, g, target = 1)
+sal
+top <- order(-abs(sal$node_feature))[1:5]
+arrayInd(top, dim(sal$node_feature))
+```
+
+With identity features, feature $j$ of node $i$ is "being node $i$", so the
+largest saliencies point at the nodes whose identity most affects node 1's
+prediction.
+
+### Integrated gradients
+
+Saliency is local. Integrated gradients (Sundararajan, Taly, and Yan 2017)
+average gradients along the straight path from a baseline (zero by default)
+to the input and multiply by the difference. The attributions then add up to
+the change in output between baseline and input; graphlearnR reports the
+remaining gap of the Riemann approximation.
+
+```{r}
+ig <- explain_integrated_gradients(fit, g, target = 1, steps = 64)
+sum(ig$node_feature)
+ig$completeness_gap
+```
+
+## Edge attributions
+
+### Edge gradients
+
+`explain_edges()` attaches a weight of one to every edge, takes the gradient
+of the output with respect to those weights, and returns a table.
+
+```{r}
+eg <- explain_edges(fit, g, target = 1)
+head(eg$edges[order(-abs(eg$edges$attribution)), ])
+```
+
+### Occlusion
+
+`explain_occlusion()` removes each incoming edge of the target in turn and
+records how much the output drops. It also masks each feature column. It is
+slow for many edges but needs no gradients and is easy to interpret.
+
+```{r}
+oc <- explain_occlusion(fit, g, target = 1)
+head(oc$edges[order(-oc$edges$attribution), ])
+```
+
+### GNNExplainer
+
+`gnn_explainer()` (Ying et al. 2019) learns a soft mask over edges and
+features that keeps the prediction while staying small and close to binary.
+The trained model's weights are frozen during the optimization and restored
+afterwards.
+
+```{r}
+gx <- gnn_explainer(fit, g, target = 1, epochs = 100, seed = 1)
+head(gx$edges[order(-gx$edges$attribution), ])
+range(gx$edges$attribution)
+```
+
+## Attention
+
+For attention models, `attention_weights()` collects the coefficients of the
+last forward pass of each attention layer. Attention is a model component,
+not an explanation; high attention does not have to mean high influence.
+
+```{r}
+torch_manual_seed(2)
+fit_gat <- train_graph_model(gnn_model("gat", 34, 8, 2, heads = 2), g,
+                             "node_classification", epochs = 50, seed = 1)
+invisible(predict(fit_gat, g))
+aw <- attention_weights(fit_gat)
+length(aw)
+head(aw[[1]])
+```
+
+## Is the explanation any good?
+
+### Fidelity
+
+`explanation_fidelity()` keeps or removes the `k` most important edges and
+measures the change in the predicted probability (Yuan et al. 2022).
+`fidelity_plus` is the drop when the important edges are removed (higher is
+better); `fidelity_minus` is the drop when only they are kept (lower is
+better).
+
+```{r}
+rbind(gradient = explanation_fidelity(fit, g, eg, k = 5),
+      gnn_explainer = explanation_fidelity(fit, g, gx, k = 5))
+```
+
+### Stability
+
+`explanation_stability()` perturbs the features with small noise, explains
+again, and reports the rank correlation with the original explanation. A low
+value means the explanation would change for inputs that are practically
+the same.
+
+```{r}
+explanation_stability(fit, g, function(m, h) explain_edges(m, h, target = 1),
+                      noise = 0.01, reps = 3, seed = 1)
+```
+
+## Caveats
+
+* Gradient methods explain the model, not the data. Two models with the same
+  accuracy can have very different explanations.
+* With one hot identity features, feature attributions are about node
+  identity; with real features, they are about feature values.
+* Always check fidelity before you interpret an explanation, and compare
+  against a random edge ranking.

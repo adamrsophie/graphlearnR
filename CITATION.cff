@@ -1,0 +1,54 @@
+# -----------------------------------------------------------------------------
+# Citation File Format (https://citation-file-format.github.io/).
+# Machine-readable citation metadata for GitHub, Zenodo, and FAIR tooling.
+# The R-level citation lives in inst/CITATION; the software metadata crosswalk
+# is in codemeta.json; Zenodo deposit metadata is in .zenodo.json.
+# -----------------------------------------------------------------------------
+cff-version: 1.2.0
+message: 'To cite the graphlearnR package in publications use:'
+type: software
+license: GPL-3.0-only
+title: 'graphlearnR: Graph Machine Learning and Geometric Deep Learning in R'
+version: 0.1.0
+date-released: '2026-11-12'
+abstract: >-
+  A native R framework for machine learning on graphs, built on the torch
+  package without a Python dependency. Provides validated graph data
+  structures with explicit 1-based indexing, conversion from igraph, edge
+  lists and sparse matrices, mini-batching, scatter aggregation and message
+  passing, graph neural network layers (GraphSAGE, GCN, GIN, GAT, GATv2,
+  transformer convolution, NNConv, RGCN), pooling, neighbor sampling,
+  leakage safe splits, heterogeneous and temporal graphs, graph
+  transformers with structural encodings, a training loop for node, edge,
+  link and graph tasks, evaluation metrics, and explanations.
+authors:
+  - family-names: Sophie
+    given-names: Adam R
+    email: adamrsophie@gmail.com
+repository-code: https://github.com/adamrsophie/graphlearnR
+url: https://adamrsophie.github.io/graphlearnR/
+keywords:
+  - graph-neural-networks
+  - geometric-deep-learning
+  - graph-machine-learning
+  - message-passing
+  - torch
+  - r
+references:
+  - type: article
+    title: 'Fast Graph Representation Learning with PyTorch Geometric'
+    authors:
+      - family-names: Fey
+        given-names: Matthias
+      - family-names: Lenssen
+        given-names: Jan Eric
+    year: 2019
+    doi: 10.48550/arXiv.1903.02428
+  - type: software
+    title: 'torch: Tensors and Neural Networks with GPU Acceleration'
+    authors:
+      - family-names: Falbel
+        given-names: Daniel
+      - family-names: Luraschi
+        given-names: Javier
+    url: https://torch.mlverse.org

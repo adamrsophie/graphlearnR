@@ -1,0 +1,37 @@
+{
+  "title": "graphlearnR: Graph Machine Learning and Geometric Deep Learning in R",
+  "description": "A native R framework for machine learning on graphs, built on the torch package without a Python dependency. Provides validated graph data structures with explicit 1-based indexing, conversions, mini-batching, scatter aggregation and message passing, graph neural network layers, pooling, neighbor sampling, leakage safe splits, heterogeneous and temporal graphs, graph transformers with structural encodings, a training loop for node, edge, link and graph tasks, evaluation metrics, and explanations.",
+  "upload_type": "software",
+  "license": "GPL-3.0-only",
+  "access_right": "open",
+  "creators": [
+    {
+      "name": "Sophie, Adam R"
+    }
+  ],
+  "keywords": [
+    "graph neural networks",
+    "geometric deep learning",
+    "graph machine learning",
+    "message passing",
+    "torch",
+    "R"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/adamrsophie/graphlearnR",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://adamrsophie.github.io/graphlearnR/",
+      "relation": "isDocumentedBy",
+      "scheme": "url"
+    },
+    {
+      "identifier": "10.48550/arXiv.1903.02428",
+      "relation": "references",
+      "scheme": "doi"
+    }
+  ]
+}

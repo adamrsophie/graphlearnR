@@ -1,0 +1,153 @@
+---
+title: "Temporal and dynamic graphs"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Temporal and dynamic graphs}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+has_torch <- torch::torch_is_installed()
+```
+
+```{r setup}
+library(graphlearnR)
+```
+
+Graphs change. Messages are sent, payments are made, sensors report every
+few minutes. graphlearnR supports three views of time, and each comes with a
+rule that keeps the future out of the past.
+
+| view | object | leakage rule |
+|---|---|---|
+| events in continuous time | `temporal_graph_data` | a query at time $t$ uses events with time $< t$ |
+| discrete snapshots | `snapshot_sequence` | snapshot $k$ covers $[b_k, b_{k+1})$; evaluation steps come after training steps |
+| signals on a fixed graph | `spatiotemporal_signal` | train, validation, and test windows are consecutive in time |
+
+## Event graphs
+
+A temporal graph is a stream of timestamped edges, sorted by time on
+creation. `event_id` remembers the input order.
+
+```{r}
+tg <- temporal_graph_data(src = c(3, 1, 2, 1), dst = c(1, 2, 3, 3), t = c(5, 1, 3, 7),
+                          edge_attr = matrix(c(0.5, 0.1, 0.3, 0.9), ncol = 1))
+tg
+data.frame(src = tg$src, dst = tg$dst, t = tg$t, event_id = tg$event_id)
+```
+
+### Windows and splits
+
+`temporal_window()` keeps events with `start <= t < end`. `split_temporal()`
+cuts the stream at two times, so every validation event is later than every
+training event and every test event is later still.
+
+```{r}
+events <- dataset_synthetic_temporal(num_nodes = 30, num_events = 600, seed = 1)
+events
+sp <- split_temporal(events, val_time = 60, test_time = 80)
+c(train = length(sp$train$t), val = length(sp$val$t), test = length(sp$test$t))
+c(max(sp$train$t), min(sp$val$t), max(sp$val$t), min(sp$test$t))
+```
+
+### Causal neighborhoods
+
+`temporal_neighbors()` returns the `k` most recent events of each query node
+strictly before its query time. With `strict = FALSE` it also keeps events
+at exactly the query time; use that only when an event at time $t$ really is
+known at time $t$.
+
+```{r}
+nb <- temporal_neighbors(events, nodes = c(1, 2), times = c(50, 50), k = 3,
+                         direction = "both")
+nb
+all(nb$t < 50)
+```
+
+## Snapshots
+
+`temporal_snapshots()` bins events into graphs. Each snapshot uses the
+half open interval $[b_k, b_{k+1})$; repeated events between the same pair
+become the edge weight. With `cumulative = TRUE` snapshot $k$ holds every
+event before $b_{k+1}$.
+
+```{r}
+snaps <- temporal_snapshots(events, breaks = 8)
+snaps
+vapply(snaps$graphs, num_edges, integer(1))
+round(snaps$start, 1)
+```
+
+### Dynamic link prediction
+
+`train_dynamic_link_model()` runs a graph GRU over the snapshots. At each
+training step it predicts the edges of the *next* snapshot from everything
+up to the current one, with fresh negatives. Evaluation steps are strictly
+later than all training steps, and the result carries a baseline that scores
+a pair by how often it appeared before.
+
+```{r, eval = has_torch}
+library(torch)
+torch_manual_seed(1)
+fit <- train_dynamic_link_model(snaps, hidden_dim = 16, epochs = 30, seed = 1)
+fit
+fit$train_steps
+fit$eval_steps
+fit$step_metrics
+rbind(model = fit$test_metrics, history_baseline = fit$baseline_metrics)
+```
+
+Report the model next to the baseline. On many real dynamic graphs, simply
+predicting that past edges repeat is hard to beat, and a model that does not
+beat it has not learned anything new.
+
+## Spatiotemporal signals
+
+A spatiotemporal signal is a fixed graph (a road network, a sensor grid) with
+a feature array of shape time by nodes by features.
+
+```{r}
+sig <- dataset_synthetic_signal(num_nodes = 15, num_steps = 80, seed = 2)
+sig
+dim(sig$features)
+```
+
+`train_spatiotemporal_model()` forecasts `horizon` steps ahead from `lags`
+past steps with a graph GRU. Windows are assigned to training, validation,
+and test sets in time order, and the naive forecast (the last observed
+value) is reported next to the model.
+
+```{r, eval = has_torch}
+torch_manual_seed(2)
+fst <- train_spatiotemporal_model(sig, lags = 4, horizon = 1, hidden_dim = 16,
+                                  epochs = 40, seed = 2)
+fst
+c(last_train = max(fst$windows$train), first_val = min(fst$windows$val),
+  first_test = min(fst$windows$test))
+rbind(model = fst$test_metrics, naive = fst$baseline_metrics)
+```
+
+To bring your own data, build the graph with any of the constructors and
+pass the array to `spatiotemporal_signal()`, which checks that the node
+dimension matches.
+
+## The recurrent cell
+
+`graph_gru_cell()` replaces the matrix products of a GRU with graph
+convolutions, as in DCRNN and GConvGRU, so the hidden state of each node mixes
+with its neighbors at every step. `temporal_gnn_model()` wraps it with an
+output layer. Its output at step $s$ depends only on inputs up to step $s$;
+the test suite checks this by changing later inputs and comparing.
+
+```{r, eval = has_torch}
+g <- sig$graph
+tt <- graph_tensors(g)
+torch_manual_seed(3)
+m <- temporal_gnn_model(input_dim = 1, hidden_dim = 8, output_dim = 1)
+xs <- lapply(1:5, function(s) torch_tensor(matrix(sig$features[s, , 1], ncol = 1)))
+out <- m(xs, tt$edge_index)
+length(out$outputs)
+dim(out$outputs[[5]])
+```

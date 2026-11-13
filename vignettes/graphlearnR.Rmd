@@ -1,0 +1,119 @@
+---
+title: "Getting started with graphlearnR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with graphlearnR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>",
+                      eval = torch::torch_is_installed())
+```
+
+graphlearnR is a framework for machine learning on graphs written in R on top
+of the [torch](https://torch.mlverse.org) package. Nothing in it calls Python.
+This article walks through one complete workflow: load a graph, split it,
+train a graph neural network, evaluate it, and predict. Later articles cover
+each step in depth.
+
+```{r setup}
+library(graphlearnR)
+library(torch)
+```
+
+LibTorch must be installed once with `torch::install_torch()`. Every code
+chunk in these articles runs only when it is available.
+
+## A first graph
+
+Zachary's karate club is a social network of 34 club members. The club split
+into two factions, which is the node label. `dataset_karate()` returns it as a
+`graph_data` object with one hot node identity features.
+
+```{r}
+g <- dataset_karate()
+g
+summary(g)
+```
+
+The graph is undirected. graphlearnR stores each undirected pair in both
+directions, so message passing sees both, and records which stored edges
+belong to the same pair in `g$edge_pair`. Node indices are 1-based
+everywhere, like the rest of R.
+
+```{r}
+g$edge_index[, 1:6]
+g$edge_pair[1:6]
+```
+
+## Split the nodes
+
+`split_nodes()` adds disjoint logical masks. With a factor label it
+stratifies by class, so each split keeps the class balance.
+
+```{r}
+g <- split_nodes(g, train = 0.5, val = 0.25, test = 0.25, seed = 42)
+table(train = g$train_mask, label = g$y)
+```
+
+## Build and train a model
+
+`gnn_model()` builds a stack of message passing layers. Here a two layer
+GraphSAGE network maps the 34 input features to 16 hidden units and then to
+two class scores.
+
+```{r}
+torch_manual_seed(1)
+model <- gnn_model("sage", input_dim = 34, hidden_dim = 16, output_dim = 2,
+                   dropout = 0.3)
+model
+```
+
+`train_graph_model()` runs the training loop. The loss for node
+classification is cross entropy on the training nodes only; the validation
+nodes drive early stopping, and the best weights are restored at the end.
+
+```{r}
+fit <- train_graph_model(model, g, task = "node_classification",
+                         epochs = 150, lr = 0.01, weight_decay = 5e-4,
+                         early_stopping = 20, seed = 1)
+fit
+tail(fit$history)
+```
+
+## Evaluate and predict
+
+`evaluate_graph_model()` scores the held out test nodes.
+
+```{r}
+evaluate_graph_model(fit, g)
+```
+
+`predict()` returns a data frame with one row per node, a predicted class,
+and a probability per class. Other types return only the classes, the
+probability matrix, the raw scores, or the node embeddings.
+
+```{r}
+pred <- predict(fit, g)
+head(pred)
+emb <- predict(fit, g, type = "embedding")
+dim(emb)
+```
+
+## Where to go next
+
+* [Graph data](graph-data.html): the data model, conversions from igraph,
+  edge lists and sparse matrices, batching, and transforms.
+* [Message passing](message-passing.html): scatter aggregation, the built in
+  layers, and how to write a custom layer.
+* [Node, graph, and link tasks](node-graph-link-tasks.html): every task the
+  training loop supports.
+* [Sampling and scale](sampling-and-scale.html): neighbor sampling and
+  mini-batch training.
+* [Heterogeneous graphs](heterogeneous-graphs.html),
+  [temporal graphs](temporal-graphs.html), and
+  [graph transformers](graph-transformers.html).
+* [Explainability](explainability.html) and
+  [evaluation and reproducibility](evaluation-and-reproducibility.html).
