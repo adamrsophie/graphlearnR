@@ -28,11 +28,18 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2.14.0
         with:
-          extra-packages: any::covr, any::xml2
+          extra-packages: any::covr, any::xml2, any::pkgload
           needs: coverage
 
       - name: Check LibTorch
         run: if (!torch::torch_is_installed()) torch::install_torch()
+        shell: Rscript {0}
+
+      - name: Run tests
+        run: |
+          options(testthat.progress.max_fails = 1000)
+          res <- testthat::test_local(reporter = testthat::ProgressReporter$new(show_praise = FALSE),
+                                      stop_on_failure = TRUE)
         shell: Rscript {0}
 
       - name: Test coverage

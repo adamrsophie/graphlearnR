@@ -33,7 +33,8 @@
 #'   E by 2 matrix, or a data frame with columns `from` and `to`. Values are
 #'   one based node indices. `NULL` means no edges.
 #' @param y Node labels: factor (classification), integer or numeric vector,
-#'   or numeric matrix (multi target), one entry per node.
+#'   or numeric matrix (multi target), one entry per node. Character labels
+#'   are converted to a factor (as are character `edge_y` and `graph_y`).
 #' @param edge_attr Edge features, one row per input edge.
 #' @param edge_weight Positive or signed numeric edge weights, one per input
 #'   edge.
@@ -97,6 +98,11 @@ graph_data <- function(x = NULL, edge_index = NULL, y = NULL,
             n_rows(v), n_in)
     }
   }
+  # Character labels become factors, so class levels are explicit.
+  as_label <- function(v) if (is.character(v)) factor(v) else v
+  y <- as_label(y)
+  edge_y <- as_label(edge_y)
+  graph_y <- as_label(graph_y)
   edge_pair <- seq_len(n_in)
   if (!directed && n_in > 0L) {
     warn_reciprocal(ei)

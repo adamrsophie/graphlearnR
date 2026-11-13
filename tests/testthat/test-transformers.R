@@ -53,8 +53,8 @@ test_that("graph transformer layers are equivariant and never mix graphs", {
   expect_equal(o2, o1[perm, ], tolerance = 1e-4)
   gs <- list(g, random_graph(5, 8, 4, seed = 5), random_graph(3, 4, 4, seed = 6))
   b <- graph_batch(gs)
-  ob <- as_mat(graphlearnR:::model_forward(m, graph_tensors(b)))
   os <- do.call(rbind, lapply(gs, function(x) as_mat(graphlearnR:::model_forward(m, graph_tensors(x)))))
+  ob <- as_mat(graphlearnR:::model_forward(m, graph_tensors(b)))
   expect_equal(ob, os, tolerance = 1e-4)
   att <- m$layers[[1]]$last_attention
   expect_equal(dim(att), c(3, 2, 8, 8))

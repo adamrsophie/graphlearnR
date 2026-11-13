@@ -34,7 +34,8 @@ E by 2 matrix, or a data frame with columns \code{from} and \code{to}. Values ar
 one based node indices. \code{NULL} means no edges.}
 
 \item{y}{Node labels: factor (classification), integer or numeric vector,
-or numeric matrix (multi target), one entry per node.}
+or numeric matrix (multi target), one entry per node. Character labels
+are converted to a factor (as are character \code{edge_y} and \code{graph_y}).}
 
 \item{edge_attr}{Edge features, one row per input edge.}
 
