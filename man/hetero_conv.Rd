@@ -4,13 +4,22 @@
 \alias{hetero_conv}
 \title{Heterogeneous convolution wrapper}
 \usage{
-hetero_conv(convs, aggr = c("sum", "mean"))
+hetero_conv(
+  convs,
+  aggr = c("sum", "mean", "semantic"),
+  dim = NULL,
+  semantic_dim = 128L
+)
 }
 \arguments{
 \item{convs}{Named list of layers keyed by relation key; each is called as
 \code{layer(list(x_src, x_dst), edge_index)}.}
 
-\item{aggr}{\code{"sum"} or \code{"mean"} over relations.}
+\item{aggr}{\code{"sum"}, \code{"mean"} or \code{"semantic"} over relations.}
+
+\item{dim}{Output size of the layers, needed for \code{"semantic"}.}
+
+\item{semantic_dim}{Hidden size of the semantic attention.}
 }
 \value{
 An \code{nn_module} called as \code{module(x_dict, edge_index_dict)}.
@@ -21,6 +30,15 @@ results arriving at each target node type, the scheme of PyG's
 \code{HeteroConv}. Node types that receive no relation keep their input
 features.
 }
+\details{
+With \code{aggr = "semantic"}, relations arriving at a node type are combined
+by the semantic attention of HAN (Wang et al. 2019): relation \eqn{r}
+gets the score \eqn{w_r = \frac{1}{N}\sum_i q^\top \tanh(W z_i^{r} + b)}
+(one \eqn{q, W, b} per target type), \eqn{\beta = \mathrm{softmax}(w)},
+and the output is \eqn{\sum_r \beta_r z^{r}}. The last weights are kept
+in \code{module$last_semantic_attention} for inspection (they show how the
+layer weighted relations, not causal importance).
+}
 \examples{
 if (torch::torch_is_installed()) {
   hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
@@ -28,4 +46,8 @@ if (torch::torch_is_installed()) {
   conv <- hetero_conv(convs)
   conv
 }
+}
+\references{
+Wang et al. (2019) Heterogeneous graph attention network.
+The Web Conference (WWW).
 }

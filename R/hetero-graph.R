@@ -221,6 +221,57 @@ add_reverse_relations <- function(hg, prefix = "rev_") {
   hg
 }
 
+#' Add a metapath relation
+#'
+#' Composes a chain of relations into one new relation, as PyG's
+#' `AddMetaPaths`: an edge \eqn{u \to w} is added when some walk follows the
+#' relations of `path` in order from \eqn{u} to \eqn{w}. Each pair is kept
+#' once (walk counts are not recorded). Metapaths such as
+#' paper, author, paper are the input of HAN style models
+#' (`hetero_gnn_model(conv = "han")`). Build metapaths from training edges
+#' only when the composed relations will be evaluated.
+#'
+#' @param hg A `hetero_graph_data` object.
+#' @param path Relation keys (`"src__rel__dst"`), where the target type of
+#'   each is the source type of the next.
+#' @param name Relation name of the new key; defaults to the relation names
+#'   joined by `"_"`.
+#' @return `hg` with the new relation.
+#' @examples
+#' hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
+#' names(hg$edges)
+#' hg2 <- add_metapath(hg, c("drug__targets__protein", "protein__rev_targets__drug"))
+#' tail(names(hg2$edges), 1)
+#' @export
+add_metapath <- function(hg, path, name = NULL) {
+  if (!inherits(hg, "hetero_graph_data")) stopf("`hg` must be a hetero_graph_data object.")
+  if (length(path) < 2L) stopf("`path` needs at least two relation keys.")
+  bad <- setdiff(path, names(hg$edges))
+  if (length(bad)) stopf("Unknown relation `%s`.", bad[1L])
+  es <- hg$edges[path]
+  for (i in seq_len(length(es) - 1L)) {
+    if (es[[i]]$dst != es[[i + 1L]]$src) {
+      stopf("Relation `%s` ends at `%s` but `%s` starts at `%s`.", path[i], es[[i]]$dst,
+            path[i + 1L], es[[i + 1L]]$src)
+    }
+  }
+  pairs <- unique(data.frame(a = es[[1L]]$edge_index[1L, ], b = es[[1L]]$edge_index[2L, ]))
+  for (e in es[-1L]) {
+    nxt <- unique(data.frame(b = e$edge_index[1L, ], c = e$edge_index[2L, ]))
+    m <- merge(pairs, nxt, by = "b")
+    pairs <- unique(data.frame(a = m$a, b = m$c))
+  }
+  pairs <- pairs[order(pairs$b, pairs$a), , drop = FALSE]
+  rel <- name %||% paste(vapply(es, function(e) e$rel, character(1)), collapse = "_")
+  key <- paste(es[[1L]]$src, rel, es[[length(es)]]$dst, sep = "__")
+  if (key %in% names(hg$edges)) stopf("Relation `%s` already exists.", key)
+  hg$edges[[key]] <- list(src = es[[1L]]$src, rel = rel, dst = es[[length(es)]]$dst,
+                          edge_index = rbind(as.integer(pairs$a), as.integer(pairs$b)),
+                          edge_attr = NULL, edge_weight = NULL, edge_y = NULL, edge_time = NULL,
+                          reverse = NULL, reverse_of = NULL)
+  hg
+}
+
 #' Convert a heterogeneous graph to a homogeneous one
 #'
 #' Concatenates node types in the order of `hg$node_types` and relations in
@@ -585,10 +636,22 @@ print.hetero_link_split <- function(x, ...) {
 #' `HeteroConv`. Node types that receive no relation keep their input
 #' features.
 #'
+#' With `aggr = "semantic"`, relations arriving at a node type are combined
+#' by the semantic attention of HAN (Wang et al. 2019): relation \eqn{r}
+#' gets the score \eqn{w_r = \frac{1}{N}\sum_i q^\top \tanh(W z_i^{r} + b)}
+#' (one \eqn{q, W, b} per target type), \eqn{\beta = \mathrm{softmax}(w)},
+#' and the output is \eqn{\sum_r \beta_r z^{r}}. The last weights are kept
+#' in `module$last_semantic_attention` for inspection (they show how the
+#' layer weighted relations, not causal importance).
+#'
 #' @param convs Named list of layers keyed by relation key; each is called as
 #'   `layer(list(x_src, x_dst), edge_index)`.
-#' @param aggr `"sum"` or `"mean"` over relations.
+#' @param aggr `"sum"`, `"mean"` or `"semantic"` over relations.
+#' @param dim Output size of the layers, needed for `"semantic"`.
+#' @param semantic_dim Hidden size of the semantic attention.
 #' @return An `nn_module` called as `module(x_dict, edge_index_dict)`.
+#' @references Wang et al. (2019) Heterogeneous graph attention network.
+#'   The Web Conference (WWW).
 #' @examples
 #' if (torch::torch_is_installed()) {
 #'   hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
@@ -599,10 +662,18 @@ print.hetero_link_split <- function(x, ...) {
 #' @export
 hetero_conv <- nn_module(
   "hetero_conv",
-  initialize = function(convs, aggr = c("sum", "mean")) {
+  initialize = function(convs, aggr = c("sum", "mean", "semantic"), dim = NULL,
+                        semantic_dim = 128L) {
     self$aggr <- match.arg(aggr)
     self$keys <- names(convs)
     self$convs <- nn_module_dict(convs)
+    if (self$aggr == "semantic") {
+      if (is.null(dim)) stopf("`aggr = \"semantic\"` needs `dim`.")
+      dsts <- unique(vapply(strsplit(self$keys, "__", fixed = TRUE), `[`, character(1), 3L))
+      self$semantic <- nn_module_dict(lapply(stats::setNames(dsts, dsts), function(d) {
+        nn_sequential(nn_linear(dim, semantic_dim), nn_tanh(), nn_linear(semantic_dim, 1L, bias = FALSE))
+      }))
+    }
   },
   forward = function(x_dict, edge_index_dict) {
     out <- list()
@@ -614,10 +685,25 @@ hetero_conv <- nn_module(
       ei <- edge_index_dict[[k]]
       if (is.null(ei) || is.null(x_dict[[s]]) || is.null(x_dict[[d]])) next
       h <- self$convs[[k]](list(x_dict[[s]], x_dict[[d]]), ei)
+      if (self$aggr == "semantic") {
+        out[[d]] <- c(out[[d]], stats::setNames(list(h), k))
+        next
+      }
       out[[d]] <- if (is.null(out[[d]])) h else out[[d]] + h
       cnt[[d]] <- (cnt[[d]] %||% 0L) + 1L
     }
     if (self$aggr == "mean") for (d in names(out)) out[[d]] <- out[[d]] / cnt[[d]]
+    if (self$aggr == "semantic") {
+      att <- list()
+      for (d in names(out)) {
+        hs <- out[[d]]
+        w <- torch_stack(lapply(unname(hs), function(z) self$semantic[[d]](z)$mean()))
+        beta <- nnf_softmax(w, dim = 1L)
+        att[[d]] <- stats::setNames(as.numeric(as.array(beta$detach()$cpu())), names(hs))
+        out[[d]] <- Reduce(`+`, lapply(seq_along(hs), function(r) beta[r] * hs[[r]]))
+      }
+      self$last_semantic_attention <- att
+    }
     for (t in setdiff(names(x_dict), names(out))) out[[t]] <- x_dict[[t]]
     out
   }
@@ -637,6 +723,11 @@ hetero_conv <- nn_module(
 #'   relation, combined with [hetero_conv()]. `"gat"` gives relation specific
 #'   attention (a heterogeneous GAT in the sense of PyG's `to_hetero` applied
 #'   to `GATConv`; it is not HAN or HGT).
+#' * `conv = "han"`: HAN (Wang et al. 2019): node level attention per
+#'   relation (`gat_conv`) and semantic attention across the relations
+#'   arriving at a type (`hetero_conv(aggr = "semantic")`). HAN uses
+#'   metapath relations; add them with [add_metapath()] (all relations of
+#'   `hg` are used, so the plain relations take part too).
 #' * `conv = "hgt"`: heterogeneous graph transformer layers, see
 #'   [hgt_conv()]; attention is normalized over all incoming relations of a
 #'   node.
@@ -651,7 +742,7 @@ hetero_conv <- nn_module(
 #' @param target_type Node type that gets the head.
 #' @param num_layers Number of relation aware layers.
 #' @param conv Layer type.
-#' @param heads Attention heads for `"gat"`.
+#' @param heads Attention heads for `"gat"`, `"han"` and `"hgt"`.
 #' @param dropout Dropout probability.
 #' @param aggr Neighbor aggregation inside each relation.
 #' @param relation_aggr Combination across relations, `"sum"` or `"mean"`.
@@ -669,7 +760,7 @@ hetero_conv <- nn_module(
 #' }
 #' @export
 hetero_gnn_model <- function(hg, hidden_dim = 64L, output_dim = NULL, target_type = NULL,
-                             num_layers = 2L, conv = c("sage", "graph_conv", "gat", "rgcn", "hgt"),
+                             num_layers = 2L, conv = c("sage", "graph_conv", "gat", "rgcn", "hgt", "han"),
                              heads = 2L, dropout = 0.5, aggr = "mean",
                              relation_aggr = "sum", num_bases = NULL, temporal_encoding = FALSE) {
   conv <- match.arg(conv)
@@ -677,7 +768,7 @@ hetero_gnn_model <- function(hg, hidden_dim = 64L, output_dim = NULL, target_typ
   if (!is.null(target_type) && !target_type %in% hg$node_types) {
     stopf("Unknown target type `%s`.", target_type)
   }
-  if (conv %in% c("gat", "hgt") && hidden_dim %% heads != 0L) stopf("`hidden_dim` must be divisible by `heads`.")
+  if (conv %in% c("gat", "hgt", "han") && hidden_dim %% heads != 0L) stopf("`hidden_dim` must be divisible by `heads`.")
   schema <- list(
     node_types = hg$node_types,
     keys = names(hg$edges),
@@ -716,10 +807,12 @@ hetero_gnn <- nn_module(
           switch(config$conv,
             sage = sage_conv(c(h, h), h, aggr = config$aggr),
             graph_conv = graph_conv(c(h, h), h, aggr = config$aggr),
-            gat = gat_conv(c(h, h), h %/% config$heads, heads = config$heads, add_self_loops = FALSE)
+            gat = ,
+            han = gat_conv(c(h, h), h %/% config$heads, heads = config$heads, add_self_loops = FALSE)
           )
         })
-        hetero_conv(convs, aggr = config$relation_aggr)
+        if (config$conv == "han") hetero_conv(convs, aggr = "semantic", dim = h)
+        else hetero_conv(convs, aggr = config$relation_aggr)
       }))
     }
     if (!is.null(config$output_dim)) self$head <- nn_linear(h, config$output_dim)

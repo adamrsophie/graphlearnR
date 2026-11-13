@@ -270,3 +270,59 @@ test_that("heterogeneous node training works on typed neighbor samples", {
                             lr = 0.02, fanouts = c(5, 5), batch_size = 8, seed = 1)
   expect_equal(fit2$history$train_loss, fit3$history$train_loss)
 })
+
+test_that("add_metapath composes relations into unique pairs", {
+  hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
+  path <- c("drug__targets__protein", "protein__rev_targets__drug")
+  hg2 <- add_metapath(hg, path)
+  key <- "drug__targets_rev_targets__drug"
+  expect_true(key %in% names(hg2$edges))
+  e1 <- hg$edges[[path[1]]]$edge_index
+  nd <- hg$nodes$drug$num_nodes
+  np <- hg$nodes$protein$num_nodes
+  A <- matrix(0, nd, np)
+  A[cbind(e1[1, ], e1[2, ])] <- 1
+  ref <- which((A %*% t(A)) > 0, arr.ind = TRUE)
+  got <- t(hg2$edges[[key]]$edge_index)
+  expect_equal(nrow(got), nrow(ref))
+  expect_setequal(paste(got[, 1], got[, 2]), paste(ref[, 1], ref[, 2]))
+  expect_error(add_metapath(hg, rev(path)[1]), "at least two")
+  expect_error(add_metapath(hg, c(path[1], path[1])), "ends at")
+  expect_error(add_metapath(hg2, path), "already exists")
+})
+
+test_that("semantic attention combines relations with softmax weights", {
+  skip_if_no_torch()
+  torch::torch_manual_seed(1)
+  hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
+  ht <- hetero_tensors(hg)
+  x <- lapply(hg$nodes, function(nd) torch::torch_randn(nd$num_nodes, 4))
+  convs <- lapply(stats::setNames(nm = names(hg$edges)), function(r) sage_conv(c(4, 4), 4))
+  conv <- hetero_conv(convs, aggr = "semantic", dim = 4, semantic_dim = 8)
+  out <- conv(x, ht$edge_index)
+  beta <- conv$last_semantic_attention
+  for (d in names(beta)) expect_equal(sum(beta[[d]]), 1, tolerance = 1e-6)
+  # reference: weighted sum of each relation's output
+  d <- names(beta)[1]
+  ks <- names(beta[[d]])
+  ref <- Reduce(`+`, lapply(ks, function(k) {
+    p <- strsplit(k, "__", fixed = TRUE)[[1]]
+    beta[[d]][[k]] * as_mat(convs[[k]](list(x[[p[1]]], x[[p[3]]]), ht$edge_index[[k]]))
+  }))
+  expect_equal(as_mat(out[[d]]), ref, tolerance = 1e-5)
+  expect_error(hetero_conv(convs, aggr = "semantic"), "dim")
+})
+
+test_that("HAN model trains on metapath relations", {
+  skip_if_no_torch()
+  testthat::skip_on_cran()  # trains for many epochs
+  hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))
+  hg <- add_metapath(hg, c("drug__targets__protein", "protein__rev_targets__drug"))
+  torch::torch_manual_seed(1)
+  m <- hetero_gnn_model(hg, hidden_dim = 16, output_dim = 3, target_type = "drug",
+                        conv = "han", heads = 2, dropout = 0)
+  fit <- train_graph_model(m, hg, "node_classification", target_type = "drug", epochs = 40,
+                           lr = 0.02, seed = 1)
+  ev <- evaluate_graph_model(fit)
+  expect_gt(ev$value[ev$metric == "accuracy"], 0.6)
+})

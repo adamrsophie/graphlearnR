@@ -10,7 +10,7 @@ hetero_gnn_model(
   output_dim = NULL,
   target_type = NULL,
   num_layers = 2L,
-  conv = c("sage", "graph_conv", "gat", "rgcn", "hgt"),
+  conv = c("sage", "graph_conv", "gat", "rgcn", "hgt", "han"),
   heads = 2L,
   dropout = 0.5,
   aggr = "mean",
@@ -33,7 +33,7 @@ relations, feature sizes, node counts); its data are not stored.}
 
 \item{conv}{Layer type.}
 
-\item{heads}{Attention heads for \code{"gat"}.}
+\item{heads}{Attention heads for \code{"gat"}, \code{"han"} and \code{"hgt"}.}
 
 \item{dropout}{Dropout probability.}
 
@@ -66,6 +66,11 @@ averaged per relation.
 relation, combined with \code{\link[=hetero_conv]{hetero_conv()}}. \code{"gat"} gives relation specific
 attention (a heterogeneous GAT in the sense of PyG's \code{to_hetero} applied
 to \code{GATConv}; it is not HAN or HGT).
+\item \code{conv = "han"}: HAN (Wang et al. 2019): node level attention per
+relation (\code{gat_conv}) and semantic attention across the relations
+arriving at a type (\code{hetero_conv(aggr = "semantic")}). HAN uses
+metapath relations; add them with \code{\link[=add_metapath]{add_metapath()}} (all relations of
+\code{hg} are used, so the plain relations take part too).
 \item \code{conv = "hgt"}: heterogeneous graph transformer layers, see
 \code{\link[=hgt_conv]{hgt_conv()}}; attention is normalized over all incoming relations of a
 node.
