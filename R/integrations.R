@@ -329,6 +329,8 @@ aggregate_jax <- function(x, edge_index, num_nodes = NULL, aggr = c("sum", "mean
 #'
 #' @param g A `graph_data` object with node labels and masks.
 #' @param mask `"train"`, `"val"` or `"test"`.
+#' @param model For `luz_node_module`: a model whose forward takes
+#'   `(x, edge_index, edge_weight = )`, for example from [gnn_model()].
 #' @return `luz_node_dataloader()`: a torch dataloader. `luz_node_module`: an
 #'   `nn_module` generator taking the wrapped `model`.
 #' @examples
@@ -356,11 +358,11 @@ luz_node_dataloader <- function(g, mask = c("train", "val", "test")) {
   item <- list(input, tt$y$index_select(1L, idx))
   ds <- torch::dataset(
     name = "graph_node_batch",
-    initialize = function(item) self$item <- item,
-    .getitem = function(i) self$item,
+    initialize = function() NULL,
+    .getitem = function(i) item,
     .length = function() 1L
   )
-  torch::dataloader(ds(item), batch_size = NULL)
+  torch::dataloader(ds(), batch_size = NULL)
 }
 
 #' @rdname luz_node_dataloader

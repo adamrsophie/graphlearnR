@@ -156,8 +156,7 @@ and unpacks a data set, checked against a recorded checksum where one is
 known (each OGB data set has its own license; check it before use),
 and `read_ogb_graph()` reads its CSV files into a list of graphs with the
 official split in its metadata. The package ships a two graph toy copy of
-that layout,
-used here so that building this article downloads nothing.
+that layout, used here so that building this article downloads nothing.
 
 ```{r}
 toy <- read_ogb_graph(system.file("extdata", "ogbg-toy", package = "graphlearnR"))

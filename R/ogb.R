@@ -118,10 +118,10 @@ ogb_csv <- function(path) {
 ogb_split <- function(dir, split) {
   sdir <- file.path(dir, "split")
   if (!dir.exists(sdir)) return(NULL)
-  split <- split %||% {
-    s <- list.dirs(sdir, full.names = FALSE, recursive = FALSE)
-    if (length(s) != 1L) stopf("Several splits in `%s`; choose one with `split`.", sdir)
-    s
+  if (is.null(split)) {
+    split <- list.dirs(sdir, full.names = FALSE, recursive = FALSE)
+    if (length(split) == 0L) return(NULL)
+    if (length(split) > 1L) stopf("Several splits in `%s`; choose one with `split`.", sdir)
   }
   rd <- function(f) as.integer(ogb_csv(file.path(sdir, split, f))) + 1L
   structure(list(train = rd("train.csv.gz"), val = rd("valid.csv.gz"), test = rd("test.csv.gz")),

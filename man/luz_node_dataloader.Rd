@@ -13,6 +13,9 @@ luz_node_module(model)
 \item{g}{A \code{graph_data} object with node labels and masks.}
 
 \item{mask}{\code{"train"}, \code{"val"} or \code{"test"}.}
+
+\item{model}{For \code{luz_node_module}: a model whose forward takes
+\verb{(x, edge_index, edge_weight = )}, for example from \code{\link[=gnn_model]{gnn_model()}}.}
 }
 \value{
 \code{luz_node_dataloader()}: a torch dataloader. \code{luz_node_module}: an
