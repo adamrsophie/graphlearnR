@@ -49,10 +49,14 @@
     <li><a class="dropdown-item" href="articles/heterogeneous-graphs.html">Heterogeneous graphs</a></li>
     <li><a class="dropdown-item" href="articles/temporal-graphs.html">Temporal and dynamic graphs</a></li>
     <li><a class="dropdown-item" href="articles/graph-transformers.html">Graph transformers and structural encodings</a></li>
+    <li><a class="dropdown-item" href="articles/molecular-graphs.html">Molecular graphs</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Trust and evaluation</h6></li>
     <li><a class="dropdown-item" href="articles/explainability.html">Explaining graph neural network predictions</a></li>
     <li><a class="dropdown-item" href="articles/evaluation-and-reproducibility.html">Evaluation, leakage, and reproducibility</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Ecosystem</h6></li>
+    <li><a class="dropdown-item" href="articles/ecosystem.html">Working with modelcompR, symcompR and other sibling packages</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -83,7 +87,7 @@
 <!-- badges: start -->
 
 <p>graphlearnR is a framework for machine learning on graphs and graph neural networks in R. It is built on the <a href="https://torch.mlverse.org" class="external-link">torch</a> package, so models run on the CPU or a GPU, and nothing calls Python.</p>
-<p>It covers the whole workflow: validated graph data with explicit 1-based indexing, conversion from igraph, edge lists and sparse matrices, message passing layers, neighbor sampling, leakage safe splits, training for node, edge, link and graph level tasks, evaluation, heterogeneous and temporal graphs, graph transformers, and explanations.</p>
+<p>It covers the whole workflow: validated graph data with explicit 1-based indexing, conversion from igraph, edge lists and sparse matrices, message passing layers, neighbor sampling, leakage safe splits, training for node, edge, link and graph level tasks, evaluation, heterogeneous and temporal graphs, graph transformers, molecular graphs, and explanations.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -152,7 +156,7 @@
 </tr>
 <tr>
 <td>Layers</td>
-<td>GraphSAGE, GCN, GraphConv, GIN and GINE, GAT, GATv2, transformer convolution, NNConv, RGCN; global and top-k pooling</td>
+<td>GraphSAGE, GCN, GraphConv, GIN and GINE, GAT, GATv2, transformer convolution, NNConv, RGCN; global, top-k and DiffPool pooling</td>
 </tr>
 <tr>
 <td>Training</td>
@@ -164,7 +168,7 @@
 </tr>
 <tr>
 <td>Heterogeneous graphs</td>
-<td>typed nodes and relations, reverse relations, typed sampling, relation specific link splits, heterogeneous GNNs</td>
+<td>typed nodes and relations, reverse relations, typed sampling, relation specific link splits, heterogeneous GNNs including RGCN and the heterogeneous graph transformer (HGT)</td>
 </tr>
 <tr>
 <td>Temporal graphs</td>
@@ -175,8 +179,16 @@
 <td>Laplacian and random walk encodings, shortest path distances, Graphormer style model</td>
 </tr>
 <tr>
+<td>Molecules</td>
+<td>graphs from atoms and bonds with element and bond order features, scaffold splits, synthetic molecules; TU loaders for MUTAG and similar sets</td>
+</tr>
+<tr>
 <td>Explainability</td>
 <td>saliency, integrated gradients, edge gradients, occlusion, GNNExplainer, attention weights, fidelity and stability</td>
+</tr>
+<tr>
+<td>Sibling packages</td>
+<td>optional: graph diffusion solved by modelcompR, exact graph operators from symcompR</td>
 </tr>
 <tr>
 <td>Datasets</td>
@@ -202,7 +214,7 @@
 <div class="section level2">
 <h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
 </h2>
-<p>The <a href="https://adamrsophie.github.io/graphlearnR/">package website</a> has a reference for every function and articles on graph data, message passing, each task, sampling, heterogeneous and temporal graphs, graph transformers, explainability, and evaluation.</p>
+<p>The <a href="https://adamrsophie.github.io/graphlearnR/">package website</a> has a reference for every function and articles on graph data, message passing, each task, sampling, heterogeneous and temporal graphs, graph transformers, molecular graphs, explainability, evaluation, and the sibling packages.</p>
 </div>
 <div class="section level2">
 <h2 id="how-it-is-tested">How it is tested<a class="anchor" aria-label="anchor" href="#how-it-is-tested"></a>
@@ -217,13 +229,17 @@
 <li>The graph transformer uses dense attention within each graph, so memory grows with the square of the largest graph.</li>
 <li>There is no compiled code and no sparse matrix multiplication fast path; aggregation uses torch scatter operations.</li>
 <li>CPU and Apple MPS results agree in tests on an Apple M2; CUDA has not been tested.</li>
-<li>Not yet included: luz and tidymodels integration, Chebyshev, APPNP and PNA layers, cluster based samplers, memory based temporal models, and OGB loaders.</li>
+<li>DiffPool and the graph transformer build dense per graph matrices, so their memory grows with the square of the largest graph in a batch.</li>
+<li>graphlearnR does not parse SMILES or compute chemical scaffolds; use a chemistry toolkit and pass atoms, bonds and scaffold identifiers in.</li>
+<li>
+<code><a href="reference/graph_diffusion.html">graph_diffusion()</a></code> solves on R numerics through modelcompR, so it is a simulation tool, not a trainable neural ODE layer.</li>
+<li>Not yet included: luz and tidymodels integration, bridges to jaxR, optcompR and z3r (see the ecosystem article), Chebyshev, APPNP and PNA layers, cluster based samplers, memory based temporal models, HGT’s relative temporal encoding, and OGB loaders.</li>
 </ul>
 </div>
 <div class="section level2">
 <h2 id="related-work">Related work<a class="anchor" aria-label="anchor" href="#related-work"></a>
 </h2>
-<p>graphlearnR follows the layer designs of <a href="https://pyg.org" class="external-link">PyTorch Geometric</a> (Fey and Lenssen 2019). In R, <a href="https://r.igraph.org" class="external-link">igraph</a> and <a href="https://tidygraph.data-imaginist.com" class="external-link">tidygraph</a> cover graph analysis and manipulation, and graphlearnR converts from both. It is part of a series of R packages by the same author with <a href="https://github.com/adamrsophie/symcompR" class="external-link">symcompR</a> and <a href="https://github.com/adamrsophie/z3r" class="external-link">z3r</a>.</p>
+<p>graphlearnR follows the layer designs of <a href="https://pyg.org" class="external-link">PyTorch Geometric</a> (Fey and Lenssen 2019). In R, <a href="https://r.igraph.org" class="external-link">igraph</a> and <a href="https://tidygraph.data-imaginist.com" class="external-link">tidygraph</a> cover graph analysis and manipulation, and graphlearnR converts from both. It is part of a series of R packages by the same author with <a href="https://github.com/adamrsophie/modelcompR" class="external-link">modelcompR</a>, <a href="https://github.com/adamrsophie/symcompR" class="external-link">symcompR</a>, <a href="https://github.com/adamrsophie/optcompR" class="external-link">optcompR</a>, <a href="https://github.com/adamrsophie/jaxR" class="external-link">jaxR</a> and <a href="https://github.com/adamrsophie/z3r" class="external-link">z3r</a>; the optional bridges to modelcompR and symcompR are described in the ecosystem article.</p>
 </div>
 <div class="section level2">
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>

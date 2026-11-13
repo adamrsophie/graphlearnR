@@ -29,7 +29,16 @@ First release.
 - Layers: GraphSAGE, GCN, GraphConv, GIN and GINE, GAT, GATv2, graph
   transformer convolution, edge conditioned convolution (NNConv), and
   RGCN with basis decomposition.
-- Global add, mean, max, and attention pooling, and top-k pooling.
+- Global add, mean, max, and attention pooling, top-k pooling, and
+  DiffPool
+  ([`dense_diff_pool()`](https://adamrsophie.github.io/graphlearnR/reference/to_dense_adj.md),
+  [`to_dense_adj()`](https://adamrsophie.github.io/graphlearnR/reference/to_dense_adj.md),
+  [`dense_graph_conv()`](https://adamrsophie.github.io/graphlearnR/reference/to_dense_adj.md),
+  [`diffpool_model()`](https://adamrsophie.github.io/graphlearnR/reference/diffpool_model.md)),
+  whose auxiliary losses the trainer adds.
+- [`hgt_conv()`](https://adamrsophie.github.io/graphlearnR/reference/hgt_conv.md):
+  heterogeneous graph transformer layer, also available as
+  `hetero_gnn_model(conv = "hgt")`.
 - [`gnn_model()`](https://adamrsophie.github.io/graphlearnR/reference/gnn_model.md)
   builds node, edge, link, and graph level models with normalization,
   residual connections, and dropout.
@@ -81,3 +90,20 @@ First release.
   synthetic graph, heterogeneous, and temporal datasets.
 - Downloaders with checksum verification for TU datasets and the LINQS
   citation graphs (Cora, CiteSeer); nothing third party is bundled.
+
+### Molecules
+
+- [`molecule_graph()`](https://adamrsophie.github.io/graphlearnR/reference/molecule_graph.md)
+  builds graphs from atoms and bonds with element and bond order
+  features;
+  [`dataset_synthetic_molecules()`](https://adamrsophie.github.io/graphlearnR/reference/molecule_graph.md)
+  generates small synthetic molecules with scaffold identifiers for
+  scaffold splits.
+
+### Sibling packages (optional)
+
+- [`graph_diffusion()`](https://adamrsophie.github.io/graphlearnR/reference/graph_diffusion.md)
+  simulates diffusion on a graph with the modelcompR ODE solvers.
+- [`graph_operator_symbolic()`](https://adamrsophie.github.io/graphlearnR/reference/graph_operator_symbolic.md)
+  returns exact adjacency, Laplacian, and GCN operators as symcompR
+  matrices.

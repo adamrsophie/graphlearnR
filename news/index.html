@@ -32,10 +32,14 @@
     <li><a class="dropdown-item" href="../articles/heterogeneous-graphs.html">Heterogeneous graphs</a></li>
     <li><a class="dropdown-item" href="../articles/temporal-graphs.html">Temporal and dynamic graphs</a></li>
     <li><a class="dropdown-item" href="../articles/graph-transformers.html">Graph transformers and structural encodings</a></li>
+    <li><a class="dropdown-item" href="../articles/molecular-graphs.html">Molecular graphs</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Trust and evaluation</h6></li>
     <li><a class="dropdown-item" href="../articles/explainability.html">Explaining graph neural network predictions</a></li>
     <li><a class="dropdown-item" href="../articles/evaluation-and-reproducibility.html">Evaluation, leakage, and reproducibility</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Ecosystem</h6></li>
+    <li><a class="dropdown-item" href="../articles/ecosystem.html">Working with modelcompR, symcompR and other sibling packages</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -75,7 +79,9 @@
 <h3 id="message-passing-and-layers-0-1-0">Message passing and layers<a class="anchor" aria-label="anchor" href="#message-passing-and-layers-0-1-0"></a></h3>
 <ul><li>Scatter aggregations (sum, mean, max, min, std, softmax) and <code><a href="../reference/message_passing.html">message_passing()</a></code> for custom layers.</li>
 <li>Layers: GraphSAGE, GCN, GraphConv, GIN and GINE, GAT, GATv2, graph transformer convolution, edge conditioned convolution (NNConv), and RGCN with basis decomposition.</li>
-<li>Global add, mean, max, and attention pooling, and top-k pooling.</li>
+<li>Global add, mean, max, and attention pooling, top-k pooling, and DiffPool (<code><a href="../reference/to_dense_adj.html">dense_diff_pool()</a></code>, <code><a href="../reference/to_dense_adj.html">to_dense_adj()</a></code>, <code><a href="../reference/to_dense_adj.html">dense_graph_conv()</a></code>, <code><a href="../reference/diffpool_model.html">diffpool_model()</a></code>), whose auxiliary losses the trainer adds.</li>
+<li>
+<code><a href="../reference/hgt_conv.html">hgt_conv()</a></code>: heterogeneous graph transformer layer, also available as <code>hetero_gnn_model(conv = "hgt")</code>.</li>
 <li>
 <code><a href="../reference/gnn_model.html">gnn_model()</a></code> builds node, edge, link, and graph level models with normalization, residual connections, and dropout.</li>
 </ul></div>
@@ -108,6 +114,18 @@
 <h3 id="datasets-0-1-0">Datasets<a class="anchor" aria-label="anchor" href="#datasets-0-1-0"></a></h3>
 <ul><li>Built in: Zachary’s karate club, stochastic block models, and synthetic graph, heterogeneous, and temporal datasets.</li>
 <li>Downloaders with checksum verification for TU datasets and the LINQS citation graphs (Cora, CiteSeer); nothing third party is bundled.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="molecules-0-1-0">Molecules<a class="anchor" aria-label="anchor" href="#molecules-0-1-0"></a></h3>
+<ul><li>
+<code><a href="../reference/molecule_graph.html">molecule_graph()</a></code> builds graphs from atoms and bonds with element and bond order features; <code><a href="../reference/molecule_graph.html">dataset_synthetic_molecules()</a></code> generates small synthetic molecules with scaffold identifiers for scaffold splits.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="sibling-packages-optional-0-1-0">Sibling packages (optional)<a class="anchor" aria-label="anchor" href="#sibling-packages-optional-0-1-0"></a></h3>
+<ul><li>
+<code><a href="../reference/graph_diffusion.html">graph_diffusion()</a></code> simulates diffusion on a graph with the modelcompR ODE solvers.</li>
+<li>
+<code><a href="../reference/graph_operator_symbolic.html">graph_operator_symbolic()</a></code> returns exact adjacency, Laplacian, and GCN operators as symcompR matrices.</li>
 </ul></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

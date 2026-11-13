@@ -143,6 +143,37 @@ head(predict(fit_g, graphs[sp$test]))
 The `pool` argument turns any architecture into a graph level model:
 `"sum"`, `"mean"`, `"max"`, or `"attention"`.
 
+### Hierarchical pooling with DiffPool
+
+[`diffpool_model()`](https://adamrsophie.github.io/graphlearnR/reference/diffpool_model.md)
+learns a soft assignment of the nodes of each graph to a fixed number of
+clusters (Ying et al. 2018), coarsens the graph with
+[`dense_diff_pool()`](https://adamrsophie.github.io/graphlearnR/reference/to_dense_adj.md),
+runs a dense graph convolution on the clusters, and classifies the
+pooled result. The link and entropy regularizers are stored in
+`model$aux_loss` after each forward pass and the trainer adds them to
+the task loss. DiffPool works on dense per graph adjacency matrices, so
+memory grows with the square of the largest graph in a batch.
+
+``` r
+
+torch_manual_seed(3)
+dp <- diffpool_model(input_dim = 1, hidden_dim = 32, output_dim = 2, num_clusters = 4)
+fit_dp <- train_graph_model(dp, graphs[sp$train], "graph_classification",
+                            val_data = graphs[sp$val], epochs = 40, batch_size = 16,
+                            seed = 3)
+evaluate_graph_model(fit_dp, graphs[sp$test])
+#>              metric        value
+#> 1          accuracy 1.000000e+00
+#> 2 balanced_accuracy 1.000000e+00
+#> 3   precision_macro 1.000000e+00
+#> 4      recall_macro 1.000000e+00
+#> 5          f1_macro 1.000000e+00
+#> 6               ece 2.903740e-05
+#> 7             brier 9.443834e-09
+#> 8           roc_auc 1.000000e+00
+```
+
 ## Link prediction
 
 Link prediction asks which missing pairs are likely edges. The

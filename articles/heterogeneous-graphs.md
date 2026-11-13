@@ -135,7 +135,7 @@ get a learned embedding.
 
 library(torch)
 results <- list()
-for (cv in c("sage", "graph_conv", "gat", "rgcn")) {
+for (cv in c("sage", "graph_conv", "gat", "rgcn", "hgt")) {
   torch_manual_seed(1)
   m <- hetero_gnn_model(dh, hidden_dim = 32, output_dim = 3, target_type = "drug",
                         conv = cv, dropout = 0.2)
@@ -145,12 +145,43 @@ for (cv in c("sage", "graph_conv", "gat", "rgcn")) {
   results[[cv]] <- ev$value[ev$metric == "accuracy"]
 }
 unlist(results)
-#>       sage graph_conv        gat       rgcn 
-#>       1.00       1.00       0.75       1.00
+#>       sage graph_conv        gat       rgcn        hgt 
+#>       1.00       1.00       0.75       1.00       0.75
 ```
 
 `conv = "rgcn"` shares bases across relations when `num_bases` is set,
 which helps when there are many relations with few edges each.
+
+`conv = "hgt"` uses heterogeneous graph transformer layers (Hu et al.
+2020), see
+[`hgt_conv()`](https://adamrsophie.github.io/graphlearnR/reference/hgt_conv.md).
+Keys, queries and values are projected with weights per node type, each
+relation has its own attention and message matrices, and the attention
+softmax at a node runs over all its incoming edges across relations, so
+relations compete for attention. The relative temporal encoding of the
+paper is not implemented.
+
+``` r
+
+layer <- hgt_conv(dh$node_types, names(dh$edges), 8, 8, heads = 2)
+ht <- hetero_tensors(dh)
+x <- list(drug = torch_randn(60, 8), protein = torch_randn(80, 8))
+out <- layer(x, ht$edge_index)
+lapply(out, dim)
+#> $drug
+#> [1] 60  8
+#> 
+#> $protein
+#> [1] 80  8
+a <- layer$last_attention$protein
+summary(as.numeric(scatter_sum(a$alpha, a$index, 80)$sum(dim = 2)))
+#>    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#>       2       2       2       2       2       2
+```
+
+The last line sums the attention each protein gives to its neighbors per
+head; every protein with incoming edges gets exactly one per head, which
+is 2 here.
 
 ## Relation specific link prediction
 

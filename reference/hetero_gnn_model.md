@@ -14,7 +14,7 @@ hetero_gnn_model(
   output_dim = NULL,
   target_type = NULL,
   num_layers = 2L,
-  conv = c("sage", "graph_conv", "gat", "rgcn"),
+  conv = c("sage", "graph_conv", "gat", "rgcn", "hgt"),
   heads = 2L,
   dropout = 0.5,
   aggr = "mean",
@@ -89,6 +89,10 @@ it returns a named list of per type outputs.
   `"gat"` gives relation specific attention (a heterogeneous GAT in the
   sense of PyG's `to_hetero` applied to `GATConv`; it is not HAN or
   HGT).
+
+- `conv = "hgt"`: heterogeneous graph transformer layers, see
+  [`hgt_conv()`](https://adamrsophie.github.io/graphlearnR/reference/hgt_conv.md);
+  attention is normalized over all incoming relations of a node.
 
 Embedding tables make the model transductive for featureless types: it
 can only predict for nodes seen during training.

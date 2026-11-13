@@ -24,6 +24,8 @@
   graphs](https://adamrsophie.github.io/graphlearnR/articles/temporal-graphs.md):
 - [Graph transformers and structural
   encodings](https://adamrsophie.github.io/graphlearnR/articles/graph-transformers.md):
+- [Molecular
+  graphs](https://adamrsophie.github.io/graphlearnR/articles/molecular-graphs.md):
 
 ### Trust and evaluation
 
@@ -31,3 +33,8 @@
   predictions](https://adamrsophie.github.io/graphlearnR/articles/explainability.md):
 - [Evaluation, leakage, and
   reproducibility](https://adamrsophie.github.io/graphlearnR/articles/evaluation-and-reproducibility.md):
+
+### Ecosystem
+
+- [Working with modelcompR, symcompR and other sibling
+  packages](https://adamrsophie.github.io/graphlearnR/articles/ecosystem.md):

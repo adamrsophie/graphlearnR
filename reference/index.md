@@ -104,6 +104,12 @@ Scatter aggregation and the general message passing operator.
   : Global attention pooling
 - [`topk_pool()`](https://adamrsophie.github.io/graphlearnR/reference/topk_pool.md)
   : Top-k pooling (hierarchical, experimental)
+- [`to_dense_adj()`](https://adamrsophie.github.io/graphlearnR/reference/to_dense_adj.md)
+  [`dense_diff_pool()`](https://adamrsophie.github.io/graphlearnR/reference/to_dense_adj.md)
+  [`dense_graph_conv()`](https://adamrsophie.github.io/graphlearnR/reference/to_dense_adj.md)
+  : Dense adjacency and differentiable pooling
+- [`diffpool_model()`](https://adamrsophie.github.io/graphlearnR/reference/diffpool_model.md)
+  : DiffPool graph classification model
 
 ## Models and decoders
 
@@ -194,6 +200,8 @@ Leakage safe splits for every task.
   : Split one relation of a heterogeneous graph for link prediction
 - [`hetero_conv()`](https://adamrsophie.github.io/graphlearnR/reference/hetero_conv.md)
   : Heterogeneous convolution wrapper
+- [`hgt_conv()`](https://adamrsophie.github.io/graphlearnR/reference/hgt_conv.md)
+  : Heterogeneous graph transformer convolution
 - [`hetero_gnn_model()`](https://adamrsophie.github.io/graphlearnR/reference/hetero_gnn_model.md)
   : Heterogeneous graph neural network
 
@@ -273,3 +281,20 @@ Leakage safe splits for every task.
   [`download_planetoid_raw()`](https://adamrsophie.github.io/graphlearnR/reference/download-datasets.md)
   [`read_linqs_citation()`](https://adamrsophie.github.io/graphlearnR/reference/download-datasets.md)
   : Download and read public benchmark datasets
+
+## Molecules
+
+Molecular graphs from atoms and bonds.
+
+- [`molecule_graph()`](https://adamrsophie.github.io/graphlearnR/reference/molecule_graph.md)
+  [`dataset_synthetic_molecules()`](https://adamrsophie.github.io/graphlearnR/reference/molecule_graph.md)
+  : Molecular graphs from atoms and bonds
+
+## Sibling packages
+
+Optional bridges to modelcompR and symcompR.
+
+- [`graph_diffusion()`](https://adamrsophie.github.io/graphlearnR/reference/graph_diffusion.md)
+  : Diffusion on a graph, solved with modelcompR
+- [`graph_operator_symbolic()`](https://adamrsophie.github.io/graphlearnR/reference/graph_operator_symbolic.md)
+  : Exact graph operators with symcompR

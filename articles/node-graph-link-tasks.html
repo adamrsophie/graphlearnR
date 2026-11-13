@@ -47,10 +47,14 @@
     <li><a class="dropdown-item" href="../articles/heterogeneous-graphs.html">Heterogeneous graphs</a></li>
     <li><a class="dropdown-item" href="../articles/temporal-graphs.html">Temporal and dynamic graphs</a></li>
     <li><a class="dropdown-item" href="../articles/graph-transformers.html">Graph transformers and structural encodings</a></li>
+    <li><a class="dropdown-item" href="../articles/molecular-graphs.html">Molecular graphs</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Trust and evaluation</h6></li>
     <li><a class="dropdown-item" href="../articles/explainability.html">Explaining graph neural network predictions</a></li>
     <li><a class="dropdown-item" href="../articles/evaluation-and-reproducibility.html">Evaluation, leakage, and reproducibility</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Ecosystem</h6></li>
+    <li><a class="dropdown-item" href="../articles/ecosystem.html">Working with modelcompR, symcompR and other sibling packages</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -276,6 +280,34 @@ test at telling such graphs apart.</p>
 <p>The <code>pool</code> argument turns any architecture into a graph
 level model: <code>"sum"</code>, <code>"mean"</code>,
 <code>"max"</code>, or <code>"attention"</code>.</p>
+<div class="section level3">
+<h3 id="hierarchical-pooling-with-diffpool">Hierarchical pooling with DiffPool<a class="anchor" aria-label="anchor" href="#hierarchical-pooling-with-diffpool"></a>
+</h3>
+<p><code><a href="../reference/diffpool_model.html">diffpool_model()</a></code> learns a soft assignment of the nodes
+of each graph to a fixed number of clusters (Ying et al. 2018), coarsens
+the graph with <code><a href="../reference/to_dense_adj.html">dense_diff_pool()</a></code>, runs a dense graph
+convolution on the clusters, and classifies the pooled result. The link
+and entropy regularizers are stored in <code>model$aux_loss</code> after
+each forward pass and the trainer adds them to the task loss. DiffPool
+works on dense per graph adjacency matrices, so memory grows with the
+square of the largest graph in a batch.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://torch.mlverse.org/docs/reference/torch_manual_seed.html" class="external-link">torch_manual_seed</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">dp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/diffpool_model.html">diffpool_model</a></span><span class="op">(</span>input_dim <span class="op">=</span> <span class="fl">1</span>, hidden_dim <span class="op">=</span> <span class="fl">32</span>, output_dim <span class="op">=</span> <span class="fl">2</span>, num_clusters <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
+<span><span class="va">fit_dp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/train_graph_model.html">train_graph_model</a></span><span class="op">(</span><span class="va">dp</span>, <span class="va">graphs</span><span class="op">[</span><span class="va">sp</span><span class="op">$</span><span class="va">train</span><span class="op">]</span>, <span class="st">"graph_classification"</span>,</span>
+<span>                            val_data <span class="op">=</span> <span class="va">graphs</span><span class="op">[</span><span class="va">sp</span><span class="op">$</span><span class="va">val</span><span class="op">]</span>, epochs <span class="op">=</span> <span class="fl">40</span>, batch_size <span class="op">=</span> <span class="fl">16</span>,</span>
+<span>                            seed <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/evaluate_graph_model.html">evaluate_graph_model</a></span><span class="op">(</span><span class="va">fit_dp</span>, <span class="va">graphs</span><span class="op">[</span><span class="va">sp</span><span class="op">$</span><span class="va">test</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt;              metric        value</span></span>
+<span><span class="co">#&gt; 1          accuracy 1.000000e+00</span></span>
+<span><span class="co">#&gt; 2 balanced_accuracy 1.000000e+00</span></span>
+<span><span class="co">#&gt; 3   precision_macro 1.000000e+00</span></span>
+<span><span class="co">#&gt; 4      recall_macro 1.000000e+00</span></span>
+<span><span class="co">#&gt; 5          f1_macro 1.000000e+00</span></span>
+<span><span class="co">#&gt; 6               ece 2.903740e-05</span></span>
+<span><span class="co">#&gt; 7             brier 9.443834e-09</span></span>
+<span><span class="co">#&gt; 8           roc_auc 1.000000e+00</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="link-prediction">Link prediction<a class="anchor" aria-label="anchor" href="#link-prediction"></a>
@@ -292,14 +324,14 @@ training.</li>
 <li>It samples validation and test negatives that are not edges anywhere
 in the full graph.</li>
 </ol>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dataset_sbm.html">dataset_sbm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">50</span>, <span class="fl">50</span><span class="op">)</span>, p_in <span class="op">=</span> <span class="fl">0.2</span>, p_out <span class="op">=</span> <span class="fl">0.01</span>, seed <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
 <span><span class="va">ls</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/split_edges.html">split_edges</a></span><span class="op">(</span><span class="va">gl</span>, val <span class="op">=</span> <span class="fl">0.1</span>, test <span class="op">=</span> <span class="fl">0.2</span>, seed <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
 <span><span class="va">ls</span></span>
 <span><span class="co">#&gt; &lt;link_split&gt; 100 nodes, undirected pairs: train 372, val 53 (+53 neg), test 106 (+106 neg)</span></span></code></pre></div>
 <p>The encoder produces node embeddings and a decoder scores pairs.
 Fresh training negatives are drawn every epoch.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://torch.mlverse.org/docs/reference/torch_manual_seed.html" class="external-link">torch_manual_seed</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span></span>
 <span><span class="va">enc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gnn_model.html">gnn_model</a></span><span class="op">(</span><span class="st">"gcn"</span>, <span class="fl">8</span>, <span class="fl">32</span>, output_dim <span class="op">=</span> <span class="cn">NULL</span>, dropout <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
 <span><span class="va">fit_l</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/train_graph_model.html">train_graph_model</a></span><span class="op">(</span><span class="va">enc</span>, <span class="va">ls</span>, <span class="st">"link_prediction"</span>, epochs <span class="op">=</span> <span class="fl">100</span>, lr <span class="op">=</span> <span class="fl">0.01</span>,</span>
@@ -314,7 +346,7 @@ Fresh training negatives are drawn every epoch.</p>
 <span><span class="co">#&gt; 6           hits@50 0.981132075</span></span></code></pre></div>
 <p>Score any pairs with <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code>. Message passing uses the
 training graph.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_l</span>, pairs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">60</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">70</span>, <span class="fl">61</span><span class="op">)</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"prob"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 0.6104220 0.5000000 0.5801775</span></span></code></pre></div>
 <p>Other decoders are <code>link_decoder("distmult", dim = 32)</code>,
@@ -328,7 +360,7 @@ training graph.</p>
 tails. <code><a href="../reference/corrupt_tails.html">corrupt_tails()</a></code> draws them, filtering out known
 positives, and <code><a href="../reference/metrics.html">metric_mrr()</a></code> and
 <code><a href="../reference/metrics.html">metric_hits_at_k()</a></code> score the ranks.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">neg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/corrupt_tails.html">corrupt_tails</a></span><span class="op">(</span><span class="va">ls</span><span class="op">$</span><span class="va">test_pos</span>, num_nodes <span class="op">=</span> <span class="fl">100</span>, k <span class="op">=</span> <span class="fl">20</span>, known <span class="op">=</span> <span class="va">ls</span><span class="op">$</span><span class="va">all_pos</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">pos_s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_l</span>, pairs <span class="op">=</span> <span class="va">ls</span><span class="op">$</span><span class="va">test_pos</span>, type <span class="op">=</span> <span class="st">"score"</span><span class="op">)</span></span>
 <span><span class="va">neg_s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_l</span>, pairs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">ls</span><span class="op">$</span><span class="va">test_pos</span><span class="op">[</span><span class="fl">1</span>, <span class="op">]</span>, each <span class="op">=</span> <span class="fl">20</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">neg</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -345,7 +377,7 @@ positives, and <code><a href="../reference/metrics.html">metric_mrr()</a></code>
 <code><a href="../reference/split_edge_labels.html">split_edge_labels()</a></code> adds edge masks, keeping both
 directions of an undirected pair in the same split. The model embeds
 nodes and an edge decoder classifies each pair.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ge</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dataset_sbm.html">dataset_sbm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">30</span><span class="op">)</span>, p_in <span class="op">=</span> <span class="fl">0.3</span>, p_out <span class="op">=</span> <span class="fl">0.05</span>, seed <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="va">same</span> <span class="op">&lt;-</span> <span class="va">ge</span><span class="op">$</span><span class="va">y</span><span class="op">[</span><span class="va">ge</span><span class="op">$</span><span class="va">edge_index</span><span class="op">[</span><span class="fl">1</span>, <span class="op">]</span><span class="op">]</span> <span class="op">==</span> <span class="va">ge</span><span class="op">$</span><span class="va">y</span><span class="op">[</span><span class="va">ge</span><span class="op">$</span><span class="va">edge_index</span><span class="op">[</span><span class="fl">2</span>, <span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">ge</span><span class="op">$</span><span class="va">edge_y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">same</span>, <span class="st">"within"</span>, <span class="st">"between"</span><span class="op">)</span><span class="op">)</span></span>
@@ -392,7 +424,7 @@ training.</li>
 <code>weight_decay</code>, <code>device</code>, and
 <code>seed</code>.</li>
 </ul>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://torch.mlverse.org/docs/reference/torch_manual_seed.html" class="external-link">torch_manual_seed</a></span><span class="op">(</span><span class="fl">6</span><span class="op">)</span></span>
 <span><span class="va">fit_o</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/train_graph_model.html">train_graph_model</a></span><span class="op">(</span><span class="fu"><a href="../reference/gnn_model.html">gnn_model</a></span><span class="op">(</span><span class="st">"sage"</span>, <span class="fl">8</span>, <span class="fl">32</span>, <span class="fl">3</span><span class="op">)</span>, <span class="va">g</span>, <span class="st">"node_classification"</span>,</span>
 <span>                           epochs <span class="op">=</span> <span class="fl">200</span>, optimizer <span class="op">=</span> <span class="st">"adamw"</span>, lr <span class="op">=</span> <span class="fl">0.02</span>,</span>
@@ -410,7 +442,7 @@ training.</li>
 </h2>
 <p><code><a href="../reference/save_graph_fit.html">save_graph_fit()</a></code> writes the weights and everything
 needed to rebuild the model to one <code>.rds</code> file.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".rds"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/save_graph_fit.html">save_graph_fit</a></span><span class="op">(</span><span class="va">fits</span><span class="op">$</span><span class="va">sage</span>, <span class="va">path</span><span class="op">)</span></span>
 <span><span class="va">again</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/save_graph_fit.html">load_graph_fit</a></span><span class="op">(</span><span class="va">path</span><span class="op">)</span></span>

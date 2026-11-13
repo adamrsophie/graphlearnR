@@ -32,10 +32,14 @@
     <li><a class="dropdown-item" href="../articles/heterogeneous-graphs.html">Heterogeneous graphs</a></li>
     <li><a class="dropdown-item" href="../articles/temporal-graphs.html">Temporal and dynamic graphs</a></li>
     <li><a class="dropdown-item" href="../articles/graph-transformers.html">Graph transformers and structural encodings</a></li>
+    <li><a class="dropdown-item" href="../articles/molecular-graphs.html">Molecular graphs</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Trust and evaluation</h6></li>
     <li><a class="dropdown-item" href="../articles/explainability.html">Explaining graph neural network predictions</a></li>
     <li><a class="dropdown-item" href="../articles/evaluation-and-reproducibility.html">Evaluation, leakage, and reproducibility</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Ecosystem</h6></li>
+    <li><a class="dropdown-item" href="../articles/ecosystem.html">Working with modelcompR, symcompR and other sibling packages</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -252,6 +256,20 @@
 
         </dt>
         <dd>Top-k pooling (hierarchical, experimental)</dd>
+
+        <dt>
+
+          <code><a href="to_dense_adj.html">to_dense_adj()</a></code> <code><a href="to_dense_adj.html">dense_diff_pool()</a></code> <code><a href="to_dense_adj.html">dense_graph_conv()</a></code>
+
+        </dt>
+        <dd>Dense adjacency and differentiable pooling</dd>
+
+        <dt>
+
+          <code><a href="diffpool_model.html">diffpool_model()</a></code>
+
+        </dt>
+        <dd>DiffPool graph classification model</dd>
       </dl></div><div class="section level2">
       <h2 id="models-and-decoders">Models and decoders<a class="anchor" aria-label="anchor" href="#models-and-decoders"></a></h2>
 
@@ -482,6 +500,13 @@
 
         <dt>
 
+          <code><a href="hgt_conv.html">hgt_conv()</a></code>
+
+        </dt>
+        <dd>Heterogeneous graph transformer convolution</dd>
+
+        <dt>
+
           <code><a href="hetero_gnn_model.html">hetero_gnn_model()</a></code>
 
         </dt>
@@ -690,6 +715,45 @@
 
         </dt>
         <dd>Download and read public benchmark datasets</dd>
+      </dl></div><div class="section level2">
+      <h2 id="molecules">Molecules<a class="anchor" aria-label="anchor" href="#molecules"></a></h2>
+
+      <div class="section-desc"><p>Molecular graphs from atoms and bonds.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="molecule_graph.html">molecule_graph()</a></code> <code><a href="molecule_graph.html">dataset_synthetic_molecules()</a></code>
+
+        </dt>
+        <dd>Molecular graphs from atoms and bonds</dd>
+      </dl></div><div class="section level2">
+      <h2 id="sibling-packages">Sibling packages<a class="anchor" aria-label="anchor" href="#sibling-packages"></a></h2>
+
+      <div class="section-desc"><p>Optional bridges to modelcompR and symcompR.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="graph_diffusion.html">graph_diffusion()</a></code>
+
+        </dt>
+        <dd>Diffusion on a graph, solved with modelcompR</dd>
+
+        <dt>
+
+          <code><a href="graph_operator_symbolic.html">graph_operator_symbolic()</a></code>
+
+        </dt>
+        <dd>Exact graph operators with symcompR</dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
