@@ -19,8 +19,11 @@
 #' stored. Molecule datasets carry categorical atom and bond codes in their
 #' feature columns (OGB's `AtomEncoder` and `BondEncoder` inputs); they are
 #' kept as numbers, so one hot encode or embed them before training.
-#' Evaluate with the official split and metric (ROC AUC for `ogbg-molhiv`,
-#' accuracy for `ogbn-arxiv`) before comparing with the OGB leaderboards.
+#' Evaluate with the official split and metric ([ogb_evaluate()]: ROC AUC
+#' for `ogbg-molhiv`, average precision for `ogbg-molpcba`, accuracy for the
+#' node datasets) before comparing with the OGB leaderboards. The multi task
+#' `ogbg-molpcba` labels have missing entries; train on them with
+#' `loss = "bce_masked"` (see [train_graph_model()]).
 #' Link property prediction datasets store their splits as PyTorch files
 #' and are not supported.
 #'
@@ -155,4 +158,51 @@ download_ogb <- function(name, root = tempdir(), md5 = NULL, overwrite = FALSE) 
   dir <- file.path(root, dirname(dirname(edge)))
   if (info$type == "node") read_ogb_node(dir, add_inverse_edge = info$inverse)
   else read_ogb_graph(dir, add_inverse_edge = info$inverse)
+}
+
+#' Official OGB evaluation metrics
+#'
+#' Computes the metric that the Open Graph Benchmark uses for a dataset,
+#' following the logic of OGB's `Evaluator`:
+#'
+#' * `ogbg-molhiv`: ROC-AUC; `ogbg-molpcba`: average precision. For both,
+#'   the metric is computed per task over the rows whose label is observed
+#'   (not `NA`), tasks without both classes are skipped, and the mean over
+#'   tasks is returned.
+#' * `ogbn-arxiv`, `ogbn-products`: accuracy.
+#'
+#' Results are comparable to the leaderboards only with the official split
+#' (the split stored by [read_ogb_node()] and [read_ogb_graph()]).
+#'
+#' @param name OGB dataset name.
+#' @param truth Labels: a vector or a matrix with one column per task
+#'   (`NA` for missing labels).
+#' @param pred Predicted scores (any monotone score for the molecular
+#'   datasets, for example logits) with the same shape as `truth`, or
+#'   predicted classes for the node datasets.
+#' @return A named numeric scalar.
+#' @examples
+#' ogb_evaluate("ogbg-molhiv", c(0, 1, 1, 0), c(0.1, 0.8, 0.6, 0.3))
+#' ogb_evaluate("ogbg-molpcba", cbind(c(0, 1, NA, 1), c(1, 0, 0, NA)),
+#'              cbind(c(0.2, 0.9, 0.5, 0.7), c(0.6, 0.1, 0.3, 0.2)))
+#' @export
+ogb_evaluate <- function(name, truth, pred) {
+  name <- match.arg(name, names(ogb_registry))
+  if (name %in% c("ogbn-arxiv", "ogbn-products")) {
+    truth <- as.vector(as.matrix(truth))
+    pred <- as.vector(as.matrix(pred))
+    check_same_length(truth, pred)
+    return(c(acc = mean(as.character(truth) == as.character(pred))))
+  }
+  truth <- as.matrix(truth)
+  pred <- as.matrix(pred)
+  if (!identical(dim(truth), dim(pred))) stopf("`truth` and `pred` must have the same shape.")
+  f <- if (name == "ogbg-molhiv") metric_roc_auc else metric_average_precision
+  vals <- vapply(seq_len(ncol(truth)), function(j) {
+    obs <- !is.na(truth[, j])
+    y <- truth[obs, j] == 1
+    if (!any(y) || all(y)) NA_real_ else f(y, pred[obs, j])
+  }, numeric(1))
+  if (all(is.na(vals))) stopf("No task has both positive and negative labels.")
+  stats::setNames(mean(vals, na.rm = TRUE), if (name == "ogbg-molhiv") "rocauc" else "ap")
 }

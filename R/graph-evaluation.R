@@ -10,7 +10,8 @@
 #'   one-vs-rest AUCs.
 #' * `metric_average_precision()`: \eqn{\sum_n (R_n - R_{n-1}) P_n} over
 #'   distinct score thresholds (the definition used by scikit-learn), not
-#'   the trapezoidal area under the precision-recall curve.
+#'   the trapezoidal area under the precision-recall curve. A probability
+#'   matrix gives the macro one-vs-rest average, as for ROC-AUC.
 #' * `metric_ece()`: expected calibration error with equal width bins on the
 #'   top predicted probability.
 #' * `metric_hits_at_k()`, `metric_mrr()`: link ranking metrics. With a
@@ -23,8 +24,8 @@
 #'   binary ranking metrics, numeric for regression.
 #' @param estimate Predicted class or value.
 #' @param score Predicted score or probability of the positive class (or a
-#'   probability matrix with one column per class for `metric_roc_auc()` and
-#'   `metric_ece()`).
+#'   probability matrix with one column per class for `metric_roc_auc()`,
+#'   `metric_average_precision()` and `metric_ece()`).
 #' @param average `"macro"` or `"micro"` averaging over classes, or
 #'   `"binary"` for the class named by `positive`.
 #' @param positive Positive class for binary averaging.
@@ -137,6 +138,20 @@ metric_roc_auc <- function(truth, score) {
 #' @rdname metrics
 #' @export
 metric_average_precision <- function(truth, score) {
+  if (is.matrix(score)) {
+    # Binary: the second column scores the positive class. More classes:
+    # macro average of one versus rest average precision over the classes
+    # that occur in `truth`.
+    truth <- as.factor(truth)
+    if (ncol(score) == 2L && nlevels(truth) == 2L) {
+      return(metric_average_precision(as.integer(truth) == 2L, score[, 2L]))
+    }
+    aps <- vapply(seq_len(ncol(score)), function(j) {
+      y <- as.integer(truth) == j
+      if (!any(y)) NA_real_ else metric_average_precision(y, score[, j])
+    }, numeric(1))
+    return(mean(aps, na.rm = TRUE))
+  }
   y <- as_binary(truth)
   if (!any(y)) stopf("Average precision needs at least one positive case.")
   o <- order(-score)
@@ -301,7 +316,8 @@ evaluate_predictions <- function(truth, prediction, task = c("classification", "
              ece = metric_ece(tf, prob),
              brier = metric_brier(tf, prob))
       auc <- tryCatch(metric_roc_auc(tf, prob), error = function(e) NA_real_)
-      c(m, roc_auc = auc)
+      ap <- tryCatch(metric_average_precision(tf, prob), error = function(e) NA_real_)
+      c(m, roc_auc = auc, average_precision = ap)
     },
     regression = c(mse = metric_mse(truth, prediction),
                    rmse = metric_rmse(truth, prediction),
@@ -316,5 +332,78 @@ evaluate_predictions <- function(truth, prediction, task = c("classification", "
         mrr = metric_mrr(prediction, neg), setNames(hk, paste0("hits@", ks)))
     }
   )
+  data.frame(metric = names(out), value = unname(out), row.names = NULL)
+}
+
+#' Evaluate node or graph embeddings
+#'
+#' Two task independent checks of a learned representation, for example
+#' `predict(fit, type = "embedding")`:
+#'
+#' * **Downstream prediction (linear probe).** A ridge regression from the
+#'   standardized embedding to one hot labels (classification) or to the
+#'   numeric target is fitted on the `train` rows and scored on the others.
+#'   Classification reports accuracy and macro F1; regression reports RMSE
+#'   and \eqn{R^2}. A linear probe measures how much label information is
+#'   linearly available, not the best attainable model.
+#' * **Clustering.** k-means with `k` centers (default: the number of
+#'   classes) on the standardized embedding, compared with the labels by
+#'   normalized mutual information and the adjusted Rand index.
+#'
+#' The split of `train` rows must follow the dependence structure of the
+#' data (for example [split_nodes()] masks), not a random mix of dependent
+#' observations.
+#'
+#' @param embedding Numeric matrix, one row per node or graph.
+#' @param labels Factor (classification) or numeric vector, one per row.
+#' @param train Logical vector of rows used to fit the probe.
+#' @param lambda Ridge penalty.
+#' @param k Number of clusters; `NULL` uses the number of classes. Ignored
+#'   (no clustering) for numeric labels unless given.
+#' @param seed Optional seed for k-means starts.
+#' @return A data frame with columns `metric` and `value`.
+#' @examples
+#' g <- dataset_sbm(c(30, 30), p_in = 0.3, p_out = 0.02, seed = 1)
+#' emb <- laplacian_pe(g, 4)
+#' tr <- rep(c(TRUE, FALSE), 30)
+#' evaluate_embeddings(emb, g$y, train = tr, seed = 1)
+#' @export
+evaluate_embeddings <- function(embedding, labels, train, lambda = 1e-3, k = NULL, seed = NULL) {
+  emb <- as.matrix(embedding)
+  if (!is.numeric(emb) || anyNA(emb)) stopf("`embedding` must be a numeric matrix without missing values.")
+  n <- nrow(emb)
+  if (length(labels) != n) stopf("`labels` has %d entries for %d embedding rows.", length(labels), n)
+  train <- as.logical(train)
+  if (length(train) != n || anyNA(train)) stopf("`train` must be a logical vector with one entry per row.")
+  if (!any(train) || all(train)) stopf("`train` must leave rows on both sides.")
+  mu <- colMeans(emb[train, , drop = FALSE])
+  sdv <- apply(emb[train, , drop = FALSE], 2L, stats::sd)
+  sdv[!is.finite(sdv) | sdv == 0] <- 1
+  z <- sweep(sweep(emb, 2L, mu), 2L, sdv, "/")
+  X <- cbind(1, z)
+  classif <- is.factor(labels) || is.character(labels) || is.logical(labels)
+  Y <- if (classif) {
+    labels <- as.factor(labels)
+    stats::model.matrix(~ labels - 1)
+  } else {
+    matrix(as.numeric(labels))
+  }
+  Xt <- X[train, , drop = FALSE]
+  pen <- diag(lambda * sum(train), ncol(X))
+  pen[1L, 1L] <- 0
+  B <- solve(crossprod(Xt) + pen, crossprod(Xt, Y[train, , drop = FALSE]))
+  P <- X[!train, , drop = FALSE] %*% B
+  out <- if (classif) {
+    est <- factor(levels(labels)[max.col(P, ties.method = "first")], levels = levels(labels))
+    tr <- labels[!train]
+    c(probe_accuracy = metric_accuracy(tr, est), probe_f1_macro = metric_f1(tr, est))
+  } else {
+    c(probe_rmse = metric_rmse(Y[!train, 1L], P[, 1L]), probe_r2 = metric_r2(Y[!train, 1L], P[, 1L]))
+  }
+  k <- k %||% if (classif) nlevels(labels)
+  if (!is.null(k)) {
+    cl <- with_optional_seed(seed, stats::kmeans(z, centers = k, nstart = 10L)$cluster)
+    if (classif) out <- c(out, cluster_nmi = metric_nmi(labels, cl), cluster_ari = metric_ari(labels, cl))
+  }
   data.frame(metric = names(out), value = unname(out), row.names = NULL)
 }

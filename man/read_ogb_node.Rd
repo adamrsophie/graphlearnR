@@ -58,8 +58,11 @@ stores each undirected edge once (\code{add_inverse_edge} in OGB's
 stored. Molecule datasets carry categorical atom and bond codes in their
 feature columns (OGB's \code{AtomEncoder} and \code{BondEncoder} inputs); they are
 kept as numbers, so one hot encode or embed them before training.
-Evaluate with the official split and metric (ROC AUC for \code{ogbg-molhiv},
-accuracy for \code{ogbn-arxiv}) before comparing with the OGB leaderboards.
+Evaluate with the official split and metric (\code{\link[=ogb_evaluate]{ogb_evaluate()}}: ROC AUC
+for \code{ogbg-molhiv}, average precision for \code{ogbg-molpcba}, accuracy for the
+node datasets) before comparing with the OGB leaderboards. The multi task
+\code{ogbg-molpcba} labels have missing entries; train on them with
+\code{loss = "bce_masked"} (see \code{\link[=train_graph_model]{train_graph_model()}}).
 Link property prediction datasets store their splits as PyTorch files
 and are not supported.
 }

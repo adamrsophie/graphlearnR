@@ -10,6 +10,13 @@
 #' can be passed to [graph_loader()], [train_graph_model()] and
 #' [split_graphs()].
 #'
+#' **Feature schema.** All graphs of a dataset must share one schema: the
+#' same number (and names, when set) of node feature and edge feature
+#' columns, and the same kind of node, edge and graph labels (factor,
+#' numeric vector or matrix with the same number of columns), each present
+#' in all graphs or in none. `graph_dataset()` and `write_graph_dataset()`
+#' check this; `graph_schema()` returns the schema of one graph.
+#'
 #' @param graphs A list of `graph_data` objects.
 #' @param transform Optional function applied to each graph on access.
 #' @param metadata Named list (name, source, version, license, notes).
@@ -25,8 +32,40 @@ graph_dataset <- function(graphs, transform = NULL, metadata = list()) {
   if (!is.list(graphs) || !all(vapply(graphs, inherits, logical(1), "graph_data"))) {
     stopf("`graphs` must be a list of graph_data objects.")
   }
+  check_graph_schema(graphs)
   structure(list(graphs = graphs, transform = transform, metadata = metadata,
                  dir = NULL), class = "graph_dataset")
+}
+
+#' @rdname graph_dataset
+#' @param g A `graph_data` object.
+#' @export
+graph_schema <- function(g) {
+  kind <- function(v) {
+    if (is.null(v)) "none"
+    else if (is.factor(v)) "factor"
+    else if (is.matrix(v)) sprintf("matrix[%d]", ncol(v))
+    else if (is.numeric(v) || is.logical(v)) "numeric"
+    else class(v)[1L]
+  }
+  list(x = if (is.null(g$x)) NULL else ncol(g$x), x_names = colnames(g$x),
+       edge_attr = if (is.null(g$edge_attr)) NULL else ncol(g$edge_attr),
+       edge_attr_names = colnames(g$edge_attr),
+       y = kind(g$y), edge_y = kind(g$edge_y), graph_y = kind(g$graph_y),
+       directed = isTRUE(g$directed))
+}
+
+check_graph_schema <- function(graphs) {
+  if (length(graphs) < 2L) return(invisible(TRUE))
+  ref <- graph_schema(graphs[[1L]])
+  for (i in seq_along(graphs)[-1L]) {
+    sc <- graph_schema(graphs[[i]])
+    bad <- names(ref)[!vapply(names(ref), function(k) identical(ref[[k]], sc[[k]]), logical(1))]
+    if (length(bad)) {
+      stopf("Graph %d does not match the schema of graph 1 (%s).", i, paste(bad, collapse = ", "))
+    }
+  }
+  invisible(TRUE)
 }
 
 #' @rdname graph_dataset
@@ -46,6 +85,7 @@ graph_dataset_disk <- function(dir, transform = NULL) {
 #'   without it, writing into such a directory is an error.
 #' @export
 write_graph_dataset <- function(graphs, dir, metadata = list(), overwrite = FALSE) {
+  check_graph_schema(graphs)
   old <- list.files(dir, pattern = "^graph_[0-9]+\\.rds$|^metadata\\.rds$", full.names = TRUE)
   if (length(old)) {
     # Stale graph files from an earlier, larger dataset would be read back.
@@ -216,15 +256,17 @@ dataset_synthetic_graphs <- function(n = 100L, min_nodes = 5L, max_nodes = 12L,
 #'   al. 2020), for example `"MUTAG"` and `"PROTEINS"`, from
 #'   <https://www.chrsmrrs.com/graphkerneldatasets/>.
 #' * `download_planetoid_raw()`: the original LINQS releases of Cora and
-#'   CiteSeer (Sen et al. 2008) from <https://linqs-data.soe.ucsc.edu/>.
+#'   CiteSeer (Sen et al. 2008) from <https://linqs-data.soe.ucsc.edu/>;
+#'   `download_pubmed_raw()` the Pubmed-Diabetes release (Namata et al.
+#'   2012) from the same site.
 #'   These are the raw citation graphs. They are **not** the Planetoid splits
 #'   used by Kipf and Welling (2017) and PyG's `Planetoid` class (which also
 #'   drop and reorder nodes), so results are not comparable to published
 #'   leaderboards. Open Graph Benchmark datasets are read by
 #'   [download_ogb()].
 #'
-#' `read_tu_dataset()` and `read_linqs_citation()` parse already downloaded
-#' files.
+#' `read_tu_dataset()`, `read_linqs_citation()` and `read_linqs_pubmed()`
+#' parse already downloaded files.
 #'
 #' @param name Dataset name.
 #' @param root Directory to store downloads.
@@ -244,7 +286,8 @@ NULL
 known_md5 <- c(MUTAG = "dbe05fcee4e85280424d20db065b3e60",
                PROTEINS = "7afcf38db3ae46202b853f99e5230d6a",
                cora = "2fc040bee8ce3d920e4204effd1e9214",
-               citeseer = "c8ded8ed395b31899576bfd1e91e4d6e")
+               citeseer = "c8ded8ed395b31899576bfd1e91e4d6e",
+               pubmed = "9fa24b917990c47e264a94079b9599fe")
 
 fetch_archive <- function(url, dest, md5, overwrite) {
   if (overwrite || !file.exists(dest)) {
@@ -327,6 +370,57 @@ download_planetoid_raw <- function(name = c("cora", "citeseer"), root = tempdir(
   fetch_archive(url, dest, md5 %||% known_md5[[name]], overwrite)
   utils::untar(dest, exdir = root)
   read_linqs_citation(file.path(root, name), name)
+}
+
+#' @rdname download-datasets
+#' @export
+download_pubmed_raw <- function(root = tempdir(), md5 = NULL, overwrite = FALSE) {
+  url <- "https://linqs-data.soe.ucsc.edu/public/Pubmed-Diabetes.tgz"
+  dest <- file.path(root, "Pubmed-Diabetes.tgz")
+  fetch_archive(url, dest, md5 %||% known_md5[["pubmed"]], overwrite)
+  utils::untar(dest, exdir = root)
+  read_linqs_pubmed(file.path(root, "Pubmed-Diabetes", "data"))
+}
+
+#' @rdname download-datasets
+#' @details The Pubmed-Diabetes release stores sparse TF-IDF word weights as
+#'   `word=value` fields; absent words are zero. Its `.cites.tab` file lists
+#'   each link as `paper:A | paper:B` and does not document the direction, so
+#'   `read_linqs_pubmed()` keeps the file order (an edge from `A` to `B`); use
+#'   [as_undirected()] when direction should not matter. Links to unknown
+#'   papers are dropped and counted in `metadata$dropped_edges`.
+#' @export
+read_linqs_pubmed <- function(dir) {
+  node_file <- file.path(dir, "Pubmed-Diabetes.NODE.paper.tab")
+  cite_file <- file.path(dir, "Pubmed-Diabetes.DIRECTED.cites.tab")
+  if (!file.exists(node_file) || !file.exists(cite_file)) {
+    stopf("`%s` must hold Pubmed-Diabetes.NODE.paper.tab and Pubmed-Diabetes.DIRECTED.cites.tab.", dir)
+  }
+  lines <- readLines(node_file)
+  header <- strsplit(lines[2L], "\t")[[1L]]
+  words <- sub("^numeric:([^:]+):.*$", "\\1", grep("^numeric:", header, value = TRUE))
+  rows <- strsplit(lines[-(1:2)], "\t")
+  ids <- vapply(rows, `[`, "", 1L)
+  y <- factor(sub("^label=", "", vapply(rows, `[`, "", 2L)))
+  x <- matrix(0, length(rows), length(words), dimnames = list(NULL, words))
+  for (i in seq_along(rows)) {
+    f <- rows[[i]][-(1:2)]
+    f <- f[!startsWith(f, "summary=")]
+    kv <- strsplit(f, "=", fixed = TRUE)
+    col <- match(vapply(kv, `[`, "", 1L), words)
+    ok <- !is.na(col)
+    x[i, col[ok]] <- as.numeric(vapply(kv, `[`, "", 2L))[ok]
+  }
+  cites <- strsplit(readLines(cite_file)[-(1:2)], "\t")
+  a <- match(sub("^paper:", "", vapply(cites, `[`, "", 2L)), ids)
+  b <- match(sub("^paper:", "", vapply(cites, `[`, "", 4L)), ids)
+  ok <- !is.na(a) & !is.na(b)
+  graph_data(x = x, edge_index = rbind(a[ok], b[ok]), y = y, num_nodes = length(ids),
+             directed = TRUE, node_ids = ids,
+             metadata = list(name = "pubmed", source = "LINQS Pubmed-Diabetes (Namata et al. 2012)",
+                             url = "https://linqs-data.soe.ucsc.edu/public/Pubmed-Diabetes.tgz",
+                             dropped_edges = sum(!ok),
+                             note = "Raw release; not the Planetoid split."))
 }
 
 #' @rdname download-datasets

@@ -29,3 +29,27 @@ test_that("read_ogb_graph splits edges per graph and keeps local indices", {
   expect_error(read_ogb_graph(tempdir()), "OGB graph dataset")
   expect_error(download_ogb("ogbl-collab"), "Unknown OGB dataset")
 })
+
+test_that("ogb_evaluate follows the OGB per task rules", {
+  expect_equal(unname(ogb_evaluate("ogbg-molhiv", c(0, 1, 1, 0), c(0.1, 0.8, 0.6, 0.3))), 1)
+  truth <- cbind(c(0, 1, NA, 1), c(1, 1, 1, NA), c(0, 1, 0, 1))
+  pred <- cbind(c(0.2, 0.9, 0.5, 0.7), c(0.6, 0.1, 0.3, 0.2), c(0.9, 0.1, 0.8, 0.2))
+  # task 2 has one class and is skipped; task 1 is perfect, task 3 reversed
+  ap3 <- metric_average_precision(c(FALSE, TRUE, FALSE, TRUE), c(0.9, 0.1, 0.8, 0.2))
+  expect_equal(unname(ogb_evaluate("ogbg-molpcba", truth, pred)), mean(c(1, ap3)))
+  expect_equal(unname(ogb_evaluate("ogbn-arxiv", c(1, 2, 3), c(1, 2, 0))), 2 / 3)
+})
+
+test_that("bce_masked ignores missing multi task labels", {
+  skip_if_no_torch()
+  gs <- dataset_synthetic_graphs(30, seed = 1)
+  for (i in seq_along(gs)) {
+    yy <- c(as.numeric(gs[[i]]$graph_y == levels(gs[[i]]$graph_y)[1]), NA)
+    gs[[i]]$graph_y <- matrix(if (i %% 2) yy else rev(yy), 1)
+  }
+  fit <- train_graph_model(gnn_model("gin", ncol(gs[[1]]$x), 8, 2, pool = "sum"), gs,
+                           "graph_regression", loss = "bce_masked", epochs = 3, seed = 1)
+  expect_true(all(is.finite(fit$history$train_loss)))
+  p <- predict(fit, gs, type = "response")
+  expect_equal(dim(p), c(30L, 2L))
+})

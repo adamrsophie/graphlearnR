@@ -49,7 +49,11 @@ a function taking a parameter list and returning a \code{torch} optimizer.}
 
 \item{loss}{\code{NULL} for the task default (cross entropy, mean squared error,
 binary cross entropy with logits), a name (\code{"cross_entropy"}, \code{"mse"},
-\code{"l1"}, \code{"huber"}, \code{"bce"}, \code{"focal"}), or a function \verb{(prediction, target)}.}
+\code{"l1"}, \code{"huber"}, \code{"bce"}, \code{"bce_masked"}, \code{"focal"}), or a function
+\verb{(prediction, target)}. \code{"bce_masked"} is binary cross entropy with
+logits over multi task 0/1 targets that ignores missing (\code{NA}) entries,
+for datasets such as \code{ogbg-molpcba}; use it with a regression task and
+a numeric label matrix.}
 
 \item{val_data}{Validation graphs for graph level tasks.}
 

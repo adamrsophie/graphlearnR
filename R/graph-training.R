@@ -49,8 +49,11 @@
 #' @param weight_decay L2 penalty passed to the optimizer.
 #' @param loss `NULL` for the task default (cross entropy, mean squared error,
 #'   binary cross entropy with logits), a name (`"cross_entropy"`, `"mse"`,
-#'   `"l1"`, `"huber"`, `"bce"`, `"focal"`), or a function `(prediction,
-#'   target)`.
+#'   `"l1"`, `"huber"`, `"bce"`, `"bce_masked"`, `"focal"`), or a function
+#'   `(prediction, target)`. `"bce_masked"` is binary cross entropy with
+#'   logits over multi task 0/1 targets that ignores missing (`NA`) entries,
+#'   for datasets such as `ogbg-molpcba`; use it with a regression task and
+#'   a numeric label matrix.
 #' @param val_data Validation graphs for graph level tasks.
 #' @param batch_size Graphs per batch (graph tasks) or seeds per batch (node
 #'   tasks with `fanouts`).
@@ -257,7 +260,21 @@ resolve_loss <- function(loss, default, class_weights, dev) {
   as_target <- function(pred, target) {
     if (pred$dim() == 2L && pred$size(2L) == 1L && target$dim() == 1L) pred$squeeze(2L) else pred
   }
-  switch(match.arg(name, c("cross_entropy", "mse", "l1", "huber", "bce", "focal")),
+  switch(match.arg(name, c("cross_entropy", "mse", "l1", "huber", "bce", "bce_masked", "focal")),
+    bce_masked = function(pred, target, reduction = "mean") {
+      # Multi task binary targets with missing entries (NA, stored as NaN):
+      # only observed entries contribute, as in OGB's molecular tasks.
+      pred <- as_target(pred, target)
+      target <- target$to(dtype = pred$dtype)
+      obs <- torch_isnan(target)$logical_not()
+      per <- nnf_binary_cross_entropy_with_logits(pred, torch_where(obs, target, torch_zeros_like(target)),
+                                                  reduction = "none") * obs$to(dtype = pred$dtype)
+      if (reduction == "none") {
+        if (per$dim() > 1L) per$sum(dim = 2L) / obs$sum(dim = 2L)$clamp(min = 1) else per
+      } else {
+        per$sum() / obs$sum()$clamp(min = 1)
+      }
+    },
     cross_entropy = function(pred, target, reduction = "mean") {
       nnf_cross_entropy(pred, target, weight = w, reduction = reduction)
     },

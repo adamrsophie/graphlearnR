@@ -173,13 +173,21 @@ format_predictions <- function(out, type, object, ids, id_name) {
 #' * Graph tasks: every graph in `new_data`.
 #' * Link prediction: `split$test_pos` against `split$test_neg` (or the
 #'   validation pairs with `split = "val"`), with message passing on the
-#'   training graph only.
+#'   training graph only. ROC-AUC and average precision use those pairs;
+#'   by default MRR and Hits@K rank every positive against the shared
+#'   negatives. With `filtered_negatives = k`, each positive \eqn{(u, v)} is
+#'   instead ranked against `k` corrupted tails \eqn{(u, v')} drawn by
+#'   [corrupt_tails()] so that no \eqn{(u, v')} is a known positive pair of
+#'   the split (the filtered setting of Bordes et al. 2013).
 #' * Edge tasks: edges in the `split` edge mask.
 #'
 #' @param fit A `graph_fit`.
 #' @param new_data Evaluation data; defaults to the training data object.
 #' @param split `"test"`, `"val"` or `"train"`.
 #' @param ks Cut-offs for Hits@K.
+#' @param filtered_negatives For homogeneous link prediction: number of
+#'   filtered corrupted tails per positive for MRR and Hits@K, or `NULL`.
+#' @param seed Optional seed for drawing the corrupted tails.
 #' @return A data frame with `metric` and `value`.
 #' @examples
 #' if (torch::torch_is_installed()) {
@@ -190,7 +198,7 @@ format_predictions <- function(out, type, object, ids, id_name) {
 #' }
 #' @export
 evaluate_graph_model <- function(fit, new_data = NULL, split = c("test", "val", "train"),
-                                 ks = c(1L, 10L, 50L)) {
+                                 ks = c(1L, 10L, 50L), filtered_negatives = NULL, seed = NULL) {
   split <- match.arg(split)
   task <- fit$task
   classif <- grepl("classification", task)
@@ -221,7 +229,21 @@ evaluate_graph_model <- function(fit, new_data = NULL, split = c("test", "val", 
     if (split == "train") stopf("Use split = \"val\" or \"test\" for link prediction.")
     s_pos <- predict(fit, sp$train_graph, type = "score", pairs = pos)
     s_neg <- predict(fit, sp$train_graph, type = "score", pairs = neg)
-    return(evaluate_predictions(s_pos, s_pos, "link", neg = s_neg, ks = ks))
+    out <- evaluate_predictions(s_pos, s_pos, "link", neg = s_neg, ks = ks)
+    if (!is.null(filtered_negatives)) {
+      if (is.null(sp$all_pos)) stopf("Filtered ranking needs a homogeneous split from split_edges().")
+      k <- check_count(filtered_negatives, "filtered_negatives", 1L)
+      tails <- corrupt_tails(pos, sp$num_nodes, k, known = sp$all_pos, filtered = TRUE,
+                             directed = sp$directed, seed = seed)
+      cand <- rbind(rep(pos[1L, ], each = k), as.vector(t(tails)))
+      s_cand <- matrix(predict(fit, sp$train_graph, type = "score", pairs = cand),
+                       ncol = k, byrow = TRUE)
+      rk <- c(filtered_mrr = metric_mrr(s_pos, s_cand),
+              stats::setNames(vapply(ks, function(kk) metric_hits_at_k(s_pos, s_cand, kk), numeric(1)),
+                              paste0("filtered_hits@", ks)))
+      out <- rbind(out, data.frame(metric = names(rk), value = unname(rk)))
+    }
+    return(out)
   }
   mask <- data[[paste0("edge_", split, "_mask")]]
   if (is.null(mask) || !any(mask)) stopf("No edges in the %s edge mask.", split)

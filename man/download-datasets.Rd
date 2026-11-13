@@ -5,6 +5,8 @@
 \alias{download_tu_dataset}
 \alias{read_tu_dataset}
 \alias{download_planetoid_raw}
+\alias{download_pubmed_raw}
+\alias{read_linqs_pubmed}
 \alias{read_linqs_citation}
 \title{Download and read public benchmark datasets}
 \usage{
@@ -18,6 +20,10 @@ download_planetoid_raw(
   md5 = NULL,
   overwrite = FALSE
 )
+
+download_pubmed_raw(root = tempdir(), md5 = NULL, overwrite = FALSE)
+
+read_linqs_pubmed(dir)
 
 read_linqs_citation(dir, name = basename(dir))
 }
@@ -50,7 +56,9 @@ redistributing the data.
 al. 2020), for example \code{"MUTAG"} and \code{"PROTEINS"}, from
 \url{https://www.chrsmrrs.com/graphkerneldatasets/}.
 \item \code{download_planetoid_raw()}: the original LINQS releases of Cora and
-CiteSeer (Sen et al. 2008) from \url{https://linqs-data.soe.ucsc.edu/}.
+CiteSeer (Sen et al. 2008) from \url{https://linqs-data.soe.ucsc.edu/};
+\code{download_pubmed_raw()} the Pubmed-Diabetes release (Namata et al.
+2012) from the same site.
 These are the raw citation graphs. They are \strong{not} the Planetoid splits
 used by Kipf and Welling (2017) and PyG's \code{Planetoid} class (which also
 drop and reorder nodes), so results are not comparable to published
@@ -58,8 +66,15 @@ leaderboards. Open Graph Benchmark datasets are read by
 \code{\link[=download_ogb]{download_ogb()}}.
 }
 
-\code{read_tu_dataset()} and \code{read_linqs_citation()} parse already downloaded
-files.
+\code{read_tu_dataset()}, \code{read_linqs_citation()} and \code{read_linqs_pubmed()}
+parse already downloaded files.
+
+The Pubmed-Diabetes release stores sparse TF-IDF word weights as
+\code{word=value} fields; absent words are zero. Its \code{.cites.tab} file lists
+each link as \code{paper:A | paper:B} and does not document the direction, so
+\code{read_linqs_pubmed()} keeps the file order (an edge from \code{A} to \code{B}); use
+\code{\link[=as_undirected]{as_undirected()}} when direction should not matter. Links to unknown
+papers are dropped and counted in \code{metadata$dropped_edges}.
 
 In the LINQS \code{.cites} files each line is \verb{cited citing}. The
 returned graph is directed from the citing paper to the cited paper.

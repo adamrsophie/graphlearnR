@@ -67,8 +67,8 @@ binary ranking metrics, numeric for regression.}
 \item{positive}{Positive class for binary averaging.}
 
 \item{score}{Predicted score or probability of the positive class (or a
-probability matrix with one column per class for \code{metric_roc_auc()} and
-\code{metric_ece()}).}
+probability matrix with one column per class for \code{metric_roc_auc()},
+\code{metric_average_precision()} and \code{metric_ece()}).}
 
 \item{prob}{Probability matrix (one column per class) or vector of
 positive class probabilities.}
@@ -100,7 +100,8 @@ factor truth with more than two levels it returns the macro average of
 one-vs-rest AUCs.
 \item \code{metric_average_precision()}: \eqn{\sum_n (R_n - R_{n-1}) P_n} over
 distinct score thresholds (the definition used by scikit-learn), not
-the trapezoidal area under the precision-recall curve.
+the trapezoidal area under the precision-recall curve. A probability
+matrix gives the macro one-vs-rest average, as for ROC-AUC.
 \item \code{metric_ece()}: expected calibration error with equal width bins on the
 top predicted probability.
 \item \code{metric_hits_at_k()}, \code{metric_mrr()}: link ranking metrics. With a

@@ -8,7 +8,9 @@ evaluate_graph_model(
   fit,
   new_data = NULL,
   split = c("test", "val", "train"),
-  ks = c(1L, 10L, 50L)
+  ks = c(1L, 10L, 50L),
+  filtered_negatives = NULL,
+  seed = NULL
 )
 }
 \arguments{
@@ -19,6 +21,11 @@ evaluate_graph_model(
 \item{split}{\code{"test"}, \code{"val"} or \code{"train"}.}
 
 \item{ks}{Cut-offs for Hits@K.}
+
+\item{filtered_negatives}{For homogeneous link prediction: number of
+filtered corrupted tails per positive for MRR and Hits@K, or \code{NULL}.}
+
+\item{seed}{Optional seed for drawing the corrupted tails.}
 }
 \value{
 A data frame with \code{metric} and \code{value}.
@@ -32,7 +39,12 @@ Computes task metrics on a held out set, using \code{\link[=evaluate_predictions
 \item Graph tasks: every graph in \code{new_data}.
 \item Link prediction: \code{split$test_pos} against \code{split$test_neg} (or the
 validation pairs with \code{split = "val"}), with message passing on the
-training graph only.
+training graph only. ROC-AUC and average precision use those pairs;
+by default MRR and Hits@K rank every positive against the shared
+negatives. With \code{filtered_negatives = k}, each positive \eqn{(u, v)} is
+instead ranked against \code{k} corrupted tails \eqn{(u, v')} drawn by
+\code{\link[=corrupt_tails]{corrupt_tails()}} so that no \eqn{(u, v')} is a known positive pair of
+the split (the filtered setting of Bordes et al. 2013).
 \item Edge tasks: edges in the \code{split} edge mask.
 }
 }

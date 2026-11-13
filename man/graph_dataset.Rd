@@ -2,11 +2,14 @@
 % Please edit documentation in R/graph-datasets.R
 \name{graph_dataset}
 \alias{graph_dataset}
+\alias{graph_schema}
 \alias{graph_dataset_disk}
 \alias{write_graph_dataset}
 \title{Graph datasets}
 \usage{
 graph_dataset(graphs, transform = NULL, metadata = list())
+
+graph_schema(g)
 
 graph_dataset_disk(dir, transform = NULL)
 
@@ -18,6 +21,8 @@ write_graph_dataset(graphs, dir, metadata = list(), overwrite = FALSE)
 \item{transform}{Optional function applied to each graph on access.}
 
 \item{metadata}{Named list (name, source, version, license, notes).}
+
+\item{g}{A \code{graph_data} object.}
 
 \item{dir}{Directory holding \code{graph_000001.rds}, ... and \code{metadata.rds}.}
 
@@ -38,6 +43,13 @@ so large collections need not fit in memory.
 Both support \code{length()}, \code{[[} and \code{[} (subset, returning a dataset), and
 can be passed to \code{\link[=graph_loader]{graph_loader()}}, \code{\link[=train_graph_model]{train_graph_model()}} and
 \code{\link[=split_graphs]{split_graphs()}}.
+
+\strong{Feature schema.} All graphs of a dataset must share one schema: the
+same number (and names, when set) of node feature and edge feature
+columns, and the same kind of node, edge and graph labels (factor,
+numeric vector or matrix with the same number of columns), each present
+in all graphs or in none. \code{graph_dataset()} and \code{write_graph_dataset()}
+check this; \code{graph_schema()} returns the schema of one graph.
 }
 \examples{
 ds <- graph_dataset(dataset_synthetic_graphs(10, seed = 1),

@@ -182,3 +182,30 @@ test_that("forecast windows are purged at period boundaries", {
   expect_true(max(w$train) + 4 <= min(w$val))
   expect_true(max(w$val) + 4 <= min(w$test))
 })
+
+test_that("average precision handles probability matrices and appears in the table", {
+  truth <- factor(c("a", "b", "c", "a", "b", "c"))
+  p <- diag(3)[c(1, 2, 3, 1, 2, 3), ]
+  expect_equal(metric_average_precision(truth, p), 1)
+  colnames(p) <- c("a", "b", "c")
+  ev <- evaluate_predictions(truth, p, "classification")
+  expect_equal(ev$value[ev$metric == "average_precision"], 1)
+  expect_equal(metric_average_precision(factor(c("x", "y", "y")), cbind(c(0.9, 0.1, 0.4), c(0.1, 0.9, 0.6))),
+               metric_average_precision(c(FALSE, TRUE, TRUE), c(0.1, 0.9, 0.6)))
+})
+
+test_that("evaluate_embeddings separates informative from noise embeddings", {
+  set.seed(1)
+  y <- factor(rep(c("a", "b"), each = 40))
+  good <- cbind(as.integer(y) + rnorm(80, sd = 0.1), rnorm(80))
+  noise <- matrix(rnorm(160), 80)
+  tr <- rep(c(TRUE, FALSE), 40)
+  eg <- evaluate_embeddings(good, y, tr, seed = 1)
+  en <- evaluate_embeddings(noise, y, tr, seed = 1)
+  expect_equal(eg$value[eg$metric == "probe_accuracy"], 1)
+  expect_gt(eg$value[eg$metric == "cluster_ari"], 0.9)
+  expect_lt(en$value[en$metric == "cluster_ari"], 0.2)
+  r <- evaluate_embeddings(good, as.integer(y) * 2, tr)
+  expect_gt(r$value[r$metric == "probe_r2"], 0.95)
+  expect_error(evaluate_embeddings(good, y, rep(TRUE, 80)), "both sides")
+})

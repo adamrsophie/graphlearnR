@@ -81,3 +81,34 @@ test_that("transforms add loops, coalesce, subset and normalize", {
   expect_s3_class(tf(g), "graph_data")
   expect_error(induced_subgraph(g, c(1, 1)), "unique")
 })
+
+test_that("datasets reject graphs with different feature schemas", {
+  gs <- dataset_synthetic_graphs(3, seed = 1)
+  expect_silent(graph_dataset(gs))
+  bad <- gs
+  bad[[2]]$x <- cbind(bad[[2]]$x, 1)
+  expect_error(graph_dataset(bad), "Graph 2 .*x")
+  bad <- gs
+  bad[[3]]$graph_y <- NULL
+  expect_error(graph_dataset(bad), "graph_y")
+  expect_equal(graph_schema(gs[[1]])$graph_y, graph_schema(gs[[2]])$graph_y)
+})
+
+test_that("read_linqs_pubmed parses the sparse word weight format", {
+  dir <- withr::local_tempdir()
+  writeLines(c("NODE\tpaper",
+               "cat=1,2,3:label\tnumeric:w-a:0.0\tnumeric:w-b:0.0\tstring:summary",
+               "11\tlabel=1\tw-a=0.5\tsummary=w-a",
+               "22\tlabel=3\tw-b=0.25\tw-a=0.1\tsummary=w-b,w-a",
+               "33\tlabel=2\tsummary="),
+             file.path(dir, "Pubmed-Diabetes.NODE.paper.tab"))
+  writeLines(c("DIRECTED\tcites", "NO_FEATURES",
+               "1\tpaper:22\t|\tpaper:11", "2\tpaper:33\t|\tpaper:11", "3\tpaper:44\t|\tpaper:11"),
+             file.path(dir, "Pubmed-Diabetes.DIRECTED.cites.tab"))
+  g <- read_linqs_pubmed(dir)
+  expect_equal(unname(g$x), rbind(c(0.5, 0), c(0.1, 0.25), c(0, 0)))
+  expect_equal(colnames(g$x), c("w-a", "w-b"))
+  expect_equal(as.character(g$y), c("1", "3", "2"))
+  expect_equal(g$edge_index, rbind(c(2L, 3L), c(1L, 1L)))
+  expect_equal(g$metadata$dropped_edges, 1L)
+})

@@ -287,3 +287,15 @@ test_that("fits with a named mlp decoder survive save and load", {
   expect_equal(predict(back, sp$train_graph, pairs = sp$test_pos, type = "score"),
                predict(fit, pairs = sp$test_pos, type = "score"), tolerance = 1e-5)
 })
+
+test_that("filtered link evaluation ranks each positive against its own tails", {
+  skip_if_no_torch()
+  sp <- split_edges(dataset_karate(), seed = 1)
+  fit <- train_graph_model(gnn_model("gcn", 34, 8), sp, "link_prediction", epochs = 5, seed = 1)
+  ev <- evaluate_graph_model(fit, filtered_negatives = 5, ks = c(1, 6), seed = 1)
+  expect_true(all(c("filtered_mrr", "filtered_hits@1", "filtered_hits@6") %in% ev$metric))
+  # With 5 negatives a rank is at most 6.
+  expect_equal(ev$value[ev$metric == "filtered_hits@6"], 1)
+  v <- ev$value[ev$metric == "filtered_mrr"]
+  expect_true(v > 0 && v <= 1)
+})
