@@ -137,12 +137,26 @@ metric_f1 <- function(truth, estimate, average = "macro", positive = NULL) {
   prf(truth, estimate, average, positive, "f1")
 }
 
+# Positive class indicator for binary truth: the second level of a factor,
+# TRUE, or 1. The mapping does not depend on which classes are observed.
 as_binary <- function(truth) {
   if (is.factor(truth)) {
     if (nlevels(truth) != 2L) stopf("Binary metrics need two classes.")
     return(as.integer(truth) == 2L)
   }
+  if (is.numeric(truth) && !all(truth %in% c(0, 1))) {
+    stopf("Binary metrics need 0/1, logical or two level factor truth.")
+  }
   as.logical(truth)
+}
+
+# Class labels of the two columns (negative, positive) of a binary score.
+binary_levels <- function(truth) {
+  if (is.factor(truth)) {
+    if (nlevels(truth) != 2L) stopf("Binary metrics need two classes.")
+    return(levels(truth))
+  }
+  if (is.logical(truth)) c("FALSE", "TRUE") else c("0", "1")
 }
 
 #' @rdname metrics
@@ -208,8 +222,12 @@ metric_average_precision <- function(truth, score) {
 #' @export
 metric_ece <- function(truth, prob, bins = 10L) {
   prob <- check_scores(truth, prob)
-  if (!is.matrix(prob)) prob <- cbind(1 - prob, prob)
-  truth <- as.integer(as.factor(truth))
+  if (!is.matrix(prob)) {
+    prob <- cbind(1 - prob, prob)
+    truth <- as_binary(truth) + 1L
+  } else {
+    truth <- as.integer(as.factor(truth))
+  }
   conf <- apply(prob, 1L, max)
   pred <- max.col(prob, ties.method = "first")
   bin <- pmin(floor(conf * bins) + 1L, bins)
@@ -354,7 +372,14 @@ evaluate_predictions <- function(truth, prediction, task = c("classification", "
   task <- match.arg(task)
   out <- switch(task,
     classification = {
-      prob <- if (is.matrix(prediction)) prediction else cbind(1 - prediction, prediction)
+      if (is.matrix(prediction)) {
+        prob <- prediction
+      } else {
+        # A vector holds positive class probabilities of a binary task.
+        as_binary(truth)
+        prob <- cbind(1 - prediction, prediction)
+        colnames(prob) <- binary_levels(truth)
+      }
       lv <- colnames(prob) %||% levels(as.factor(truth))
       est <- factor(lv[max.col(prob, ties.method = "first")], levels = lv)
       tf <- factor(as.character(truth), levels = lv)

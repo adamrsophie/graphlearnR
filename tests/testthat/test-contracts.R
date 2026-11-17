@@ -1100,3 +1100,10 @@ test_that("coalescing keeps multiplicity and GCN rejects negative degrees", {
   expect_equal(run(remove_self_loops(s)), 0.5 + 1 / sqrt(6), tolerance = 1e-6)
   expect_equal(run(coalesce_edges(s)), 0.5 + 1 / sqrt(6), tolerance = 1e-6)
 })
+
+test_that("binary metrics map vector scores to one positive class", {
+  r <- evaluate_predictions(c(0L, 1L), c(.1, .9))
+  expect_equal(r$value[r$metric == "accuracy"], 1)
+  expect_equal(metric_ece(c(1L, 1L), c(.9, .9)), 0.1)
+  expect_error(metric_roc_auc(c(1, 2), c(.1, .9)), "0/1")
+})
