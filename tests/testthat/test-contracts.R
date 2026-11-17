@@ -1227,3 +1227,13 @@ test_that("reverse relation pairing rejects prefix chains in any order", {
   expect_error(add_reverse_relations(mk(c("a__rev_rev_r__b", "b__rev_r__a", "a__r__b"))), "more than one")
   expect_error(add_reverse_relations(mk("a__r__b"), prefix = ""), "non empty")
 })
+
+test_that("TopK keeps the exact decimal share of nodes", {
+  skip_if_no_torch()
+  p <- topk_pool(1, ratio = 0.28)
+  x <- torch::torch_randn(25, 1)
+  ei <- torch::torch_empty(2, 0, dtype = torch::torch_long())
+  out <- p(x, ei)
+  expect_equal(out$x$size(1), 7)
+  expect_equal(topk_pool(1, ratio = 0.3)(x, ei)$x$size(1), 8)
+})

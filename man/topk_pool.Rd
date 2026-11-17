@@ -25,7 +25,8 @@ An \code{nn_module} returning a list with \code{x}, \code{edge_index}, \code{bat
 \description{
 Graph U-Net style pooling (Gao and Ji 2019): nodes are scored by
 \eqn{y = X p / \lVert p \rVert}, the top \code{ceiling(ratio * n_g)} nodes of
-each graph are kept, their features are scaled by \eqn{\tanh(y)} and the
+each graph are kept (a product within rounding error of a whole number
+counts as that number, so \code{ratio = 0.28} keeps 7 of 25 nodes), their features are scaled by \eqn{\tanh(y)} and the
 edges between kept nodes are retained.
 }
 \details{

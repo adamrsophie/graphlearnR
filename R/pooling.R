@@ -91,7 +91,8 @@ global_attention_pool <- nn_module(
 #'
 #' Graph U-Net style pooling (Gao and Ji 2019): nodes are scored by
 #' \eqn{y = X p / \lVert p \rVert}, the top `ceiling(ratio * n_g)` nodes of
-#' each graph are kept, their features are scaled by \eqn{\tanh(y)} and the
+#' each graph are kept (a product within rounding error of a whole number
+#' counts as that number, so `ratio = 0.28` keeps 7 of 25 nodes), their features are scaled by \eqn{\tanh(y)} and the
 #' edges between kept nodes are retained.
 #'
 #' @param in_features Node feature size.
@@ -166,8 +167,11 @@ topk_select <- function(x, score, edge_index, batch, ratio) {
   start <- torch_cumsum(cnt, dim = 1L) - cnt
   rank <- torch_arange(1L, n, dtype = torch_long(), device = dev) - start$index_select(1L, bo)
   # ceiling(ratio * n) per graph in R double precision (one host transfer of
-  # the graph sizes; some backends, such as MPS, have no float64).
-  k <- torch_tensor(as.integer(ceiling(as.numeric(as_r_array(cnt)) * ratio)),
+  # the graph sizes; some backends, such as MPS, have no float64). Products
+  # within rounding error of a whole number (0.28 * 25) are snapped to it,
+  # so a decimal ratio keeps its exact share.
+  kk <- as.numeric(as_r_array(cnt)) * ratio
+  k <- torch_tensor(as.integer(ceiling(round(kk, 9))),
                     dtype = torch_long(), device = dev)
   perm_t <- order_t[rank <= k$index_select(1L, bo)]
   xs <- x$index_select(1L, perm_t) * torch_tanh(score$index_select(1L, perm_t))$unsqueeze(2L)
