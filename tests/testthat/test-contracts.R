@@ -781,3 +781,14 @@ test_that("corrupted tails stay filtered on large graphs", {
   expect_error(corrupt_tails(p, 50000L, 49998L, known = cbind(p, rbind(50000L, 2L)), seed = 1),
                "Too few")
 })
+
+test_that("TGN negatives avoid every partner of the source at that time", {
+  for (s in 1:20) {
+    neg <- tgn_negatives(4L, c(1L, 1L), c(2L, 3L), s, t = c(5, 5))
+    expect_true(all(neg == 4L))
+  }
+  expect_error(tgn_negatives(3L, c(1L, 1L), c(2L, 3L), 1, t = c(5, 5)), "no negative destination")
+  # different times do not exclude each other
+  neg <- tgn_negatives(3L, c(1L, 1L), c(2L, 3L), 1, t = c(5, 6))
+  expect_equal(neg, c(3L, 2L))
+})

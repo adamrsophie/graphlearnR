@@ -310,8 +310,8 @@ tgn_store_query <- function(store, nodes) {
 #'   them updates the memory.
 #' @param lr Learning rate.
 #' @param seed Optional seed for weights, negatives and the epoch order.
-#'   Each event gets one random negative destination that differs from its
-#'   own source and destination. The three periods of `split` must follow
+#'   Each event gets one random negative destination: a node that is not
+#'   the source and does not interact with the source at that timestamp. The three periods of `split` must follow
 #'   each other in time, each starting strictly after the previous one ends
 #'   ([split_temporal()] keeps events at one time in the same period).
 #' @param device Device.
@@ -347,7 +347,7 @@ train_tgn <- function(model, split, epochs = 10L, batch_size = 200L, lr = 1e-3, 
 
   run <- function(tg, state, train, neg_seed) {
     m <- length(tg$t)
-    negs <- tgn_negatives(n, tg$src, tg$dst, neg_seed)
+    negs <- tgn_negatives(n, tg$src, tg$dst, neg_seed, tg$t)
     scores <- list()
     losses <- numeric(0)
     for (idx in tgn_batches(tg$t, batch_size)) {
@@ -435,16 +435,26 @@ tgn_batches <- function(t, batch_size) {
 
 # One random destination per event, never equal to the event's own source or
 # destination, so a negative pair can not coincide with the positive one.
-tgn_negatives <- function(n, src, dst, seed) {
+# One negative destination per event: a node that is neither the source nor
+# any node the source interacts with (in either role) at that timestamp, so
+# no negative is an observed positive of the same source and time.
+tgn_negatives <- function(n, src, dst, seed, t = seq_along(src)) {
   m <- length(src)
   if (!m) return(integer())
-  if (n < 3L) stopf("TGN negative sampling needs at least three nodes.")
+  observed <- paste(c(src, dst, src), c(t, t, t), c(dst, src, src))
+  key <- function(cand) paste(src, t, cand)
+  partners <- tapply(observed, paste(c(src, dst, src), c(t, t, t)), function(z) length(unique(z)))
+  free <- n - partners[paste(src, t)]
+  if (any(free < 1L)) {
+    stopf("Event %d has no negative destination: its source interacts with every node at time %g.",
+          which(free < 1L)[1L], t[which(free < 1L)[1L]])
+  }
   with_optional_seed(seed, {
     neg <- sample.int(n, m, replace = TRUE)
-    bad <- neg == src | neg == dst
+    bad <- key(neg) %in% observed
     while (any(bad)) {
       neg[bad] <- sample.int(n, sum(bad), replace = TRUE)
-      bad <- neg == src | neg == dst
+      bad <- key(neg) %in% observed
     }
     neg
   })
