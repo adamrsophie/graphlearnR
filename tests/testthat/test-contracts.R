@@ -726,8 +726,7 @@ test_that("scatter extremes, weighted vector messages and GCN normalization edge
   expect_equal(as.numeric(as_r_array(message_passing(x, ei, edge_weight = torch_tensor(c(5, 7))))),
                c(0, 0, 31))
   w <- torch_tensor(-2, requires_grad = TRUE)
-  n1 <- gcn_norm(torch_tensor(rbind(1L, 2L), dtype = torch_long()), 2, w)
-  expect_false(any(is.nan(as_r_array(n1$edge_weight))))
+  expect_error(gcn_norm(torch_tensor(rbind(1L, 2L), dtype = torch_long()), 2, w), "nonnegative")
   w0 <- torch_tensor(0, requires_grad = TRUE)
   n0 <- gcn_norm(torch_tensor(rbind(1L, 2L), dtype = torch_long()), 2, w0, add_self_loops = FALSE)
   n0$edge_weight$sum()$backward()
@@ -1082,4 +1081,22 @@ test_that("edge label splits skip pairs with any missing label", {
   g$edge_y <- c(2, NA)
   g <- split_edge_labels(g, train = 1, val = 0, test = 0)
   expect_false(any(g$edge_train_mask))
+})
+
+test_that("coalescing keeps multiplicity and GCN rejects negative degrees", {
+  g <- graph_data(num_nodes = 2, edge_index = rbind(c(1, 1), c(2, 2)))
+  expect_equal(coalesce_edges(g)$edge_weight, 2)
+  skip_if_no_torch()
+  ei <- torch::torch_tensor(rbind(1L, 2L), dtype = torch::torch_long())
+  expect_error(gcn_norm(ei, 3L, torch::torch_tensor(-2)), "negative incoming weight")
+  # identity transforms on a sample keep the full graph prediction
+  ch <- graph_data(x = matrix(1, 3, 1), edge_index = rbind(c(1, 2), c(2, 3)), directed = FALSE)
+  s <- sample_neighbors(ch, 1, -1)
+  m <- gcn_conv(1, 1, bias = FALSE)
+  torch::with_no_grad(m$lin$weight$fill_(1))
+  run <- function(z) { tt <- graph_tensors(z); as.numeric(as_r_array(m(tt$x, tt$edge_index,
+                       node_degree = tt$node_degree))[1]) }
+  expect_equal(run(s), 0.5 + 1 / sqrt(6), tolerance = 1e-6)
+  expect_equal(run(remove_self_loops(s)), 0.5 + 1 / sqrt(6), tolerance = 1e-6)
+  expect_equal(run(coalesce_edges(s)), 0.5 + 1 / sqrt(6), tolerance = 1e-6)
 })

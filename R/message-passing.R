@@ -167,8 +167,16 @@ gcn_norm <- function(edge_index, num_nodes, edge_weight = NULL,
     node_degree$degree$to(dtype = edge_weight$dtype) +
       fill * (!node_degree$self_loop)$to(dtype = edge_weight$dtype)
   }
-  # A node whose total incoming weight is not positive gets no normalized
-  # edges. The clamp keeps both the value and its gradient finite.
+  # Symmetric normalization needs nonnegative degrees; signed weights that
+  # make a degree negative have no real D^{-1/2}.
+  neg <- deg < 0
+  if (as.logical(neg$any()$item())) {
+    ids <- as.integer(as_r_array(torch_nonzero(neg)$squeeze(2L)$cpu()))
+    stopf("GCN normalization needs nonnegative degrees; nodes %s have negative incoming weight.",
+          paste(utils::head(ids, 5L), collapse = ", "))
+  }
+  # A node whose total incoming weight is zero gets no normalized edges.
+  # The clamp keeps both the value and its gradient finite.
   pos <- deg > 0
   dinv <- torch_where(pos, deg$clamp(min = 1e-30)$pow(-0.5), torch_zeros_like(deg))
   w <- dinv$index_select(1L, edge_index[1L, ]) * edge_weight *

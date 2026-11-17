@@ -85,7 +85,12 @@ coalesce_edges <- function(g) {
   grp <- match(key, unique(key))
   first <- !duplicated(grp)
   out <- edge_subset(g, which(first))
-  if (!is.null(g$edge_weight)) out$edge_weight <- as.vector(rowsum(g$edge_weight, grp, reorder = FALSE))
+  if (!is.null(g$edge_weight)) {
+    out$edge_weight <- as.vector(rowsum(g$edge_weight, grp, reorder = FALSE))
+  } else if (anyDuplicated(grp)) {
+    # Implicit unit weights: the merged edge carries the multiplicity.
+    out$edge_weight <- as.double(tabulate(grp))
+  }
   if (!is.null(g$edge_attr)) {
     cnt <- tabulate(grp)
     out$edge_attr <- rowsum(g$edge_attr, grp, reorder = FALSE) / cnt
