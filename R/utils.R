@@ -100,8 +100,10 @@ bind_rows_values <- function(values) {
   if (is.matrix(values[[1L]])) {
     return(do.call(rbind, values))
   }
-  if (is.factor(values[[1L]])) {
+  if (any(vapply(values, is.factor, logical(1)))) {
     # Union of levels, so a class present only in a later graph is kept.
+    # Any factor member makes the result a factor of class labels, so mixed
+    # inputs give the same labels in every order.
     lv <- unique(unlist(lapply(values, function(v) if (is.factor(v)) levels(v) else unique(as.character(v)))))
     return(factor(unlist(lapply(values, as.character)), levels = lv))
   }

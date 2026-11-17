@@ -48,10 +48,13 @@ augment.graph_fit <- function(x, new_data = NULL, ...) {
     if (inherits(data, "graph_data")) data <- list(data)
     out <- predict(x, data, ...)
     truth <- lapply(seq_along(data), function(i) data[[i]]$graph_y)
-    out$.truth <- if (all(vapply(truth, is.factor, TRUE))) {
-      factor(vapply(truth, as.character, ""), levels = levels(truth[[1L]]))
+    if (task == "graph_classification") {
+      # Classes in the fitted order, whatever levels each graph carries.
+      out$.truth <- factor(vapply(truth, function(v) as.character(v)[1L], ""),
+                           levels = x$levels %||% graph_label_levels(data))
     } else {
-      unlist(truth)
+      # One row per graph; multi target labels stay a matrix column.
+      out$.truth <- stack_graph_labels(truth)
     }
     return(out)
   }

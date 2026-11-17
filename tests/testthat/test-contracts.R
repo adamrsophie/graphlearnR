@@ -1178,3 +1178,18 @@ test_that("batching keeps sampling records and edge splits reject batches", {
   p <- graph_data(num_nodes = 3, edge_index = rbind(1:2, 2:3))
   expect_error(split_edges(graph_batch(list(p, p)), val = 1, test = 1, seed = 1), "graph_batch")
 })
+
+test_that("mixed graph label types batch the same in any order and augment keeps targets", {
+  a <- graph_data(num_nodes = 1, graph_y = 1L)
+  b <- graph_data(num_nodes = 1, graph_y = factor("9"))
+  expect_equal(as.character(graph_batch(list(a, b))$graph_y), c("1", "9"))
+  expect_equal(as.character(graph_batch(list(b, a))$graph_y), c("9", "1"))
+  skip_if_no_torch()
+  gs <- lapply(1:2, function(i) graph_data(x = matrix(i, 2, 1), edge_index = rbind(1, 2),
+                                           graph_y = c(i, -i)))
+  fit <- train_graph_model(gnn_model("graph_conv", 1, 2, 2, num_layers = 1, pool = "mean"), gs,
+                           task = "graph_regression", epochs = 1, seed = 1)
+  skip_if_not_installed("generics")
+  au <- generics::augment(fit, gs)
+  expect_equal(dim(au$.truth), c(2L, 2L))
+})
