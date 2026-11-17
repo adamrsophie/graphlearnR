@@ -324,7 +324,10 @@ explanation_subgraph <- function(g, explanation, k = 5L) {
   # Rank pairs by the largest absolute attribution of either direction.
   score <- tapply(abs(ed$attribution), key, max)
   top_keys <- names(sort(score, decreasing = TRUE))[seq_len(min(k, length(score)))]
-  edges <- sort(ed$edge[as.character(key) %in% top_keys])
+  # Every stored edge of a selected pair, also directions the explanation
+  # did not score.
+  edges <- if (!is.null(g$edge_pair)) which(as.character(g$edge_pair) %in% top_keys)
+           else sort(ed$edge[as.character(key) %in% top_keys])
   nodes <- sort(unique(c(explanation$target, g$edge_index[, edges])))
   sub <- edge_subset(g, edges)
   ids <- g$node_ids %||% seq_len(g$num_nodes)

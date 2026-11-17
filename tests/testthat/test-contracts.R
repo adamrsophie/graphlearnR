@@ -1133,3 +1133,10 @@ test_that("fractional node indices are rejected, not truncated", {
   expect_error(sample_neighbors(g, 1.9, -1), "whole numbers")
   expect_error(induced_subgraph(g, 1.5), "whole numbers")
 })
+
+test_that("explanation subgraphs keep both directions of a selected pair", {
+  g <- graph_data(num_nodes = 2, edge_index = rbind(1, 2), directed = FALSE)
+  ex <- list(target = 1L, edges = data.frame(edge = 2L, attribution = 1))
+  sub <- explanation_subgraph(g, ex, k = 1)
+  expect_equal(ncol(sub$edge_index), 2L)
+})
