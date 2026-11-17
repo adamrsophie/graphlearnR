@@ -36,7 +36,9 @@ Computes task metrics on a held out set, using \code{\link[=evaluate_predictions
 \details{
 \itemize{
 \item Node tasks: nodes in \code{new_data}'s \code{split} mask (\code{"test"} by default).
-\item Graph tasks: every graph in \code{new_data}.
+\item Graph tasks: every graph in \code{new_data}, which is required unless
+\code{split = "train"} (the training graphs are the only graphs a fit
+holds).
 \item Link prediction: \code{split$test_pos} against \code{split$test_neg} (or the
 validation pairs with \code{split = "val"}), with message passing on the
 training graph only. ROC-AUC and average precision use those pairs;

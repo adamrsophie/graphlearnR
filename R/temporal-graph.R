@@ -232,7 +232,18 @@ snapshot_sequence <- function(graphs, start = seq_along(graphs) - 1, end = seq_a
   if (length(ids) > 1L && !all(vapply(ids[-1L], identical, logical(1), ids[[1L]]))) {
     stopf("All snapshots must have the same `node_ids` in the same order.")
   }
-  if (is.unsorted(start)) stopf("Snapshots must be in time order.")
+  start <- as.numeric(start)
+  end <- as.numeric(end)
+  k <- length(graphs)
+  if (length(start) != k || length(end) != k || anyNA(start) || anyNA(end)) {
+    stopf("`start` and `end` need one non missing value per snapshot.")
+  }
+  if (any(end < start)) stopf("Each snapshot must end at or after its start.")
+  # A snapshot's information must be available when the next one starts, so
+  # forecasting the next window from it never looks ahead.
+  if (k > 1L && any(end[-k] > start[-1L])) {
+    stopf("Snapshots must be in time order: each must end at or before the next one starts.")
+  }
   structure(list(graphs = graphs, start = as.numeric(start), end = as.numeric(end),
                  num_nodes = n[1L]), class = "snapshot_sequence")
 }
@@ -267,7 +278,9 @@ temporal_snapshots <- function(tg, breaks = 10L, cumulative = FALSE) {
                edge_weight = if (any(keep)) w, num_nodes = tg$num_nodes,
                directed = tg$directed, node_ids = tg$node_ids, validate = FALSE)
   })
-  snapshot_sequence(graphs, breaks[-length(breaks)], breaks[-1L])
+  out <- snapshot_sequence(graphs, breaks[-length(breaks)], breaks[-1L])
+  out$cumulative <- cumulative
+  out
 }
 
 #' @export
@@ -583,7 +596,9 @@ print.temporal_fit <- function(x, ...) {
 #' `train_steps` are used for training; the remaining transitions are
 #' evaluated, in time order, with the state carried forward through every
 #' earlier snapshot. No snapshot after `k` ever influences a score for
-#' snapshot `k + 1`.
+#' snapshot `k + 1`. An undirected pair counts as one positive. Either every
+#' snapshot has node features `x` of one width, or none has and identity
+#' features are used; [predict()] applies the same rule.
 #'
 #' @param snapshots A `snapshot_sequence`.
 #' @param train_steps Target snapshot indices used for training (default the
@@ -620,23 +635,18 @@ train_dynamic_link_model <- function(snapshots, train_steps = NULL, hidden_dim =
     stopf("Evaluation snapshots must come after all training snapshots.")
   }
   n <- snapshots$num_nodes
-  feats <- lapply(snapshots$graphs, function(g) g$x)
-  x0 <- if (!is.null(feats[[1L]])) feats[[1L]] else diag(n)
+  identity <- snapshot_identity_features(snapshots)
   tts <- lapply(snapshots$graphs, graph_tensors, device = dev)
-  xt <- lapply(seq_len(K), function(k) {
-    if (!is.null(tts[[k]]$x)) tts[[k]]$x else torch_tensor(x0, dtype = torch_float(), device = dev)
-  })
-  cell <- if (cell_type == "gru") graph_gru_cell(ncol(x0), hidden_dim)
-          else evolve_gcn_cell(ncol(x0), hidden_dim)
+  xt <- lapply(seq_len(K), function(k) snapshot_input(snapshots, k, identity, dev))
+  in_dim <- xt[[1L]]$size(2L)
+  cell <- if (cell_type == "gru") graph_gru_cell(in_dim, hidden_dim)
+          else evolve_gcn_cell(in_dim, hidden_dim)
   cell$to(device = dev)
   opt <- optim_adam(cell$parameters, lr = lr)
   pairs <- function(k, s) {
-    g <- snapshots$graphs[[k]]
-    pos <- g$edge_index
-    neg <- negative_sampling(pos, num_nodes = n, num_samples = max(1L, ceiling(neg_ratio * ncol(pos))),
-                             directed = g$directed, seed = s)
-    list(pos = torch_tensor(pos, dtype = torch_long(), device = dev),
-         neg = torch_tensor(neg, dtype = torch_long(), device = dev))
+    pr <- snapshot_link_pairs(snapshots$graphs[[k]], n, neg_ratio, s)
+    list(pos = torch_tensor(pr$pos, dtype = torch_long(), device = dev),
+         neg = torch_tensor(pr$neg, dtype = torch_long(), device = dev))
   }
   dot <- function(h, p) (h$index_select(1L, p[1L, ]) * h$index_select(1L, p[2L, ]))$sum(dim = 2L)
   history <- data.frame(epoch = integer(), train_loss = numeric())
@@ -685,7 +695,7 @@ train_dynamic_link_model <- function(snapshots, train_steps = NULL, hidden_dim =
                  test_metrics = if (!is.null(step_metrics)) colMeans(step_metrics[, -1L, drop = FALSE]),
                  baseline_metrics = if (length(eval_steps)) dynamic_link_baseline(snapshots, eval_steps, neg_ratio, seed),
                  task = "dynamic link prediction", device = dev, seed = seed,
-                 num_nodes = n, identity_features = is.null(feats[[1L]]),
+                 num_nodes = n, identity_features = identity,
                  node_ids = snapshots$graphs[[1L]]$node_ids %||% seq_len(n)),
             class = "temporal_fit")
 }
@@ -695,7 +705,10 @@ train_dynamic_link_model <- function(snapshots, train_steps = NULL, hidden_dim =
 #' Scores the links of snapshot `k` with a heuristic computed from snapshots
 #' `1, ..., k - 1` only: the number of earlier interactions between the pair
 #' (`"history"`) or the product of earlier degrees (`"preferential"`), with
-#' the same negative sampling as [train_dynamic_link_model()].
+#' the same positives, negatives and scorable snapshots as
+#' [train_dynamic_link_model()]. Interactions are counted through snapshot
+#' edge weights; for cumulative snapshots only the latest earlier snapshot
+#' is used, since it already holds all earlier events.
 #'
 #' @param snapshots A `snapshot_sequence`.
 #' @param steps Target snapshot indices.
@@ -711,13 +724,18 @@ dynamic_link_baseline <- function(snapshots, steps, neg_ratio = 1, seed = NULL,
                                   method = c("history", "preferential")) {
   method <- match.arg(method)
   n <- snapshots$num_nodes
+  # Like the model, only transitions whose target snapshot has links.
+  steps <- steps[vapply(steps, function(k) ncol(snapshots$graphs[[k]]$edge_index) > 0L, logical(1))]
+  if (!length(steps)) return(c(roc_auc = NA_real_, average_precision = NA_real_))
   res <- t(vapply(steps, function(k) {
-    past <- snapshots$graphs[seq_len(k - 1L)]
-    A <- Reduce(`+`, lapply(past, function(g) adjacency_from_graph(g, weighted = FALSE)))
+    # Edge weights count interactions. A cumulative snapshot already holds
+    # all earlier events, so only the latest one is used.
+    past <- if (isTRUE(snapshots$cumulative)) snapshots$graphs[k - 1L] else snapshots$graphs[seq_len(k - 1L)]
+    A <- Reduce(`+`, lapply(past, function(g) adjacency_from_graph(g, weighted = TRUE)))
     g <- snapshots$graphs[[k]]
-    pos <- g$edge_index
-    neg <- negative_sampling(pos, num_nodes = n, num_samples = max(1L, ceiling(neg_ratio * ncol(pos))),
-                             directed = g$directed, seed = if (is.null(seed)) NULL else seed + 7919L * (k - 1L))
+    pr <- snapshot_link_pairs(g, n, neg_ratio, if (is.null(seed)) NULL else seed + 7919L * (k - 1L))
+    pos <- pr$pos
+    neg <- pr$neg
     sc <- function(p) {
       if (method == "history") as.numeric(A[cbind(p[1L, ], p[2L, ])])
       else Matrix::rowSums(A)[p[1L, ]] * Matrix::colSums(A)[p[2L, ]]
@@ -785,4 +803,33 @@ dataset_synthetic_signal <- function(num_nodes = 20L, num_steps = 60L, seed = NU
     }
   })
   spatiotemporal_signal(g, v)
+}
+
+# Feature policy shared by training and prediction of dynamic link models:
+# every snapshot has features of one width, or none has and identity
+# features are used throughout.
+snapshot_identity_features <- function(snapshots) {
+  has <- vapply(snapshots$graphs, function(g) !is.null(g$x), logical(1))
+  if (any(has) && !all(has)) {
+    stopf("Either every snapshot has node features `x` or none has (snapshots %s lack them).",
+          paste(which(!has), collapse = ", "))
+  }
+  if (all(has) && length(unique(vapply(snapshots$graphs, function(g) ncol(g$x), integer(1)))) > 1L) {
+    stopf("All snapshots must have node features of the same width.")
+  }
+  !any(has)
+}
+
+snapshot_input <- function(snapshots, k, identity, dev) {
+  x <- if (identity) diag(snapshots$num_nodes) else snapshots$graphs[[k]]$x
+  torch_tensor(x, dtype = torch_float(), device = dev)
+}
+
+# Positives of a snapshot (one per undirected pair) and sampled negatives.
+snapshot_link_pairs <- function(g, n, neg_ratio, seed) {
+  pos <- g$edge_index
+  if (!g$directed && ncol(pos)) pos <- pos[, !duplicated(g$edge_pair), drop = FALSE]
+  neg <- negative_sampling(pos, num_nodes = n, num_samples = max(1L, ceiling(neg_ratio * ncol(pos))),
+                           directed = g$directed, seed = seed)
+  list(pos = pos, neg = neg)
 }

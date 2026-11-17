@@ -30,7 +30,10 @@ Named vector of mean ROC-AUC and average precision.
 Scores the links of snapshot \code{k} with a heuristic computed from snapshots
 \verb{1, ..., k - 1} only: the number of earlier interactions between the pair
 (\code{"history"}) or the product of earlier degrees (\code{"preferential"}), with
-the same negative sampling as \code{\link[=train_dynamic_link_model]{train_dynamic_link_model()}}.
+the same positives, negatives and scorable snapshots as
+\code{\link[=train_dynamic_link_model]{train_dynamic_link_model()}}. Interactions are counted through snapshot
+edge weights; for cumulative snapshots only the latest earlier snapshot
+is used, since it already holds all earlier events.
 }
 \examples{
 snaps <- temporal_snapshots(dataset_synthetic_temporal(seed = 1), breaks = 8)

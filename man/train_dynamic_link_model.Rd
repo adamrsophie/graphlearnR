@@ -49,7 +49,9 @@ snapshot \code{k + 1}. Transitions whose target snapshot index is in
 \code{train_steps} are used for training; the remaining transitions are
 evaluated, in time order, with the state carried forward through every
 earlier snapshot. No snapshot after \code{k} ever influences a score for
-snapshot \code{k + 1}.
+snapshot \code{k + 1}. An undirected pair counts as one positive. Either every
+snapshot has node features \code{x} of one width, or none has and identity
+features are used; \code{\link[=predict]{predict()}} applies the same rule.
 }
 \examples{
 if (torch::torch_is_installed()) {

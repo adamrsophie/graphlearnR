@@ -825,3 +825,31 @@ test_that("one node forecasts keep one row per origin", {
   p <- predict(fit, sig, ends = 9:10)
   expect_equal(dim(p), c(2L, 1L))
 })
+
+test_that("snapshot sequences and dynamic link models share one causal, consistent protocol", {
+  g <- graph_data(x = diag(3), edge_index = rbind(1, 2))
+  expect_error(snapshot_sequence(list(g, g, g), start = c(0, 1, 2), end = c(10, 2, 3)), "before the next")
+  expect_error(snapshot_sequence(list(g, g), start = c(0, 1), end = c(1)), "one non missing")
+  expect_error(snapshot_sequence(list(g, g), start = c(0, 2), end = c(1, 1)), "end at or after")
+  # interaction counts drive the history baseline
+  tg <- temporal_graph_data(c(rep(1, 10), 3, 1, 3), c(rep(2, 10), 4, 2, 4),
+                            c(seq(0.1, 1, length.out = 10), 0.5, 1.5, 2.5), num_nodes = 4)
+  sn <- temporal_snapshots(tg, breaks = c(0, 1.2, 2, 3))
+  expect_equal(max(sn$graphs[[1]]$edge_weight), 10)
+  # undirected positives are counted once per pair
+  ug <- graph_data(num_nodes = 3, edge_index = rbind(c(1, 2), c(2, 3)), directed = FALSE)
+  pr <- snapshot_link_pairs(ug, 3, 0.5, 1)
+  expect_equal(ncol(pr$pos), 2L)
+  expect_equal(ncol(pr$neg), 1L)
+  skip_if_no_torch()
+  # mixed feature presence is rejected before training
+  e <- graph_data(edge_index = rbind(1, 2), num_nodes = 4)
+  f <- graph_data(x = diag(4), edge_index = rbind(c(1, 3), c(2, 4)))
+  expect_error(train_dynamic_link_model(snapshot_sequence(list(f, e, f)), hidden_dim = 2, epochs = 1),
+               "Either every snapshot")
+  # an edgeless evaluation snapshot is skipped by model and baseline alike
+  h <- graph_data(x = diag(4), edge_index = matrix(integer(), 2, 0), num_nodes = 4)
+  fit <- train_dynamic_link_model(snapshot_sequence(list(f, f, h)), train_steps = 2, hidden_dim = 2,
+                                  epochs = 1, seed = 1)
+  expect_true(all(is.na(fit$baseline_metrics)))
+})

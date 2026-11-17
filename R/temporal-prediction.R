@@ -99,13 +99,16 @@ predict.temporal_fit <- function(object, new_data = NULL, pairs = NULL, time = N
     dev <- object$device
     cell <- object$model
     cell$eval()
-    x0 <- if (object$identity_features) diag(snaps$num_nodes) else NULL
+    if (!identical(snapshot_identity_features(snaps), object$identity_features)) {
+      stopf("`new_data` %s node features, unlike the training snapshots.",
+            if (object$identity_features) "has" else "lacks")
+    }
     p <- torch_tensor(normalize_edge_index(pairs), dtype = torch_long(), device = dev)
     s <- with_no_grad({
       h <- NULL
       for (k in seq_len(step - 1L)) {
         tt <- graph_tensors(snaps$graphs[[k]], dev)
-        x <- if (!is.null(x0)) torch_tensor(x0, dtype = torch_float(), device = dev) else tt$x
+        x <- snapshot_input(snaps, k, object$identity_features, dev)
         h <- cell(x, tt$edge_index, h, tt$edge_weight)
       }
       (h$index_select(1L, p[1L, ]) * h$index_select(1L, p[2L, ]))$sum(dim = 2L)

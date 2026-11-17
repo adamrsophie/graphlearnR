@@ -138,8 +138,9 @@ uses the training nodes in each batch, weighted by GraphSAINT's
 
 \strong{Link prediction.} Message passing uses \code{split$train_graph}, which holds
 training edges only. Fresh negative pairs are drawn every epoch, excluding
-training positives; validation and test pairs are never used for
-training.
+training positives and every validation and test pair (positive or
+negative), so no evaluation pair enters the training objective under
+either label.
 
 \strong{Reproducibility.} With \code{seed}, \code{torch}'s global generator is seeded
 with \code{torch_manual_seed(seed)} for dropout and other torch draws during
