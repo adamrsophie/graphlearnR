@@ -66,11 +66,13 @@ read_ogb_node <- function(dir, split = NULL, add_inverse_edge = FALSE) {
                   num_nodes = n, directed = !add_inverse_edge)
   sp <- ogb_split(dir, split)
   if (!is.null(sp)) {
+    check_ogb_split(sp, n, "node")
     for (k in c("train", "val", "test")) {
       m <- logical(n)
       m[sp[[k]]] <- TRUE
       g[[paste0(k, "_mask")]] <- m
     }
+    validate_graph(g)
   }
   g$metadata <- list(source = "Open Graph Benchmark", url = "https://ogb.stanford.edu/",
                      folder = basename(dir), split = attr(sp, "name"))
@@ -104,6 +106,7 @@ read_ogb_graph <- function(dir, split = NULL, add_inverse_edge = TRUE) {
     for (k in seq_along(graphs)) graphs[[k]]$graph_y <- factor(lab[k, 1L], levels = c(0, 1))
   }
   sp <- ogb_split(dir, split)
+  if (!is.null(sp)) check_ogb_split(sp, length(graphs), "graph")
   graph_dataset(graphs, metadata = list(
     source = "Open Graph Benchmark", url = "https://ogb.stanford.edu/", folder = basename(dir),
     split = if (!is.null(sp)) unclass(sp)[c("train", "val", "test")], split_name = attr(sp, "name")))
@@ -126,9 +129,31 @@ ogb_split <- function(dir, split) {
     if (length(split) == 0L) return(NULL)
     if (length(split) > 1L) stopf("Several splits in `%s`; choose one with `split`.", sdir)
   }
-  rd <- function(f) as.integer(ogb_csv(file.path(sdir, split, f))) + 1L
+  if (!dir.exists(file.path(sdir, split))) {
+    stopf("Split `%s` not found in `%s`; available: %s.", split, sdir,
+          paste(list.dirs(sdir, full.names = FALSE, recursive = FALSE), collapse = ", "))
+  }
+  rd <- function(f) {
+    v <- ogb_csv(file.path(sdir, split, f))
+    if (is.null(v)) stopf("Split `%s` has no `%s`.", split, f)
+    as.integer(v) + 1L
+  }
   structure(list(train = rd("train.csv.gz"), val = rd("valid.csv.gz"), test = rd("test.csv.gz")),
             name = split)
+}
+
+# Split indices must be valid, distinct and disjoint across periods.
+check_ogb_split <- function(sp, n, what) {
+  for (k in names(sp)) {
+    v <- sp[[k]]
+    if (anyNA(v) || any(v < 1L | v > n)) stopf("The %s split refers to %ss outside 1:%d.", k, what, n)
+    if (anyDuplicated(v)) stopf("The %s split lists a %s more than once.", k, what)
+  }
+  pairs <- list(c("train", "val"), c("train", "test"), c("val", "test"))
+  for (p in pairs) {
+    both <- intersect(sp[[p[1L]]], sp[[p[2L]]])
+    if (length(both)) stopf("%d %ss are in both the %s and %s splits.", length(both), what, p[1L], p[2L])
+  }
 }
 
 ogb_registry <- list(

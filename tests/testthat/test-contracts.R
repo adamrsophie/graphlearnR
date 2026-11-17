@@ -1048,3 +1048,16 @@ test_that("sampling a hetero sample keeps original node indices and edge labels"
   expect_true(3L %in% s2$n_id$a)
   expect_true(all(s2$n_id$a %in% c(3L, 4L)))
 })
+
+test_that("OGB readers reject unknown and overlapping splits", {
+  src <- system.file("extdata", "ogbn-toy", package = "graphlearnR")
+  dir <- file.path(tempfile("ogb"), "ogbn-toy")
+  dir.create(dirname(dir))
+  file.copy(src, dirname(dir), recursive = TRUE)
+  expect_error(read_ogb_node(dir, split = "nope"), "not found")
+  f <- file.path(dir, "split", "time", "valid.csv.gz")
+  con <- gzfile(f, "w")
+  writeLines("0", con)
+  close(con)
+  expect_error(read_ogb_node(dir), "both the train and val")
+})
