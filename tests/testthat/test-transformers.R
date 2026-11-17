@@ -123,7 +123,8 @@ test_that("edge biased attention shifts only the target's attention row by w'e",
 test_that("graph_transformer_model uses edge features when edge_dim is set", {
   skip_if_no_torch()
   gs <- dataset_synthetic_graphs(12, seed = 1)
-  gs <- lapply(gs, function(g) { g$edge_attr <- matrix(1, num_edges(g), 3); g })
+  withr::local_seed(2)
+  gs <- lapply(gs, function(g) { g$edge_attr <- matrix(rnorm(3 * num_edges(g)), num_edges(g), 3); g })
   torch::torch_manual_seed(1)
   m <- graph_transformer_model(ncol(gs[[1]]$x), 8, 2, heads = 2, edge_dim = 3)
   fit <- train_graph_model(m, gs, "graph_classification", epochs = 2, batch_size = 6, seed = 1)
@@ -131,7 +132,7 @@ test_that("graph_transformer_model uses edge features when edge_dim is set", {
   bt <- graph_tensors(graph_batch(gs[1:2]))
   m$eval()
   o1 <- as_mat(graphlearnR:::model_forward(m, bt))
-  bt$edge_attr <- bt$edge_attr * 2
+  bt$edge_attr <- torch::torch_randn(bt$edge_attr$size(1), 3)
   o2 <- as_mat(graphlearnR:::model_forward(m, bt))
   expect_false(isTRUE(all.equal(o1, o2)))
 })

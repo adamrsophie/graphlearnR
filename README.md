@@ -2,8 +2,14 @@
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/adamrsophie/graphlearnR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/adamrsophie/graphlearnR/actions/workflows/R-CMD-check.yaml)
+[![Codecov test coverage](https://codecov.io/gh/adamrsophie/graphlearnR/graph/badge.svg)](https://app.codecov.io/gh/adamrsophie/graphlearnR)
 [![pkgdown](https://github.com/adamrsophie/graphlearnR/actions/workflows/pkgdown.yaml/badge.svg)](https://adamrsophie.github.io/graphlearnR/)
-[![License: GPL-3](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+<!-- DOI badge: Zenodo mints a concept DOI on the first GitHub release; replace XXXXXXXX and uncomment. -->
+<!-- [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXXX) -->
+<!-- Software Heritage archives public repositories only; uncomment once the repository is archived. -->
+<!-- [![Archived on Software Heritage](https://archive.softwareheritage.org/badge/origin/https://github.com/adamrsophie/graphlearnR/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/adamrsophie/graphlearnR) -->
 <!-- badges: end -->
 
 graphlearnR is a framework for machine learning on graphs and graph neural

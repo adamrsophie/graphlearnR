@@ -89,7 +89,7 @@ graph_laplacian <- function(g, operator) {
 #' @export
 graph_operator_symbolic <- function(g, operator = c("adjacency", "laplacian", "gcn")) {
   if (!requireNamespace("symcompR", quietly = TRUE)) {
-    stopf("graph_operator_symbolic() needs the symcompR package: remotes::install_github(\"adamrsophie/symcompR\").")
+    stopf("graph_operator_symbolic() needs the symcompR package: install.packages(\"symcompR\") once it is on CRAN, or remotes::install_github(\"adamrsophie/symcompR\").")
   }
   operator <- match.arg(operator)
   if (!inherits(g, "graph_data")) stopf("`g` must be a graph_data object.")
