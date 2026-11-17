@@ -262,6 +262,7 @@ split_graphs <- function(n, train = 0.8, val = 0.1, test = 0.1,
     if (is.null(groups) || length(groups) != n) {
       stopf("`groups` must give one group per graph for method \"%s\".", method)
     }
+    if (anyNA(groups)) stopf("`groups` must not be missing; give each graph a group.")
     p <- c(train, val, test)
     if (any(!is.finite(p)) || any(p < 0) || any(p > 1) || sum(p) > 1 + 1e-8) {
       stopf("Group and scaffold splits need proportions in [0, 1] that sum to at most 1.")
@@ -273,13 +274,18 @@ split_graphs <- function(n, train = 0.8, val = 0.1, test = 0.1,
     } else {
       grp <- with_optional_seed(seed, grp[sample.int(length(grp))])
     }
-    target <- cumsum(c(train, val)) * n
+    # Whole groups go to the first split with room; groups beyond the
+    # total target stay unassigned, as with the random method.
+    target <- cumsum(c(train, val, test)) * n + 1e-8
     out <- list(train = integer(), val = integer(), test = integer())
+    used <- 0L
     for (gi in grp) {
       k <- if (length(out$train) + length(gi) <= target[1L]) "train"
            else if (length(out$train) + length(out$val) + length(gi) <= target[2L]) "val"
-           else "test"
+           else if (used + length(gi) <= target[3L]) "test"
+           else next
       out[[k]] <- c(out[[k]], gi)
+      used <- used + length(gi)
     }
     return(out)
   }

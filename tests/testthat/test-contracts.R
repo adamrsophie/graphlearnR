@@ -1070,3 +1070,9 @@ test_that("link splits refuse relations that a metapath was built from", {
   sp <- split_edges_hetero(hg, "a__r__b", val = 1 / 3, test = 1 / 3, seed = 1)
   expect_s3_class(add_metapath(sp$train_graph, c("a__r__b", "b__id__b")), "hetero_graph_data")
 })
+
+test_that("group splits honor a zero test share and reject missing groups", {
+  sp <- split_graphs(10, .5, 0, 0, method = "group", groups = 1:10, seed = 1)
+  expect_equal(lengths(sp), c(train = 5L, val = 0L, test = 0L))
+  expect_error(split_graphs(3, method = "group", groups = c(1, NA, 2)), "missing")
+})
