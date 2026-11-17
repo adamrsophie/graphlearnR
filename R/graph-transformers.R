@@ -397,16 +397,20 @@ graph_transformer_model <- nn_module(
 #' batch norm. Positional encodings ([laplacian_pe()], [random_walk_pe()])
 #' are added to the input features by the caller, as in the paper.
 #'
-#' Both parts are permutation equivariant. Memory of the global part is
-#' \eqn{O(B L^2 H)} for `B` graphs of at most `L` nodes; linear attention
-#' variants (Performer) are not provided.
+#' Both parts are permutation equivariant. With `attn_type = "multihead"`
+#' memory of the global part is \eqn{O(B L^2 H)} for `B` graphs of at most
+#' `L` nodes; `attn_type = "performer"` uses [linear_attention()] instead,
+#' which is linear in the number of nodes (and never pads graphs).
 #'
 #' @param dim Feature size.
 #' @param conv Local message passing module mapping `dim` to `dim`, or
 #'   `NULL` for attention only.
 #' @param heads Attention heads (`dim` must be divisible by `heads`).
 #' @param dropout Dropout after each part.
-#' @param attn_dropout Dropout on attention weights.
+#' @param attn_dropout Dropout on attention weights (`"multihead"` only).
+#' @param attn_type `"multihead"` (exact softmax attention) or
+#'   `"performer"` (FAVOR+ linear attention).
+#' @param num_features Random features for `"performer"`.
 #' @return An `nn_module` called as
 #'   `layer(x, edge_index, batch = NULL, ...)`; `...` (for example
 #'   `edge_attr`) goes to `conv`.
@@ -422,11 +426,17 @@ graph_transformer_model <- nn_module(
 #' @export
 gps_layer <- nn_module(
   "gps_layer",
-  initialize = function(dim, conv = NULL, heads = 4L, dropout = 0, attn_dropout = 0) {
+  initialize = function(dim, conv = NULL, heads = 4L, dropout = 0, attn_dropout = 0,
+                        attn_type = c("multihead", "performer"), num_features = 64L) {
     if (dim %% heads != 0L) stopf("`dim` must be divisible by `heads`.")
+    self$attn_type <- match.arg(attn_type)
     self$conv <- conv
     self$dropout <- dropout
-    self$attn <- nn_multihead_attention(dim, heads, dropout = attn_dropout, batch_first = TRUE)
+    self$attn <- if (self$attn_type == "multihead") {
+      nn_multihead_attention(dim, heads, dropout = attn_dropout, batch_first = TRUE)
+    } else {
+      linear_attention(dim, heads, num_features = num_features)
+    }
     self$norm1 <- nn_layer_norm(dim)
     self$norm2 <- nn_layer_norm(dim)
     self$norm3 <- nn_layer_norm(dim)
@@ -436,11 +446,94 @@ gps_layer <- nn_module(
     drop <- function(t) nnf_dropout(t, p = self$dropout, training = self$training)
     if (is.null(batch)) batch <- torch_ones(x$size(1L), dtype = torch_long(), device = x$device)
     h <- if (is.null(self$conv)) 0 else self$norm1(x + drop(self$conv(x, edge_index, ...)))
-    dense <- to_dense_batch(x, batch)
-    att <- self$attn(dense$x, dense$x, dense$x, key_padding_mask = dense$mask$logical_not(),
-                     need_weights = FALSE)[[1L]]
-    dense$x <- att
-    h <- h + self$norm2(x + drop(from_dense_batch(dense)))
+    g <- if (self$attn_type == "performer") {
+      self$attn(x, batch)
+    } else {
+      dense <- to_dense_batch(x, batch)
+      dense$x <- self$attn(dense$x, dense$x, dense$x, key_padding_mask = dense$mask$logical_not(),
+                           need_weights = FALSE)[[1L]]
+      from_dense_batch(dense)
+    }
+    h <- h + self$norm2(x + drop(g))
     self$norm3(h + drop(self$mlp(h)))
+  }
+)
+
+#' Linear (kernelized) attention within each graph
+#'
+#' Multi head self attention among the nodes of each graph of a batch whose
+#' cost is linear in the number of nodes. The softmax kernel
+#' \eqn{\exp(q^\top k / \sqrt{C})} is replaced by a feature map product
+#' \eqn{\phi(q)^\top \phi(k)}, so for node \eqn{i} of graph \eqn{g}
+#' \deqn{o_i = \frac{\phi(q_i)^\top \sum_{j \in g} \phi(k_j) v_j^\top}
+#'               {\phi(q_i)^\top \sum_{j \in g} \phi(k_j)}.}
+#' With `kernel = "favor"` (Performer, Choromanski et al. 2021),
+#' \eqn{\phi(x) = m^{-1/2} \exp(W^\top x' - \lVert x' \rVert^2 / 2)} with
+#' \eqn{x' = x / C^{1/4}} and `num_features` fixed Gaussian random features
+#' \eqn{W}, an unbiased estimate of the softmax kernel; with
+#' `kernel = "elu"` (Katharopoulos et al. 2020), \eqn{\phi(x) = \mathrm{elu}(x) + 1}.
+#' The per graph sums use scatter operations, so graphs are never padded and
+#' never attend to each other. Memory is \eqn{O(N H m C)}.
+#'
+#' @param dim Feature size.
+#' @param heads Attention heads (`dim` must be divisible by `heads`).
+#' @param num_features Random features \eqn{m} for `"favor"`.
+#' @param kernel `"favor"` or `"elu"`.
+#' @return An `nn_module` called as `attn(x, batch = NULL)`, returning N by
+#'   `dim`.
+#' @references Choromanski et al. (2021) Rethinking attention with
+#'   Performers. ICLR. Katharopoulos et al. (2020) Transformers are RNNs.
+#'   ICML.
+#' @examples
+#' if (torch::torch_is_installed()) {
+#'   attn <- linear_attention(8, heads = 2)
+#'   attn(torch::torch_randn(5, 8))$shape
+#' }
+#' @export
+linear_attention <- nn_module(
+  "linear_attention",
+  initialize = function(dim, heads = 4L, num_features = 64L, kernel = c("favor", "elu")) {
+    if (dim %% heads != 0L) stopf("`dim` must be divisible by `heads`.")
+    self$kernel <- match.arg(kernel)
+    self$heads <- heads
+    self$C <- dim %/% heads
+    self$m <- check_count(num_features, "num_features", 1L)
+    self$qkv <- nn_linear(dim, 3L * dim)
+    self$proj <- nn_linear(dim, dim)
+    if (self$kernel == "favor") self$features <- nn_buffer(torch_randn(self$C, self$m))
+  },
+  feature_map = function(x, is_query) {
+    if (self$kernel == "elu") return(nnf_elu(x) + 1)
+    x <- x / self$C^0.25
+    proj <- torch_matmul(x, self$features)
+    sq <- (x * x)$sum(dim = -1L, keepdim = TRUE) / 2
+    # Subtract a stabilizer that cancels in the ratio: per row for queries,
+    # one global constant for keys.
+    stab <- if (is_query) proj$amax(dim = -1L, keepdim = TRUE) else proj$max()
+    torch_exp(proj - sq - stab) / sqrt(self$m) + 1e-6
+  },
+  forward = function(x, batch = NULL) {
+    n <- x$size(1L)
+    H <- self$heads
+    C <- self$C
+    if (is.null(batch)) batch <- torch_ones(n, dtype = torch_long(), device = x$device)
+    batch <- as_index_tensor(batch, x$device)
+    G <- as.integer(batch$max()$item())
+    qkv <- self$qkv(x)$view(c(n, 3L, H, C))
+    pq <- self$feature_map(qkv[, 1L, , ], TRUE)
+    pk <- self$feature_map(qkv[, 2L, , ], FALSE)
+    v <- qkv[, 3L, , ]
+    if (H == 1L) {
+      pq <- pq$view(c(n, 1L, -1L))
+      pk <- pk$view(c(n, 1L, -1L))
+      v <- v$view(c(n, 1L, C))
+    }
+    m <- pk$size(3L)
+    kv <- (pk$unsqueeze(-1L) * v$unsqueeze(3L))$reshape(c(n, -1L))
+    KV <- scatter_sum(kv, batch, G)$view(c(G, H, m, C))$index_select(1L, batch)
+    Z <- scatter_sum(pk$reshape(c(n, -1L)), batch, G)$view(c(G, H, m))$index_select(1L, batch)
+    num <- (pq$unsqueeze(-1L) * KV)$sum(dim = 3L)
+    den <- (pq * Z)$sum(dim = -1L, keepdim = TRUE)
+    self$proj((num / den)$reshape(c(n, H * C)))
   }
 )

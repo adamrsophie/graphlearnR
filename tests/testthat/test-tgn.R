@@ -148,3 +148,36 @@ test_that("train_tgn rejects periods that overlap in time", {
   sp$val <- sp$train
   expect_error(train_tgn(tgn_model(tg$num_nodes, 8, 4, 8), sp, epochs = 1), "overlap")
 })
+
+test_that("multi layer TGAT embeddings reach two hop partners and train", {
+  skip_if_no_torch()
+  torch::torch_manual_seed(1)
+  n <- 6
+  m2 <- tgn_model(n, memory_dim = 4, time_dim = 4, embedding_dim = 4, embedding = "graph_attention",
+                  num_neighbors = 3, heads = 1, num_layers = 2, node_embedding = FALSE)
+  m1 <- tgn_model(n, memory_dim = 4, time_dim = 4, embedding_dim = 4, embedding = "graph_attention",
+                  num_neighbors = 3, heads = 1, num_layers = 1, node_embedding = FALSE)
+  # chain 1 - 2 - 3: node 3 is two hops from node 1
+  store <- graphlearnR:::tgn_store_add(graphlearnR:::tgn_neighbor_store(n, 3), c(1, 2), c(2, 3), c(1, 2))
+  last_t <- rep(0, n)
+  mem <- torch::torch_randn(n, 4)
+  emb <- function(model, mm) {
+    as.numeric(as.array(model$embed(mm, last_t, 1L, 5, graphlearnR:::tgn_store_query(store, 1L), store)))
+  }
+  mem_b <- mem$clone()
+  mem_b[3, ] <- mem_b[3, ] + 5
+  expect_false(isTRUE(all.equal(emb(m2, mem), emb(m2, mem_b))))
+  expect_equal(emb(m1, mem), emb(m1, mem_b), tolerance = 1e-6)
+  # a node with no partners at all only sees its own memory
+  mem_c <- mem$clone()
+  mem_c[1:4, ] <- mem_c[1:4, ] + 1
+  z5 <- function(mm) as.numeric(as.array(m2$embed(mm, last_t, 5L, 5, NULL, store)))
+  expect_equal(z5(mem), z5(mem_c), tolerance = 1e-6)
+  expect_error(tgn_model(n, embedding = "time", num_layers = 2), "graph_attention")
+  tg <- dataset_synthetic_temporal(seed = 1)
+  sp <- split_temporal(tg)
+  m <- tgn_model(tg$num_nodes, memory_dim = 8, embedding_dim = 8, embedding = "graph_attention",
+                 num_neighbors = 4, num_layers = 2)
+  fit <- train_tgn(m, sp, epochs = 1, batch_size = 200, seed = 1)
+  expect_true(all(is.finite(fit$test_metrics)))
+})

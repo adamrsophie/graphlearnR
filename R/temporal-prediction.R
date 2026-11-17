@@ -72,7 +72,7 @@ predict.temporal_fit <- function(object, new_data = NULL, pairs = NULL, time = N
              else model$update_memory(state$mem, state$last_t, state$pending)
       q <- c(pairs[1L, ], pairs[2L, ])
       nb <- if (model$embedding != "time") tgn_store_query(state$store, q)
-      z <- model$embed(cur$mem, cur$last_t, q, c(time, time), nb)
+      z <- model$embed(cur$mem, cur$last_t, q, c(time, time), nb, state$store)
       model$score(z[seq_len(k), ], z[k + seq_len(k), ])
     })
     return(link_out(as.vector(as_r_array(s))))

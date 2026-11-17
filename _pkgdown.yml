@@ -153,6 +153,7 @@ reference:
   - graph_transformer_layer
   - graph_transformer_model
   - gps_layer
+  - linear_attention
 - title: Explainability
   contents:
   - explain

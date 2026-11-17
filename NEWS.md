@@ -95,7 +95,11 @@ First release.
   relations (`hetero_conv(aggr = "semantic")`), and `add_metapath()` to
   compose relations into metapaths.
 - `gps_layer()`: GPS graph transformer layer (local message passing plus
-  masked global attention per graph).
+  masked global attention per graph), with exact or linear
+  (`attn_type = "performer"`) global attention; `linear_attention()`
+  provides FAVOR+ and elu kernel attention per graph.
+- `tgn_model(num_layers = )` stacks TGAT style temporal attention over
+  multiple hops of earlier interactions.
 - `meta_layer()` composes edge, node and graph level updates (graph network
   block, as PyG's `MetaLayer`).
 - `evolve_gcn_cell()` (EvolveGCN-O: GCN weights evolve with a GRU across

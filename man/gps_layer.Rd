@@ -4,7 +4,15 @@
 \alias{gps_layer}
 \title{GPS layer: local message passing plus global attention}
 \usage{
-gps_layer(dim, conv = NULL, heads = 4L, dropout = 0, attn_dropout = 0)
+gps_layer(
+  dim,
+  conv = NULL,
+  heads = 4L,
+  dropout = 0,
+  attn_dropout = 0,
+  attn_type = c("multihead", "performer"),
+  num_features = 64L
+)
 }
 \arguments{
 \item{dim}{Feature size.}
@@ -16,7 +24,12 @@ gps_layer(dim, conv = NULL, heads = 4L, dropout = 0, attn_dropout = 0)
 
 \item{dropout}{Dropout after each part.}
 
-\item{attn_dropout}{Dropout on attention weights.}
+\item{attn_dropout}{Dropout on attention weights (\code{"multihead"} only).}
+
+\item{attn_type}{\code{"multihead"} (exact softmax attention) or
+\code{"performer"} (FAVOR+ linear attention).}
+
+\item{num_features}{Random features for \code{"performer"}.}
 }
 \value{
 An \code{nn_module} called as
@@ -39,9 +52,10 @@ batch norm. Positional encodings (\code{\link[=laplacian_pe]{laplacian_pe()}}, \
 are added to the input features by the caller, as in the paper.
 }
 \details{
-Both parts are permutation equivariant. Memory of the global part is
-\eqn{O(B L^2 H)} for \code{B} graphs of at most \code{L} nodes; linear attention
-variants (Performer) are not provided.
+Both parts are permutation equivariant. With \code{attn_type = "multihead"}
+memory of the global part is \eqn{O(B L^2 H)} for \code{B} graphs of at most
+\code{L} nodes; \code{attn_type = "performer"} uses \code{\link[=linear_attention]{linear_attention()}} instead,
+which is linear in the number of nodes (and never pads graphs).
 }
 \examples{
 if (torch::torch_is_installed()) {

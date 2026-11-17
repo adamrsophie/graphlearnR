@@ -28,8 +28,17 @@
 #'
 #' \eqn{\phi(\Delta t) = \cos(\omega \Delta t + b)} is the learnable time
 #' encoding of TGAT (Xu et al. 2020). Memory is detached between batches
-#' (truncated backpropagation over one batch). Only one embedding layer
-#' (one hop) and the "last" message aggregator are implemented.
+#' (truncated backpropagation over one batch). Only the "last" message
+#' aggregator is implemented.
+#'
+#' With `embedding = "graph_attention"` and `num_layers > 1`, the attention
+#' is stacked as in TGAT: layer \eqn{l} attends over each node's stored
+#' partners using their layer \eqn{l - 1} representations (layer 0 is the
+#' memory), so `num_layers` hops of earlier interactions inform \eqn{z_i}.
+#' Partners of partners come from the neighbor store as it stood at the
+#' start of the batch, so every interaction used is earlier than the batch;
+#' time differences are measured from the query time. Cost grows as
+#' `num_neighbors^num_layers` per query node.
 #'
 #' @param num_nodes Number of nodes.
 #' @param memory_dim Memory size.
@@ -40,6 +49,8 @@
 #' @param num_neighbors Most recent partners used by the graph embeddings.
 #' @param heads Attention heads for `"graph_attention"`; `embedding_dim`
 #'   must be divisible by it.
+#' @param num_layers Stacked attention layers (hops) for
+#'   `"graph_attention"`.
 #' @param node_embedding Add a learned static embedding per node to
 #'   \eqn{z_i} (useful without node features; makes the model
 #'   transductive).
@@ -61,7 +72,8 @@ tgn_model <- nn_module(
   "tgn_model",
   initialize = function(num_nodes, memory_dim = 32L, time_dim = 16L, embedding_dim = 32L,
                         edge_dim = 0L, embedding = c("time", "graph_sum", "graph_attention"),
-                        num_neighbors = 10L, node_embedding = TRUE, heads = 2L) {
+                        num_neighbors = 10L, node_embedding = TRUE, heads = 2L,
+                        num_layers = 1L) {
     self$num_nodes <- check_count(num_nodes, "num_nodes", 1L)
     self$memory_dim <- memory_dim
     self$edge_dim <- edge_dim
@@ -85,6 +97,20 @@ tgn_model <- nn_module(
       self$att_out <- nn_sequential(nn_linear(embedding_dim + memory_dim + time_dim,
                                               embedding_dim), nn_relu(),
                                     nn_linear(embedding_dim, embedding_dim))
+      self$num_layers <- check_count(num_layers, "num_layers", 1L)
+      # Layers 2, 3, ...: inputs are the previous layer's embeddings.
+      if (self$num_layers > 1L) {
+        self$att_layers <- nn_module_list(lapply(seq_len(self$num_layers - 1L), function(i) {
+          nn_module_dict(list(
+            q = nn_linear(embedding_dim + time_dim, embedding_dim),
+            k = nn_linear(embedding_dim + time_dim + edge_dim, embedding_dim),
+            v = nn_linear(embedding_dim + time_dim + edge_dim, embedding_dim),
+            out = nn_sequential(nn_linear(2L * embedding_dim + time_dim, embedding_dim), nn_relu(),
+                                nn_linear(embedding_dim, embedding_dim))))
+        }))
+      }
+    } else if (num_layers != 1L) {
+      stopf("`num_layers` > 1 needs `embedding = \"graph_attention\"`.")
     }
     if (node_embedding) self$static <- nn_embedding(num_nodes, embedding_dim)
     self$decoder <- nn_sequential(nn_linear(2L * embedding_dim, embedding_dim), nn_relu(),
@@ -128,11 +154,14 @@ tgn_model <- nn_module(
     n <- torch_tanh(gx[[3L]] + r * gh[[3L]])
     (1 - z) * n + z * h
   },
-  embed = function(mem, last_t, nodes, t, nbrs = NULL) {
+  embed = function(mem, last_t, nodes, t, nbrs = NULL, store = NULL) {
     dev <- mem$device
     ni <- torch_tensor(nodes, dtype = torch_long(), device = dev)
     dt <- torch_tensor(t - last_t[nodes], dtype = torch_float(), device = dev)
-    if (self$embedding == "graph_attention") {
+    if (self$embedding == "graph_attention" && (self$num_layers %||% 1L) > 1L) {
+      if (is.null(store)) stopf("A multi layer TGN embedding needs the neighbor store.")
+      z <- self$deep(self$num_layers, mem, last_t, nodes, t, store)
+    } else if (self$embedding == "graph_attention") {
       z <- self$attend(mem, ni, dt, t, nbrs)
     } else {
       z <- self$emb_self(torch_cat(list(mem$index_select(1L, ni), self$time_encode(dt)), dim = 2L))
@@ -171,6 +200,38 @@ tgn_model <- nn_module(
       agg <- scatter_sum((v * a$unsqueeze(-1L))$reshape(c(-1L, H * C)), qi, m)
     }
     self$att_out(torch_cat(list(agg, s_q, self$time_encode(dt)), dim = 2L))
+  },
+  deep = function(l, mem, last_t, nodes, t, store) {
+    dev <- mem$device
+    if (l == 0L) return(mem$index_select(1L, torch_tensor(nodes, dtype = torch_long(), device = dev)))
+    nb <- tgn_store_query(store, nodes)
+    hq <- self$deep(l - 1L, mem, last_t, nodes, t, store)
+    hk <- if (length(nb$query)) self$deep(l - 1L, mem, last_t, nb$neighbor, t[nb$query], store)
+    mods <- if (l == 1L) list(q = self$att_q, k = self$att_k, v = self$att_v, out = self$att_out)
+            else self$att_layers[[l - 1L]]
+    m <- length(nodes)
+    H <- self$heads
+    C <- mods$q$out_features %/% H
+    q <- mods$q(torch_cat(list(hq, self$time_encode(torch_zeros(m, device = dev))), dim = 2L))
+    agg <- torch_zeros(m, H * C, device = dev)
+    if (l == self$num_layers) self$last_attention <- NULL
+    if (length(nb$query)) {
+      qi <- torch_tensor(nb$query, dtype = torch_long(), device = dev)
+      dtn <- torch_tensor(t[nb$query] - nb$t, dtype = torch_float(), device = dev)
+      parts <- list(hk, self$time_encode(dtn))
+      if (self$edge_dim > 0L) parts[[3L]] <- torch_tensor(nb$edge_attr, dtype = torch_float(), device = dev)
+      kv <- torch_cat(parts, dim = 2L)
+      k <- mods$k(kv)$view(c(-1L, H, C))
+      v <- mods$v(kv)$view(c(-1L, H, C))
+      a <- (q$view(c(-1L, H, C))$index_select(1L, qi) * k)$sum(dim = -1L) / sqrt(C)
+      a <- scatter_softmax(a, qi, m)
+      if (l == self$num_layers) {
+        self$last_attention <- list(query = nb$query, neighbor = nb$neighbor, alpha = a$detach())
+      }
+      agg <- scatter_sum((v * a$unsqueeze(-1L))$reshape(c(-1L, H * C)), qi, m)
+    }
+    dt <- torch_tensor(t - last_t[nodes], dtype = torch_float(), device = dev)
+    mods$out(torch_cat(list(agg, hq, self$time_encode(dt)), dim = 2L))
   },
   score = function(z_src, z_dst) {
     self$decoder(torch_cat(list(z_src, z_dst), dim = 2L))$squeeze(-1L)
@@ -268,7 +329,7 @@ train_tgn <- function(model, split, epochs = 10L, batch_size = 200L, lr = 1e-3, 
         q <- c(ev$src, ev$dst, negs[idx])
         tq <- rep(ev$t, 3L)
         nb <- if (model$embedding != "time") tgn_store_query(state$store, q)
-        z <- model$embed(cur$mem, cur$last_t, q, tq, nb)
+        z <- model$embed(cur$mem, cur$last_t, q, tq, nb, state$store)
         k <- length(idx)
         zs <- z[1:k, ]
         pos <- model$score(zs, z[(k + 1L):(2L * k), ])

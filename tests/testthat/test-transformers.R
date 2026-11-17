@@ -124,7 +124,13 @@ test_that("graph_transformer_model uses edge features when edge_dim is set", {
   skip_if_no_torch()
   gs <- dataset_synthetic_graphs(12, seed = 1)
   withr::local_seed(2)
-  gs <- lapply(gs, function(g) { g$edge_attr <- matrix(rnorm(3 * num_edges(g)), num_edges(g), 3); g })
+  # Random node features too: with identical nodes every value vector is
+  # the same and no attention bias can change the output.
+  gs <- lapply(gs, function(g) {
+    g$x <- matrix(rnorm(2 * num_nodes(g)), num_nodes(g), 2)
+    g$edge_attr <- matrix(rnorm(3 * num_edges(g)), num_edges(g), 3)
+    g
+  })
   torch::torch_manual_seed(1)
   m <- graph_transformer_model(ncol(gs[[1]]$x), 8, 2, heads = 2, edge_dim = 3)
   fit <- train_graph_model(m, gs, "graph_classification", epochs = 2, batch_size = 6, seed = 1)
@@ -156,4 +162,43 @@ test_that("gps_layer is equivariant and keeps graphs of a batch apart", {
   expect_equal(outp, alone[perm, ], tolerance = 1e-5)
   expect_equal(dim(as_mat(gps_layer(4, heads = 2)(t1$x, t1$edge_index))), c(5, 4))
   expect_error(gps_layer(5, heads = 2), "divisible")
+})
+
+test_that("linear_attention matches its explicit formula and keeps graphs apart", {
+  skip_if_no_torch()
+  torch::torch_manual_seed(3)
+  for (kern in c("elu", "favor")) {
+    attn <- linear_attention(4, heads = 2, num_features = 16, kernel = kern)
+    x <- torch::torch_randn(7, 4)
+    batch <- c(1, 1, 1, 2, 2, 2, 2)
+    out <- as_mat(attn(x, batch))
+    qkv <- as_mat(attn$qkv(x))
+    ref <- matrix(0, 7, 4)
+    for (h in 1:2) {
+      cols <- (h - 1) * 2 + 1:2
+      Q <- qkv[, cols]; K <- qkv[, 4 + cols]; V <- qkv[, 8 + cols]
+      phi <- function(M, query) as_mat(attn$feature_map(torch::torch_tensor(M), query))
+      pq <- phi(Q, TRUE); pk <- phi(K, FALSE)
+      for (i in 1:7) {
+        js <- which(batch == batch[i])
+        w <- as.numeric(pk[js, , drop = FALSE] %*% pq[i, ])
+        ref[i, cols] <- colSums(w * V[js, , drop = FALSE]) / sum(w)
+      }
+    }
+    ref <- ref %*% t(as_mat(attn$proj$weight)) + matrix(as.numeric(as.array(attn$proj$bias$detach())), 7, 4, byrow = TRUE)
+    expect_equal(out, ref, tolerance = 1e-4, info = kern)
+    expect_equal(as_mat(attn(x[1:3, ])), out[1:3, ], tolerance = 1e-5, info = kern)
+  }
+  # FAVOR+ approximates softmax attention with many random features
+  torch::torch_manual_seed(4)
+  a <- linear_attention(4, heads = 1, num_features = 4000)
+  x <- torch::torch_randn(6, 4) * 0.5
+  qkv <- as_mat(a$qkv(x))
+  S <- exp(qkv[, 1:4] %*% t(qkv[, 5:8]) / 2)
+  soft <- (S / rowSums(S)) %*% qkv[, 9:12]
+  lin <- (as_mat(a(x)) - matrix(as.numeric(as.array(a$proj$bias$detach())), 6, 4, byrow = TRUE)) %*%
+    t(solve(as_mat(a$proj$weight)))
+  expect_lt(max(abs(lin - soft)), 0.05)
+  g <- gps_layer(4, heads = 2, attn_type = "performer")
+  expect_equal(dim(as_mat(g(x, graph_tensors(dataset_karate())$edge_index[, 1:2]))), c(6, 4))
 })
