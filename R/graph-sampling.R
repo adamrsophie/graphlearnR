@@ -56,6 +56,7 @@ sample_neighbors <- function(g, seeds, fanouts, replace = FALSE, seed = NULL) {
 # a node loader, so batches do not rebuild them.
 sample_neighbors_impl <- function(g, seeds, fanouts, replace = FALSE, seed = NULL,
                                   csc = NULL, full_deg = NULL) {
+  check_index(seeds, "seeds")
   seeds <- as.integer(seeds)
   n <- g$num_nodes
   if (!length(seeds) || anyNA(seeds) || any(seeds < 1L | seeds > n)) {
@@ -255,6 +256,7 @@ k_hop_subgraph <- function(g, nodes, k) {
 node_loader <- function(g, nodes = NULL, batch_size = 64L, fanouts = c(10L, 10L),
                         shuffle = TRUE, seed = NULL) {
   nodes <- nodes %||% if (!is.null(g$train_mask)) which(g$train_mask) else seq_len(g$num_nodes)
+  check_index(nodes, "nodes")
   fanouts <- as.integer(fanouts)
   ld <- structure(list(graph = g, nodes = as.integer(nodes),
                        batch_size = check_count(batch_size, "batch_size", 1L),

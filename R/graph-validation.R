@@ -29,6 +29,8 @@ validate_graph <- function(g) {
 
   if (!is.matrix(ei) || nrow(ei) != 2L) {
     add("`edge_index` must be a 2 by E integer matrix.")
+  } else if (e > 0L && (!is.numeric(ei) || anyNA(ei) || any(ei != round(ei)))) {
+    add("`edge_index` must hold whole node indices without missing values.")
   } else if (e > 0L) {
     bad <- ei < 1L | ei > n
     if (any(bad)) {

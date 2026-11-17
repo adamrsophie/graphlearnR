@@ -1124,3 +1124,12 @@ test_that("training rejects empty supervision and missing classes", {
   tg <- temporal_graph_data(c(1, 2, 3), c(2, 3, 1), c(1, 1, 1))
   expect_error(train_tgn(tgn_model(3, 4, 2, 4), split_temporal(tg), epochs = 1), "no events")
 })
+
+test_that("fractional node indices are rejected, not truncated", {
+  g <- graph_data(num_nodes = 2, edge_index = rbind(1, 2))
+  g$edge_index[1, 1] <- 1.5
+  expect_error(validate_graph(g), "whole node indices")
+  g <- graph_data(num_nodes = 2, edge_index = rbind(1, 2))
+  expect_error(sample_neighbors(g, 1.9, -1), "whole numbers")
+  expect_error(induced_subgraph(g, 1.5), "whole numbers")
+})

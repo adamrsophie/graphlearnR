@@ -104,6 +104,7 @@ coalesce_edges <- function(g) {
 #' @export
 induced_subgraph <- function(g, nodes) {
   reject_batch(g, "induced_subgraph")
+  check_index(nodes, "nodes")
   nodes <- as.integer(nodes)
   if (anyDuplicated(nodes) || any(nodes < 1L | nodes > g$num_nodes)) {
     stopf("`nodes` must be unique indices in 1:%d.", g$num_nodes)
