@@ -210,14 +210,29 @@ add_reverse_relations <- function(hg, prefix = "rev_") {
   rev_key <- function(e) paste(e$dst, paste0(prefix, e$rel), e$src, sep = "__")
   unpaired <- function(e) is.null(e$reverse) && is.null(e$reverse_of)
   pair_key <- function(ei) sort(paste(ei[1L, ], ei[2L, ]))
-  # First pair existing reverses, so the result does not depend on the order
-  # of the relations. An existing reverse is paired only when it holds
-  # exactly the flipped edges, so link splits remove held out pairs from
-  # both relations.
-  for (key in names(hg$edges)) {
+  if (!is.character(prefix) || length(prefix) != 1L || !nzchar(prefix) || grepl("__", prefix, fixed = TRUE)) {
+    stopf("`prefix` must be a non empty string without \"__\".")
+  }
+  # Candidate pairings with existing relations are collected first; a
+  # relation that could pair two ways (a chain such as r, rev_r, rev_rev_r)
+  # is rejected before anything changes, so the result never depends on
+  # the order of the relations.
+  cand <- Filter(Negate(is.null), lapply(names(hg$edges), function(key) {
     e <- hg$edges[[key]]
     rkey <- rev_key(e)
-    if (!unpaired(e) || !rkey %in% names(hg$edges)) next
+    if (unpaired(e) && rkey %in% names(hg$edges) && rkey != key) c(key, rkey)
+  }))
+  used <- unlist(cand)
+  if (anyDuplicated(used)) {
+    stopf("Relation `%s` could be the reverse of more than one relation; rename relations or use another `prefix`.",
+          used[anyDuplicated(used)])
+  }
+  # An existing reverse is paired only when it holds exactly the flipped
+  # edges, so link splits remove held out pairs from both relations.
+  for (cp in cand) {
+    key <- cp[1L]
+    rkey <- cp[2L]
+    e <- hg$edges[[key]]
     r <- hg$edges[[rkey]]
     if (!unpaired(r)) stopf("Relation `%s` is already paired with another relation.", rkey)
     if (!identical(r$src, e$dst) || !identical(r$dst, e$src) ||

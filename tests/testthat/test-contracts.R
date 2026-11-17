@@ -1216,3 +1216,14 @@ test_that("the graph transformer accepts graphs without nodes", {
            batch = torch::torch_empty(0, dtype = torch::torch_long()), num_graphs = 2L)
   expect_equal(dim(torch::as_array(out$detach())), c(2L, 2L))
 })
+
+test_that("reverse relation pairing rejects prefix chains in any order", {
+  e <- rbind(1:2, 1:2)
+  mk <- function(keys) {
+    rels <- list(a__r__b = e, b__rev_r__a = e[2:1, ], a__rev_rev_r__b = e)
+    hetero_graph_data(list(a = 2, b = 2), rels[keys])
+  }
+  expect_error(add_reverse_relations(mk(c("a__r__b", "b__rev_r__a", "a__rev_rev_r__b"))), "more than one")
+  expect_error(add_reverse_relations(mk(c("a__rev_rev_r__b", "b__rev_r__a", "a__r__b"))), "more than one")
+  expect_error(add_reverse_relations(mk("a__r__b"), prefix = ""), "non empty")
+})
