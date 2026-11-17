@@ -773,3 +773,11 @@ test_that("training rejects overlapping masks set after construction", {
   expect_error(train_graph_model(gnn_model("sage", 34, 4, 2), g, "node_classification", epochs = 1),
                "overlap")
 })
+
+test_that("corrupted tails stay filtered on large graphs", {
+  p <- rbind(50000L, 1L)
+  out <- corrupt_tails(p, 50000L, 49997L, known = cbind(p, rbind(50000L, 2L)), seed = 1)
+  expect_false(any(out %in% c(1L, 2L, 50000L)))
+  expect_error(corrupt_tails(p, 50000L, 49998L, known = cbind(p, rbind(50000L, 2L)), seed = 1),
+               "Too few")
+})

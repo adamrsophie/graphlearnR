@@ -479,12 +479,13 @@ corrupt_tails <- function(pos, num_nodes, k, known = pos, filtered = TRUE, direc
   pos <- normalize_edge_index(pos)
   known <- normalize_edge_index(known)
   if (!directed) known <- cbind(known, known[2:1, , drop = FALSE])
-  kk <- (as.double(known[1L, ]) - 1) * num_nodes + known[2L, ]
+  # Known tails grouped by head, so no head by node product can overflow.
+  tails_of <- split(known[2L, ], factor(known[1L, ], levels = seq_len(num_nodes)))
   with_optional_seed(seed, {
     out <- matrix(0L, ncol(pos), k)
     for (i in seq_len(ncol(pos))) {
       u <- pos[1L, i]
-      bad <- if (filtered) kk[kk > (u - 1) * num_nodes & kk <= u * num_nodes] - (u - 1) * num_nodes else pos[2L, i]
+      bad <- if (filtered) tails_of[[u]] else pos[2L, i]
       # The head itself is never a candidate tail (no corrupted self pairs).
       cand <- setdiff(seq_len(num_nodes), c(bad, pos[2L, i], u))
       if (length(cand) < k) stopf("Too few candidate tails for positive %d.", i)
