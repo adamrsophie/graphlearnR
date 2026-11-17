@@ -733,3 +733,24 @@ test_that("scatter extremes, weighted vector messages and GCN normalization edge
   n0$edge_weight$sum()$backward()
   expect_false(is.nan(as.numeric(w0$grad)))
 })
+
+test_that("training negatives never include evaluation pairs", {
+  skip_if_no_torch()
+  g <- graph_data(x = diag(6), edge_index = rbind(c(1, 2, 3, 4, 5, 1, 2), c(2, 3, 4, 5, 6, 3, 5)))
+  sp <- split_edges(g, val = 2, test = 2, seed = 3)
+  key <- function(m) paste(m[1, ], m[2, ])
+  ev <- key(cbind(sp$val_pos, sp$val_neg, sp$test_pos, sp$test_neg))
+  seen <- new.env()
+  seen$train <- character()
+  rec <- nn_module(initialize = function() self$b <- nn_parameter(torch_zeros(1)),
+                   forward = function(z, pairs) {
+                     if (z$requires_grad) {
+                       seen$train <- c(seen$train, key(as_r_array(pairs$cpu())))
+                     }
+                     (z$index_select(1L, pairs[1L, ]) * z$index_select(1L, pairs[2L, ]))$sum(2L) + self$b
+                   })
+  train_graph_model(gnn_model("sage", 6, 4, num_layers = 1), sp, "link_prediction",
+                    decoder = rec(), epochs = 30, seed = 1)
+  expect_gt(length(seen$train), 0)
+  expect_false(any(seen$train %in% ev))
+})

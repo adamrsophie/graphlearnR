@@ -23,8 +23,9 @@
 #'
 #' **Link prediction.** Message passing uses `split$train_graph`, which holds
 #' training edges only. Fresh negative pairs are drawn every epoch, excluding
-#' training positives; validation and test pairs are never used for
-#' training.
+#' training positives and every validation and test pair (positive or
+#' negative), so no evaluation pair enters the training objective under
+#' either label.
 #'
 #' **Reproducibility.** With `seed`, `torch`'s global generator is seeded
 #' with `torch_manual_seed(seed)` for dropout and other torch draws during
@@ -585,10 +586,11 @@ link_task_runner <- function(model, split, dev, decoder, seed) {
   train_pos <- pairs_t(split$train_pos)
   val_pos <- if (ncol(split$val_pos)) pairs_t(split$val_pos)
   val_neg <- if (ncol(split$val_neg)) pairs_t(split$val_neg)
+  eval_excluded <- link_exclusions(split)
   list(
     default_loss = "bce", metric_name = "roc_auc", decoder = decoder,
     train_epoch = function(epoch, opt, loss_fn, grad_clip) {
-      neg <- negative_sampling(split$train_pos, num_nodes = split$num_nodes,
+      neg <- negative_sampling(eval_excluded, num_nodes = split$num_nodes,
                                num_samples = ncol(split$train_pos),
                                directed = split$directed,
                                seed = if (is.null(seed)) NULL else seed + epoch)
@@ -840,4 +842,13 @@ check_sampler_operator <- function(model, loader) {
     "operator than the full graph model. Use gnn_model(\"graph_conv\") (aggr = \"sum\")."),
     if (inherits(loader, "saint_loader")) "saint_loader" else "ladies_loader", cfg$architecture),
     call. = FALSE)
+}
+
+# Pairs training negatives must avoid: training positives and every
+# evaluation pair, positive or negative.
+link_exclusions <- function(split) {
+  do.call(cbind, lapply(c("train_pos", "val_pos", "val_neg", "test_pos", "test_neg"), function(f) {
+    m <- split[[f]]
+    if (is.null(m)) matrix(integer(), 2L, 0L) else m
+  }))
 }

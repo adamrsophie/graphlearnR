@@ -987,10 +987,10 @@ hetero_link_runner <- function(model, split, dev, decoder, seed) {
     train_epoch = function(epoch, opt, loss_fn, grad_clip) {
       nseed <- if (is.null(seed)) NULL else seed + epoch
       neg <- if (isTRUE(split$same_type)) {
-        negative_sampling(split$train_pos, num_nodes = split$num_src,
+        negative_sampling(link_exclusions(split), num_nodes = split$num_src,
                           num_samples = ncol(split$train_pos), directed = FALSE, seed = nseed)
       } else {
-        negative_sampling(split$train_pos, num_src = split$num_src, num_dst = split$num_dst,
+        negative_sampling(link_exclusions(split), num_src = split$num_src, num_dst = split$num_dst,
                           num_samples = ncol(split$train_pos), seed = nseed)
       }
       z <- model(ht, return_embedding = TRUE)
