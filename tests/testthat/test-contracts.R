@@ -1237,3 +1237,17 @@ test_that("TopK keeps the exact decimal share of nodes", {
   expect_equal(out$x$size(1), 7)
   expect_equal(topk_pool(1, ratio = 0.3)(x, ei)$x$size(1), 8)
 })
+
+test_that("graph regression reports exact losses on disjoint graph lists", {
+  skip_if_no_torch()
+  mk <- function(v, k) lapply(seq_len(k), function(i) graph_data(x = matrix(1, 2, 1), edge_index = rbind(1, 2),
+                                                                  graph_y = v))
+  m <- gnn_model("graph_conv", 1, 2, 1, num_layers = 1, pool = "mean", dropout = 0)
+  torch::with_no_grad(for (p in m$parameters) p$zero_())
+  fit <- train_graph_model(m, mk(1, 4), "graph_regression", val_data = mk(2, 3), epochs = 1, lr = 0,
+                           seed = 1)
+  expect_equal(fit$history$train_loss[1], 1, tolerance = 1e-6)
+  expect_equal(fit$history$val_loss[1], 4, tolerance = 1e-6)
+  ev <- evaluate_graph_model(fit, mk(3, 2))
+  expect_equal(ev$value[ev$metric == "rmse"], 3, tolerance = 1e-6)
+})
