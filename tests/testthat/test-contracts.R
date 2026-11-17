@@ -1208,3 +1208,11 @@ test_that("GRU cells follow the input dtype and HAN skips empty types", {
   expect_equal(out$b$size(1), 0)
   expect_null(sem$last_semantic_attention$b)
 })
+
+test_that("the graph transformer accepts graphs without nodes", {
+  skip_if_no_torch()
+  m <- graph_transformer_model(1, 4, 2, heads = 1, pool = "mean")
+  out <- m(torch::torch_zeros(0, 1), torch::torch_empty(2, 0, dtype = torch::torch_long()),
+           batch = torch::torch_empty(0, dtype = torch::torch_long()), num_graphs = 2L)
+  expect_equal(dim(torch::as_array(out$detach())), c(2L, 2L))
+})

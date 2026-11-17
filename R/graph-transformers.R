@@ -351,12 +351,17 @@ graph_transformer_model <- nn_module(
                      edge_attr = NULL, ...) {
     n <- x$size(1L)
     if (is.null(batch)) batch <- torch_ones(n, dtype = torch_long(), device = x$device)
-    deg <- scatter_count(edge_index[2L, ], n)$to(dtype = torch_long())$clamp(max = self$config$max_degree)
-    h <- self$input(x) + self$degree_emb(deg + 1L)
-    dist <- self$distances(edge_index, batch, x$device)
-    if (is.null(self$config$edge_dim)) edge_attr <- NULL
-    for (layer in seq_along(self$layers)) h <- self$layers[[layer]](h, batch, dist, edge_index, edge_attr)
-    h <- self$ln(h)
+    if (n == 0L) {
+      # No nodes: no attention to run; graph readouts of empty graphs are zero.
+      h <- self$ln(self$input(x))
+    } else {
+      deg <- scatter_count(edge_index[2L, ], n)$to(dtype = torch_long())$clamp(max = self$config$max_degree)
+      h <- self$input(x) + self$degree_emb(deg + 1L)
+      dist <- self$distances(edge_index, batch, x$device)
+      if (is.null(self$config$edge_dim)) edge_attr <- NULL
+      for (layer in seq_along(self$layers)) h <- self$layers[[layer]](h, batch, dist, edge_index, edge_attr)
+      h <- self$ln(h)
+    }
     if (isTRUE(return_embedding)) return(h)
     if (!is.null(self$config$pool)) {
       h <- switch(self$config$pool,
