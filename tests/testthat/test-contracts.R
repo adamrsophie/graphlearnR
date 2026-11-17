@@ -1140,3 +1140,12 @@ test_that("explanation subgraphs keep both directions of a selected pair", {
   sub <- explanation_subgraph(g, ex, k = 1)
   expect_equal(ncol(sub$edge_index), 2L)
 })
+
+test_that("edge gradients warn for models that ignore edge weights", {
+  skip_if_no_torch()
+  g <- graph_data(x = diag(3), edge_index = rbind(1:2, 2:3))
+  m <- gnn_model("gat", 3, 4, 2, num_layers = 1)
+  for (p in m$parameters) p$requires_grad_(FALSE)
+  expect_warning(ex <- explain_edges(m, g, target = 2, output = 1), "ignores")
+  expect_true(all(is.na(ex$edges$attribution)))
+})

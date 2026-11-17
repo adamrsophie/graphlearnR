@@ -147,10 +147,17 @@ explain_edges <- function(model, g, target = NULL, output = NULL) {
   mask <- torch_ones_like(w0)$requires_grad_(TRUE)
   out <- forward_with(model, tt, edge_weight = w0 * mask)
   sel <- select_output(out, target, output)
-  sel$value$backward()
-  grad <- if (is.null(mask$grad)) rep(NA_real_, num_edges(g)) else as.vector(as_r_array(mask$grad))
-  if (all(grad == 0, na.rm = TRUE)) {
-    warnf("All edge gradients are zero; the model may ignore `edge_weight`.")
+  # A model that ignores edge weights (GAT, for example) gives an output that
+  # does not depend on the mask at all.
+  if (!isTRUE(sel$value$requires_grad)) {
+    warnf("The selected output does not depend on edge weights; this model ignores `edge_weight`, so edge gradients are not available.")
+    grad <- rep(NA_real_, ncol(g$edge_index))
+  } else {
+    sel$value$backward()
+    grad <- if (is.null(mask$grad)) rep(NA_real_, ncol(g$edge_index)) else as.vector(as_r_array(mask$grad))
+    if (all(grad == 0, na.rm = TRUE)) {
+      warnf("All edge gradients are zero; the model may ignore `edge_weight`.")
+    }
   }
   structure(list(method = "edge_gradient", target = target, output = sel$index,
                  edges = data.frame(edge = seq_along(grad), from = g$edge_index[1L, ],
