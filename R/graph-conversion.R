@@ -78,8 +78,12 @@ from_igraph <- function(ig, x_attrs = NULL, y_attr = "y", edge_attrs = NULL,
   label <- function(a, getter, have) {
     if (is.null(a)) return(NULL)
     k <- opt_g(paste0(a, "_ncol"))
-    if (!is.null(k)) return(vapply(seq_len(k), function(j) as.double(getter(ig, paste0(a, "_", j))),
-                                   numeric(if (identical(getter, igraph::vertex_attr)) n else nrow(el))))
+    if (!is.null(k)) {
+      rows <- if (identical(getter, igraph::vertex_attr)) n else nrow(el)
+      # An explicit matrix: vapply() drops to a vector when there is one row.
+      return(matrix(vapply(seq_len(k), function(j) as.double(getter(ig, paste0(a, "_", j))),
+                           numeric(rows)), nrow = rows, ncol = k))
+    }
     if (a %in% have) getter(ig, a)
   }
   x <- get_cols(x_attrs, igraph::vertex_attr)

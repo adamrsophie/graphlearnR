@@ -1159,3 +1159,10 @@ test_that("SubgraphX returns a connected explanation on a disconnected graph", {
   expect_true(length(S) <= 2L)
   expect_true(all(S %in% 1:2) || all(S %in% 3:4))
 })
+
+test_that("igraph round trips keep multi target labels of one node", {
+  skip_if_not_installed("igraph")
+  g <- graph_data(num_nodes = 1, y = matrix(c(17, 18), 1, 2))
+  back <- from_igraph(to_igraph(g))
+  expect_equal(unname(back$y), matrix(c(17, 18), 1, 2))
+})
