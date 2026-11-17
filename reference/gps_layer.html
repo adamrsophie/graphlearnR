@@ -105,7 +105,15 @@ are added to the input features by the caller, as in the paper.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">gps_layer</span><span class="op">(</span><span class="va">dim</span>, conv <span class="op">=</span> <span class="cn">NULL</span>, heads <span class="op">=</span> <span class="fl">4L</span>, dropout <span class="op">=</span> <span class="fl">0</span>, attn_dropout <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">gps_layer</span><span class="op">(</span></span>
+<span>  <span class="va">dim</span>,</span>
+<span>  conv <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  heads <span class="op">=</span> <span class="fl">4L</span>,</span>
+<span>  dropout <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  attn_dropout <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  attn_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"multihead"</span>, <span class="st">"performer"</span><span class="op">)</span>,</span>
+<span>  num_features <span class="op">=</span> <span class="fl">64L</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -130,7 +138,16 @@ are added to the input features by the caller, as in the paper.</p>
 
 
 <dt id="arg-attn-dropout">attn_dropout<a class="anchor" aria-label="anchor" href="#arg-attn-dropout"></a></dt>
-<dd><p>Dropout on attention weights.</p></dd>
+<dd><p>Dropout on attention weights (<code>"multihead"</code> only).</p></dd>
+
+
+<dt id="arg-attn-type">attn_type<a class="anchor" aria-label="anchor" href="#arg-attn-type"></a></dt>
+<dd><p><code>"multihead"</code> (exact softmax attention) or
+<code>"performer"</code> (FAVOR+ linear attention).</p></dd>
+
+
+<dt id="arg-num-features">num_features<a class="anchor" aria-label="anchor" href="#arg-num-features"></a></dt>
+<dd><p>Random features for <code>"performer"</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -141,9 +158,10 @@ are added to the input features by the caller, as in the paper.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Both parts are permutation equivariant. Memory of the global part is
-\(O(B L^2 H)\) for <code>B</code> graphs of at most <code>L</code> nodes; linear attention
-variants (Performer) are not provided.</p>
+    <p>Both parts are permutation equivariant. With <code>attn_type = "multihead"</code>
+memory of the global part is \(O(B L^2 H)\) for <code>B</code> graphs of at most
+<code>L</code> nodes; <code>attn_type = "performer"</code> uses <code><a href="linear_attention.html">linear_attention()</a></code> instead,
+which is linear in the number of nodes (and never pads graphs).</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>

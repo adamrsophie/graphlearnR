@@ -21,7 +21,15 @@ are added to the input features by the caller, as in the paper.
 ## Usage
 
 ``` r
-gps_layer(dim, conv = NULL, heads = 4L, dropout = 0, attn_dropout = 0)
+gps_layer(
+  dim,
+  conv = NULL,
+  heads = 4L,
+  dropout = 0,
+  attn_dropout = 0,
+  attn_type = c("multihead", "performer"),
+  num_features = 64L
+)
 ```
 
 ## Arguments
@@ -45,7 +53,16 @@ gps_layer(dim, conv = NULL, heads = 4L, dropout = 0, attn_dropout = 0)
 
 - attn_dropout:
 
-  Dropout on attention weights.
+  Dropout on attention weights (`"multihead"` only).
+
+- attn_type:
+
+  `"multihead"` (exact softmax attention) or `"performer"` (FAVOR+
+  linear attention).
+
+- num_features:
+
+  Random features for `"performer"`.
 
 ## Value
 
@@ -54,9 +71,11 @@ An `nn_module` called as `layer(x, edge_index, batch = NULL, ...)`;
 
 ## Details
 
-Both parts are permutation equivariant. Memory of the global part is
-\\O(B L^2 H)\\ for `B` graphs of at most `L` nodes; linear attention
-variants (Performer) are not provided.
+Both parts are permutation equivariant. With `attn_type = "multihead"`
+memory of the global part is \\O(B L^2 H)\\ for `B` graphs of at most
+`L` nodes; `attn_type = "performer"` uses
+[`linear_attention()`](https://adamrsophie.github.io/graphlearnR/reference/linear_attention.md)
+instead, which is linear in the number of nodes (and never pads graphs).
 
 ## References
 

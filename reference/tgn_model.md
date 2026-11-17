@@ -17,7 +17,8 @@ tgn_model(
   embedding = c("time", "graph_sum", "graph_attention"),
   num_neighbors = 10L,
   node_embedding = TRUE,
-  heads = 2L
+  heads = 2L,
+  num_layers = 1L
 )
 
 train_tgn(
@@ -70,6 +71,10 @@ train_tgn(
 
   Attention heads for `"graph_attention"`; `embedding_dim` must be
   divisible by it.
+
+- num_layers:
+
+  Stacked attention layers (hops) for `"graph_attention"`.
 
 - model:
 
@@ -142,8 +147,17 @@ training (and, for test, validation) events, without gradient updates.
 
 \\\phi(\Delta t) = \cos(\omega \Delta t + b)\\ is the learnable time
 encoding of TGAT (Xu et al. 2020). Memory is detached between batches
-(truncated backpropagation over one batch). Only one embedding layer
-(one hop) and the "last" message aggregator are implemented.
+(truncated backpropagation over one batch). Only the "last" message
+aggregator is implemented.
+
+With `embedding = "graph_attention"` and `num_layers > 1`, the attention
+is stacked as in TGAT: layer \\l\\ attends over each node's stored
+partners using their layer \\l - 1\\ representations (layer 0 is the
+memory), so `num_layers` hops of earlier interactions inform \\z_i\\.
+Partners of partners come from the neighbor store as it stood at the
+start of the batch, so every interaction used is earlier than the batch;
+time differences are measured from the query time. Cost grows as
+`num_neighbors^num_layers` per query node.
 
 ## References
 
@@ -163,5 +177,5 @@ if (torch::torch_is_installed()) {
   fit$test_metrics
 }
 #>           roc_auc average_precision 
-#>         0.4997609         0.5301846 
+#>         0.5255789         0.5271072 
 ```

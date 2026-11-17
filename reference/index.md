@@ -283,6 +283,8 @@ Leakage safe splits for every task.
   : Graphormer style graph transformer
 - [`gps_layer()`](https://adamrsophie.github.io/graphlearnR/reference/gps_layer.md)
   : GPS layer: local message passing plus global attention
+- [`linear_attention()`](https://adamrsophie.github.io/graphlearnR/reference/linear_attention.md)
+  : Linear (kernelized) attention within each graph
 
 ## Explainability
 
@@ -292,6 +294,11 @@ Leakage safe splits for every task.
   [`explain_occlusion()`](https://adamrsophie.github.io/graphlearnR/reference/explain.md)
   [`gnn_explainer()`](https://adamrsophie.github.io/graphlearnR/reference/explain.md)
   : Explain node predictions
+- [`pg_explainer()`](https://adamrsophie.github.io/graphlearnR/reference/pg_explainer.md)
+  [`predict(`*`<pg_explainer>`*`)`](https://adamrsophie.github.io/graphlearnR/reference/pg_explainer.md)
+  : Parameterized explainer (PGExplainer)
+- [`subgraphx()`](https://adamrsophie.github.io/graphlearnR/reference/subgraphx.md)
+  : Subgraph explanations by Monte Carlo tree search (SubgraphX)
 - [`explanation_fidelity()`](https://adamrsophie.github.io/graphlearnR/reference/explanation_fidelity.md)
   [`explanation_stability()`](https://adamrsophie.github.io/graphlearnR/reference/explanation_fidelity.md)
   : Fidelity and stability of an explanation

@@ -73,7 +73,7 @@ if (torch::torch_is_installed()) {
   dec(z, pairs)
 }
 #> torch_tensor
-#> -0.2736
-#>  3.1483
+#> -1.7467
+#> -2.2851
 #> [ CPUFloatType{2} ][ grad_fn = <SumBackward1> ]
 ```

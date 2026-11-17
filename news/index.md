@@ -147,7 +147,17 @@ First release.
   to compose relations into metapaths.
 - [`gps_layer()`](https://adamrsophie.github.io/graphlearnR/reference/gps_layer.md):
   GPS graph transformer layer (local message passing plus masked global
-  attention per graph).
+  attention per graph), with exact or linear (`attn_type = "performer"`)
+  global attention;
+  [`linear_attention()`](https://adamrsophie.github.io/graphlearnR/reference/linear_attention.md)
+  provides FAVOR+ and elu kernel attention per graph.
+- `tgn_model(num_layers = )` stacks TGAT style temporal attention over
+  multiple hops of earlier interactions.
+- [`pg_explainer()`](https://adamrsophie.github.io/graphlearnR/reference/pg_explainer.md)
+  (PGExplainer: an amortized edge mask network) and
+  [`subgraphx()`](https://adamrsophie.github.io/graphlearnR/reference/subgraphx.md)
+  (SubgraphX: Monte Carlo tree search for subgraphs scored by Shapley
+  values) explain predictions.
 - [`meta_layer()`](https://adamrsophie.github.io/graphlearnR/reference/meta_layer.md)
   composes edge, node and graph level updates (graph network block, as
   PyG’s `MetaLayer`).

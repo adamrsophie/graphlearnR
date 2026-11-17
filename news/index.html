@@ -137,7 +137,11 @@
 <code><a href="../reference/gnn-layers.html">edge_conv()</a></code> (EdgeConv of dynamic graph CNNs, max over [x_i, x_j - x_i] messages).</li>
 <li>HAN: <code>hetero_gnn_model(conv = "han")</code> with semantic attention across relations (<code>hetero_conv(aggr = "semantic")</code>), and <code><a href="../reference/add_metapath.html">add_metapath()</a></code> to compose relations into metapaths.</li>
 <li>
-<code><a href="../reference/gps_layer.html">gps_layer()</a></code>: GPS graph transformer layer (local message passing plus masked global attention per graph).</li>
+<code><a href="../reference/gps_layer.html">gps_layer()</a></code>: GPS graph transformer layer (local message passing plus masked global attention per graph), with exact or linear (<code>attn_type = "performer"</code>) global attention; <code><a href="../reference/linear_attention.html">linear_attention()</a></code> provides FAVOR+ and elu kernel attention per graph.</li>
+<li>
+<code>tgn_model(num_layers = )</code> stacks TGAT style temporal attention over multiple hops of earlier interactions.</li>
+<li>
+<code><a href="../reference/pg_explainer.html">pg_explainer()</a></code> (PGExplainer: an amortized edge mask network) and <code><a href="../reference/subgraphx.html">subgraphx()</a></code> (SubgraphX: Monte Carlo tree search for subgraphs scored by Shapley values) explain predictions.</li>
 <li>
 <code><a href="../reference/meta_layer.html">meta_layer()</a></code> composes edge, node and graph level updates (graph network block, as PyG’s <code>MetaLayer</code>).</li>
 <li>

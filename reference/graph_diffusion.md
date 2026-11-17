@@ -47,7 +47,7 @@ graph_diffusion(
 - alg:
 
   A modelcompR algorithm; default
-  [`modelcompR::Tsit5()`](https://rdrr.io/pkg/modelcompR/man/ode_algorithms.html).
+  [`modelcompR::Tsit5()`](https://adamrsophie.github.io/modelcompR/reference/ode_algorithms.html).
 
 - ...:
 

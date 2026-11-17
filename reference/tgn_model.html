@@ -87,7 +87,8 @@ in chronological batches:</p>
 <span>  embedding <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"time"</span>, <span class="st">"graph_sum"</span>, <span class="st">"graph_attention"</span><span class="op">)</span>,</span>
 <span>  num_neighbors <span class="op">=</span> <span class="fl">10L</span>,</span>
 <span>  node_embedding <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  heads <span class="op">=</span> <span class="fl">2L</span></span>
+<span>  heads <span class="op">=</span> <span class="fl">2L</span>,</span>
+<span>  num_layers <span class="op">=</span> <span class="fl">1L</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">train_tgn</span><span class="op">(</span></span>
@@ -142,6 +143,11 @@ transductive).</p></dd>
 <dt id="arg-heads">heads<a class="anchor" aria-label="anchor" href="#arg-heads"></a></dt>
 <dd><p>Attention heads for <code>"graph_attention"</code>; <code>embedding_dim</code>
 must be divisible by it.</p></dd>
+
+
+<dt id="arg-num-layers">num_layers<a class="anchor" aria-label="anchor" href="#arg-num-layers"></a></dt>
+<dd><p>Stacked attention layers (hops) for
+<code>"graph_attention"</code>.</p></dd>
 
 
 <dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
@@ -210,8 +216,16 @@ weights of the last call are kept in <code>model$last_attention</code>.</p></li>
 against one random destination per event.</p></li>
 </ol><p>\(\phi(\Delta t) = \cos(\omega \Delta t + b)\) is the learnable time
 encoding of TGAT (Xu et al. 2020). Memory is detached between batches
-(truncated backpropagation over one batch). Only one embedding layer
-(one hop) and the "last" message aggregator are implemented.</p>
+(truncated backpropagation over one batch). Only the "last" message
+aggregator is implemented.</p>
+<p>With <code>embedding = "graph_attention"</code> and <code>num_layers &gt; 1</code>, the attention
+is stacked as in TGAT: layer \(l\) attends over each node's stored
+partners using their layer \(l - 1\) representations (layer 0 is the
+memory), so <code>num_layers</code> hops of earlier interactions inform \(z_i\).
+Partners of partners come from the neighbor store as it stood at the
+start of the batch, so every interaction used is earlier than the batch;
+time differences are measured from the query time. Cost grows as
+<code>num_neighbors^num_layers</code> per query node.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -231,7 +245,7 @@ temporal graphs.</p>
 <span class="r-in"><span>  <span class="va">fit</span><span class="op">$</span><span class="va">test_metrics</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>           roc_auc average_precision </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         0.4997609         0.5301846 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         0.5255789         0.5271072 </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
