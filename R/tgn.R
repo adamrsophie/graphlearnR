@@ -327,6 +327,16 @@ train_tgn <- function(model, split, epochs = 10L, batch_size = 200L, lr = 1e-3, 
     if (!inherits(split[[nm]], "temporal_graph_data")) stopf("`split` must come from split_temporal().")
     if (is.unsorted(split[[nm]]$t)) stopf("Events of `split$%s` must be in time order.", nm)
   }
+  # Memory rows are node indices, so every period must index the same nodes.
+  ids <- split$train$node_ids
+  if (split$train$num_nodes != model$num_nodes) {
+    stopf("`split` has %d nodes but the model has %d.", split$train$num_nodes, model$num_nodes)
+  }
+  for (nm in c("val", "test")) {
+    if (!identical(split[[nm]]$node_ids, ids)) {
+      stopf("`split$%s` lists its nodes differently (`node_ids`) than `split$train`.", nm)
+    }
+  }
   ends <- vapply(split[c("train", "val", "test")], function(s) {
     if (length(s$t)) c(min(s$t), max(s$t)) else c(NA_real_, NA_real_)
   }, numeric(2))
@@ -413,7 +423,8 @@ train_tgn <- function(model, split, epochs = 10L, batch_size = 200L, lr = 1e-3, 
                  # Memory, last update times, the pending batch and the
                  # neighbor store after every training, validation and test
                  # event, so predict() can continue from the end of the data.
-                 state = te$state, last_time = if (length(seen)) max(seen) else -Inf),
+                 state = te$state, last_time = if (length(seen)) max(seen) else -Inf,
+                 node_ids = ids),
             class = "temporal_fit")
 }
 

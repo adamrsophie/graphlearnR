@@ -48,7 +48,14 @@ temporal_graph_data <- function(src, dst, t, num_nodes = NULL, x = NULL, edge_at
   if (anyNA(tn) || any(!is.finite(tn))) stopf("Event times must be finite and not missing.")
   x <- as_feature_matrix(x, "x")
   edge_attr <- as_feature_matrix(edge_attr, "edge_attr")
+  # Lengths are checked before sorting, which would pad or truncate them.
+  m <- length(src)
+  if (!is.null(edge_attr) && nrow(edge_attr) != m) stopf("`edge_attr` must have one row per event.")
+  if (!is.null(y) && n_rows(y) != m) stopf("`y` must have one entry per event.")
   num_nodes <- num_nodes %||% max(c(n_rows(x), length(node_ids), src, dst, 0L), na.rm = TRUE)
+  if (!is.null(node_ids) && (length(node_ids) != num_nodes || anyNA(node_ids) || anyDuplicated(node_ids))) {
+    stopf("`node_ids` must hold %d unique, non missing identifiers.", num_nodes)
+  }
   ord <- order(tn, method = "radix")
   tg <- structure(list(
     src = src[ord], dst = dst[ord], t = tn[ord], time_class = class(t),

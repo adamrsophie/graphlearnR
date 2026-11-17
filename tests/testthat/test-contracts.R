@@ -792,3 +792,20 @@ test_that("TGN negatives avoid every partner of the source at that time", {
   neg <- tgn_negatives(3L, c(1L, 1L), c(2L, 3L), 1, t = c(5, 6))
   expect_equal(neg, c(3L, 2L))
 })
+
+test_that("temporal data check lengths and TGN keeps node identities", {
+  expect_error(temporal_graph_data(c(1, 1), c(2, 2), 1:2, y = 17), "one entry per event")
+  expect_error(temporal_graph_data(c(1, 1), c(2, 2), 1:2, edge_attr = matrix(1, 3, 1)), "one row per event")
+  expect_error(temporal_graph_data(1, 2, 1, node_ids = c("a", "a")), "unique")
+  skip_if_no_torch()
+  tg <- dataset_synthetic_temporal(num_events = 60, seed = 2)
+  tg$node_ids <- paste0("n", seq_len(tg$num_nodes))
+  sp <- split_temporal(tg)
+  sp$val$node_ids <- rev(sp$val$node_ids)
+  expect_error(train_tgn(tgn_model(tg$num_nodes, 4, 2, 4), sp, epochs = 1), "lists its nodes")
+  sp <- split_temporal(tg)
+  fit <- train_tgn(tgn_model(tg$num_nodes, 4, 2, 4), sp, epochs = 1, seed = 1)
+  later <- temporal_graph_data(1, 2, fit$last_time + 1, num_nodes = tg$num_nodes,
+                               node_ids = rev(tg$node_ids))
+  expect_error(predict(fit, later, pairs = rbind(1, 2), time = fit$last_time + 2), "lists its nodes")
+})

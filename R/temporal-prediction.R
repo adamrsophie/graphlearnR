@@ -59,6 +59,9 @@ predict.temporal_fit <- function(object, new_data = NULL, pairs = NULL, time = N
     last <- object$last_time
     if (!is.null(new_data)) {
       if (!inherits(new_data, "temporal_graph_data")) stopf("`new_data` must be a temporal_graph_data.")
+      if (!is.null(object$node_ids) && !identical(new_data$node_ids, object$node_ids)) {
+        stopf("`new_data` lists its nodes differently (`node_ids`) than the training events.")
+      }
       if (length(new_data$t) && min(new_data$t) <= last) {
         stopf("`new_data` events must come strictly after the last event of the fit (time %s); earlier or equal times would precede the stored state.", format(last))
       }
