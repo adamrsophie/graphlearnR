@@ -496,3 +496,16 @@ test_that("probability metrics keep predicted classes absent from the truth leve
   expect_equal(metric_brier(factor(c("a", "b"), levels = c("a", "b", "c")), p), 1.14)
   expect_equal(metric_brier(c(1L, 2L), unname(p)), 1.14)
 })
+
+test_that("edgeless RGCN without root or bias gives zero gradients", {
+  skip_if_no_torch()
+  for (nb in list(NULL, 2L)) {
+    conv <- rgcn_conv(2, 2, 3, num_bases = nb, root_weight = FALSE, bias = FALSE)
+    x <- torch_randn(4, 2, requires_grad = TRUE)
+    out <- conv(x, torch_zeros(2, 0, dtype = torch_long()), edge_type = integer())
+    expect_true(out$requires_grad)
+    out$sum()$backward()
+    expect_equal(as_r_array(x$grad), matrix(0, 4, 2))
+    for (p in conv$parameters) expect_equal(sum(abs(as_r_array(p$grad))), 0)
+  }
+})

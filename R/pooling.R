@@ -165,7 +165,10 @@ topk_select <- function(x, score, edge_index, batch, ratio) {
   cnt <- scatter_count(b, a$num_graphs, dtype = torch_long())
   start <- torch_cumsum(cnt, dim = 1L) - cnt
   rank <- torch_arange(1L, n, dtype = torch_long(), device = dev) - start$index_select(1L, bo)
-  k <- torch_ceil(cnt$to(dtype = torch_double()) * ratio)$to(dtype = torch_long())
+  # ceiling(ratio * n) per graph in R double precision (one host transfer of
+  # the graph sizes; some backends, such as MPS, have no float64).
+  k <- torch_tensor(as.integer(ceiling(as.numeric(as_r_array(cnt)) * ratio)),
+                    dtype = torch_long(), device = dev)
   perm_t <- order_t[rank <= k$index_select(1L, bo)]
   xs <- x$index_select(1L, perm_t) * torch_tanh(score$index_select(1L, perm_t))$unsqueeze(2L)
   m <- perm_t$numel()

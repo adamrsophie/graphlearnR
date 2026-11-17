@@ -508,6 +508,9 @@ rgcn_conv <- nn_module(
       h <- message_passing(x, edge_index[, keep], aggr = self$aggr, num_nodes = n)
       out <- out + torch_matmul(h, w[r, , ])
     }
+    # Without edges, root or bias the output is zero but stays connected to
+    # the input and weights, so backward gives zero gradients.
+    if (!any(present)) out <- out + (torch_matmul(x, w$sum(dim = 1L)) * 0)
     if (self$root_weight) out <- out + self$lin_root(x)
     if (!is.null(self$bias)) out <- out + self$bias
     out
