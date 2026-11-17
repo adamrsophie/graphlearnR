@@ -8,7 +8,11 @@ non-edges of snapshot `k + 1`. Transitions whose target snapshot index
 is in `train_steps` are used for training; the remaining transitions are
 evaluated, in time order, with the state carried forward through every
 earlier snapshot. No snapshot after `k` ever influences a score for
-snapshot `k + 1`.
+snapshot `k + 1`. An undirected pair counts as one positive. Either
+every snapshot has node features `x` of one width, or none has and
+identity features are used;
+[`predict()`](https://rdrr.io/r/stats/predict.html) applies the same
+rule.
 
 ## Usage
 
@@ -83,6 +87,6 @@ if (torch::torch_is_installed()) {
   fit
 }
 #> <temporal_fit> dynamic link prediction, 3 epochs
-#>   test:      roc_auc = 0.6566, average_precision = 0.6567 
-#>   baseline:  roc_auc = 0.8348, average_precision = 0.8224 
+#>   test:      roc_auc = 0.689, average_precision = 0.6967 
+#>   baseline:  roc_auc = 0.8463, average_precision = 0.8393 
 ```

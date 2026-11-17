@@ -3,8 +3,12 @@
 Scores the links of snapshot `k` with a heuristic computed from
 snapshots `1, ..., k - 1` only: the number of earlier interactions
 between the pair (`"history"`) or the product of earlier degrees
-(`"preferential"`), with the same negative sampling as
+(`"preferential"`), with the same positives, negatives and scorable
+snapshots as
 [`train_dynamic_link_model()`](https://adamrsophie.github.io/graphlearnR/reference/train_dynamic_link_model.md).
+Interactions are counted through snapshot edge weights; for cumulative
+snapshots only the latest earlier snapshot is used, since it already
+holds all earlier events.
 
 ## Usage
 
@@ -50,5 +54,5 @@ Named vector of mean ROC-AUC and average precision.
 snaps <- temporal_snapshots(dataset_synthetic_temporal(seed = 1), breaks = 8)
 dynamic_link_baseline(snaps, steps = 7:8, seed = 1)
 #>           roc_auc average_precision 
-#>         0.8330262         0.8213880 
+#>         0.8489339         0.8432601 
 ```

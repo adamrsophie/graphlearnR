@@ -174,8 +174,8 @@ them updates the memory.</p></dd>
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
 <dd><p>Optional seed for weights, negatives and the epoch order.
-Each event gets one random negative destination that differs from its
-own source and destination. The three periods of <code>split</code> must follow
+Each event gets one random negative destination: a node that is not
+the source and does not interact with the source at that timestamp. The three periods of <code>split</code> must follow
 each other in time, each starting strictly after the previous one ends
 (<code><a href="split_temporal.html">split_temporal()</a></code> keeps events at one time in the same period).</p></dd>
 

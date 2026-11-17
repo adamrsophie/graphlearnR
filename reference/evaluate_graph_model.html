@@ -116,7 +116,9 @@ filtered corrupted tails per positive for MRR and Hits@K, or <code>NULL</code>.<
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
 
 <ul><li><p>Node tasks: nodes in <code>new_data</code>'s <code>split</code> mask (<code>"test"</code> by default).</p></li>
-<li><p>Graph tasks: every graph in <code>new_data</code>.</p></li>
+<li><p>Graph tasks: every graph in <code>new_data</code>, which is required unless
+<code>split = "train"</code> (the training graphs are the only graphs a fit
+holds).</p></li>
 <li><p>Link prediction: <code>split$test_pos</code> against <code>split$test_neg</code> (or the
 validation pairs with <code>split = "val"</code>), with message passing on the
 training graph only. ROC-AUC and average precision use those pairs;

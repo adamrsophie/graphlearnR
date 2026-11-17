@@ -6,14 +6,18 @@ snapshot k + 1. Transitions whose target snapshot index is in
 train_steps are used for training; the remaining transitions are
 evaluated, in time order, with the state carried forward through every
 earlier snapshot. No snapshot after k ever influences a score for
-snapshot k + 1."><meta property="og:description" content="Trains a recurrent graph encoder on a snapshot_sequence(): the hidden
+snapshot k + 1. An undirected pair counts as one positive. Either every
+snapshot has node features x of one width, or none has and identity
+features are used; predict() applies the same rule."><meta property="og:description" content="Trains a recurrent graph encoder on a snapshot_sequence(): the hidden
 state after snapshot k (computed from snapshots 1, ..., k only) scores
 the links of snapshot k + 1 against negatives drawn from non-edges of
 snapshot k + 1. Transitions whose target snapshot index is in
 train_steps are used for training; the remaining transitions are
 evaluated, in time order, with the state carried forward through every
 earlier snapshot. No snapshot after k ever influences a score for
-snapshot k + 1."><meta property="og:image" content="https://adamrsophie.github.io/graphlearnR/logo.svg"></head><body>
+snapshot k + 1. An undirected pair counts as one positive. Either every
+snapshot has node features x of one width, or none has and identity
+features are used; predict() applies the same rule."><meta property="og:image" content="https://adamrsophie.github.io/graphlearnR/logo.svg"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -85,7 +89,9 @@ snapshot <code>k + 1</code>. Transitions whose target snapshot index is in
 <code>train_steps</code> are used for training; the remaining transitions are
 evaluated, in time order, with the state carried forward through every
 earlier snapshot. No snapshot after <code>k</code> ever influences a score for
-snapshot <code>k + 1</code>.</p>
+snapshot <code>k + 1</code>. An undirected pair counts as one positive. Either every
+snapshot has node features <code>x</code> of one width, or none has and identity
+features are used; <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> applies the same rule.</p>
     </div>
 
     <div class="section level2">
@@ -159,8 +165,8 @@ first 70 percent of transitions).</p></dd>
 <span class="r-in"><span>  <span class="va">fit</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;temporal_fit&gt; dynamic link prediction, 3 epochs</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   test:      roc_auc = 0.6566, average_precision = 0.6567 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   baseline:  roc_auc = 0.8348, average_precision = 0.8224 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   test:      roc_auc = 0.689, average_precision = 0.6967 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   baseline:  roc_auc = 0.8463, average_precision = 0.8393 </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

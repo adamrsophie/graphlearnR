@@ -51,7 +51,9 @@ A data frame with `metric` and `value`.
 
 - Node tasks: nodes in `new_data`'s `split` mask (`"test"` by default).
 
-- Graph tasks: every graph in `new_data`.
+- Graph tasks: every graph in `new_data`, which is required unless
+  `split = "train"` (the training graphs are the only graphs a fit
+  holds).
 
 - Link prediction: `split$test_pos` against `split$test_neg` (or the
   validation pairs with `split = "val"`), with message passing on the

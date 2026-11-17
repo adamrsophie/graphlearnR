@@ -203,8 +203,9 @@ nodes in each batch, weighted by GraphSAINT's `node_norm` when present.
 
 **Link prediction.** Message passing uses `split$train_graph`, which
 holds training edges only. Fresh negative pairs are drawn every epoch,
-excluding training positives; validation and test pairs are never used
-for training.
+excluding training positives and every validation and test pair
+(positive or negative), so no evaluation pair enters the training
+objective under either label.
 
 **Reproducibility.** With `seed`, `torch`'s global generator is seeded
 with `torch_manual_seed(seed)` for dropout and other torch draws during
@@ -233,8 +234,8 @@ if (torch::torch_is_installed()) {
 }
 #>   .row node_id .pred_class .prob_Mr. Hi .prob_Officer
 #> 1    1       1      Mr. Hi    0.9745257    0.02547433
-#> 2    2       2      Mr. Hi    0.9680582    0.03194175
-#> 3    3       3      Mr. Hi    0.8855029    0.11449710
+#> 2    2       2      Mr. Hi    0.9680582    0.03194176
+#> 3    3       3      Mr. Hi    0.8855029    0.11449708
 #> 4    4       4      Mr. Hi    0.9868816    0.01311841
 #> 5    5       5      Mr. Hi    0.9835723    0.01642764
 #> 6    6       6      Mr. Hi    0.9881732    0.01182682

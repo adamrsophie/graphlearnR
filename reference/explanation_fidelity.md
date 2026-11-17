@@ -71,5 +71,5 @@ if (torch::torch_is_installed()) {
   explanation_fidelity(fit, g, explain_edges(fit, g, target = 1), k = 3)
 }
 #>  fidelity_plus fidelity_minus 
-#>     0.03711867     0.02479592 
+#>     0.03711864     0.02479586 
 ```

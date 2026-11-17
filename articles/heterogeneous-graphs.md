@@ -238,12 +238,12 @@ m <- hetero_gnn_model(dh, hidden_dim = 32, conv = "sage", dropout = 0)
 fit_l <- train_graph_model(m, sp, "link_prediction", epochs = 60, seed = 2)
 evaluate_graph_model(fit_l)
 #>              metric      value
-#> 1           roc_auc 0.53750000
-#> 2 average_precision 0.55200494
-#> 3               mrr 0.08820665
+#> 1           roc_auc 0.53305556
+#> 2 average_precision 0.55182554
+#> 3               mrr 0.08417956
 #> 4            hits@1 0.00000000
-#> 5           hits@10 0.21666667
-#> 6           hits@50 0.93333333
+#> 5           hits@10 0.25000000
+#> 6           hits@50 0.88333333
 ```
 
 ## Typed neighbor sampling

@@ -103,9 +103,10 @@ train_tgn(
 - seed:
 
   Optional seed for weights, negatives and the epoch order. Each event
-  gets one random negative destination that differs from its own source
-  and destination. The three periods of `split` must follow each other
-  in time, each starting strictly after the previous one ends
+  gets one random negative destination: a node that is not the source
+  and does not interact with the source at that timestamp. The three
+  periods of `split` must follow each other in time, each starting
+  strictly after the previous one ends
   ([`split_temporal()`](https://adamrsophie.github.io/graphlearnR/reference/split_temporal.md)
   keeps events at one time in the same period).
 
