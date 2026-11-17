@@ -497,9 +497,14 @@ rgcn_conv <- nn_module(
     w <- self$relation_weights()
     n <- x$size(1L)
     out <- torch_zeros(n, w$size(3L), dtype = x$dtype, device = x$device)
-    for (r in seq_len(self$num_relations)) {
+    # One host transfer for all relation sizes instead of one per relation.
+    present <- if (edge_type$numel()) {
+      as.numeric(as_r_array(scatter_count(edge_type, self$num_relations))) > 0
+    } else {
+      logical(self$num_relations)
+    }
+    for (r in which(present)) {
       keep <- edge_type == r
-      if (!as.logical(keep$any()$cpu())) next
       h <- message_passing(x, edge_index[, keep], aggr = self$aggr, num_nodes = n)
       out <- out + torch_matmul(h, w[r, , ])
     }

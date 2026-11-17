@@ -289,3 +289,34 @@ test_that("sampled training validates on exact subgraphs without the full graph"
   acc <- mean(pred == as.integer(g$y)[v])
   expect_equal(utils::tail(fit$history$val_metric, 1), acc, tolerance = 1e-6)
 })
+
+test_that("the vectorized TGN neighbor store matches event by event insertion", {
+  ref_add <- function(store, src, dst, t, edge_attr = NULL) {
+    k <- store$k
+    for (i in seq_along(src)) {
+      for (pr in list(c(src[i], dst[i]), c(dst[i], src[i]))) {
+        a <- pr[1L]
+        store$nb[a, ] <- c(pr[2L], store$nb[a, ])[seq_len(k)]
+        store$t[a, ] <- c(t[i], store$t[a, ])[seq_len(k)]
+        if (!is.null(store$e)) {
+          d <- dim(store$e)[3L]
+          cur <- matrix(store$e[a, , ], k, d)
+          store$e[a, , ] <- rbind(edge_attr[i, ], cur)[seq_len(k), , drop = FALSE]
+        }
+      }
+    }
+    store
+  }
+  set.seed(8)
+  for (k in c(1L, 3L)) {
+    s1 <- s2 <- list(k = k, nb = matrix(0L, 6, k), t = matrix(0, 6, k), e = array(0, c(6, k, 2)))
+    for (b in 1:4) {
+      m <- sample(1:5, 1)
+      src <- sample(6, m, TRUE); dst <- sample(6, m, TRUE); tm <- b + seq_len(m) / 10
+      ea <- matrix(rnorm(2 * m), m, 2)
+      s1 <- tgn_store_add(s1, src, dst, tm, ea)
+      s2 <- ref_add(s2, src, dst, tm, ea)
+    }
+    expect_equal(s1, s2)
+  }
+})

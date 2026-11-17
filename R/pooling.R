@@ -147,35 +147,42 @@ sag_pool <- nn_module(
   }
 )
 
-# Keep the top ceiling(ratio * n_g) nodes of each graph by score.
+# Keep the top ceiling(ratio * n_g) nodes of each graph by score. Selection
+# and edge filtering run on the device; only the kept indices (`perm`) are
+# copied back to R. Within a graph, ties keep node order.
 topk_select <- function(x, score, edge_index, batch, ratio) {
   n <- x$size(1L)
+  dev <- x$device
   a <- pool_args(x, batch, NULL)
-  b <- as.integer(as_r_array(a$batch))
-  s <- as.numeric(as_r_array(score))
-  perm <- unlist(lapply(split(seq_len(n), factor(b, levels = seq_len(a$num_graphs))),
-                        function(idx) {
-    if (!length(idx)) return(integer())
-    k <- ceiling(ratio * length(idx))
-    idx[order(-s[idx])][seq_len(k)]
-  }), use.names = FALSE)
-  perm_t <- torch_tensor(perm, dtype = torch_long(), device = x$device)
+  b <- a$batch
+  sd <- score$detach()
+  # Score descending, then a stable sort by graph: nodes grouped by graph,
+  # best first, ties in node order.
+  o1 <- torch_sort(sd, descending = TRUE, stable = TRUE)[[2L]]
+  o2 <- torch_sort(b$index_select(1L, o1), stable = TRUE)[[2L]]
+  order_t <- o1$index_select(1L, o2)
+  bo <- b$index_select(1L, order_t)
+  cnt <- scatter_count(b, a$num_graphs, dtype = torch_long())
+  start <- torch_cumsum(cnt, dim = 1L) - cnt
+  rank <- torch_arange(1L, n, dtype = torch_long(), device = dev) - start$index_select(1L, bo)
+  k <- torch_ceil(cnt$to(dtype = torch_double()) * ratio)$to(dtype = torch_long())
+  perm_t <- order_t[rank <= k$index_select(1L, bo)]
   xs <- x$index_select(1L, perm_t) * torch_tanh(score$index_select(1L, perm_t))$unsqueeze(2L)
-  new_id <- integer(n)
-  new_id[perm] <- seq_along(perm)
-  ei <- as_r_array(edge_index)
-  keep <- if (length(ei)) new_id[ei[1L, ]] > 0L & new_id[ei[2L, ]] > 0L else logical()
-  ei_new <- if (any(keep)) {
-    rbind(new_id[ei[1L, keep]], new_id[ei[2L, keep]])
-  } else {
-    matrix(integer(), 2L, 0L)
+  m <- perm_t$numel()
+  new_id <- torch_zeros(n, dtype = torch_long(), device = dev)
+  if (m) new_id$index_put_(list(perm_t), torch_arange(1L, m, dtype = torch_long(), device = dev))
+  ei_new <- torch_empty(2L, 0L, dtype = torch_long(), device = dev)
+  if (edge_index$size(2L)) {
+    nid <- torch_stack(list(new_id$index_select(1L, edge_index[1L, ]),
+                            new_id$index_select(1L, edge_index[2L, ])))
+    keep <- (nid[1L, ] > 0L) & (nid[2L, ] > 0L)
+    if (as.logical(keep$any()$item())) ei_new <- nid[, keep]
   }
   list(
     x = xs,
-    edge_index = if (ncol(ei_new)) torch_tensor(ei_new, dtype = torch_long(), device = x$device)
-                 else torch_empty(2L, 0L, dtype = torch_long(), device = x$device),
-    batch = torch_tensor(b[perm], dtype = torch_long(), device = x$device),
-    perm = perm,
+    edge_index = ei_new,
+    batch = b$index_select(1L, perm_t),
+    perm = as.integer(as_r_array(perm_t)),
     score = score
   )
 }

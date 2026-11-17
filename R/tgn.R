@@ -245,17 +245,44 @@ tgn_neighbor_store <- function(n, k, edge_dim = 0L) {
 }
 
 tgn_store_add <- function(store, src, dst, t, edge_attr = NULL) {
+  if (!length(src)) return(store)
   k <- store$k
-  for (i in seq_along(src)) {
-    for (pr in list(c(src[i], dst[i]), c(dst[i], src[i]))) {
-      a <- pr[1L]
-      store$nb[a, ] <- c(pr[2L], store$nb[a, ])[seq_len(k)]
-      store$t[a, ] <- c(t[i], store$t[a, ])[seq_len(k)]
-      if (!is.null(store$e)) {
-        d <- dim(store$e)[3L]
-        cur <- matrix(store$e[a, , ], k, d)
-        store$e[a, , ] <- rbind(edge_attr[i, ], cur)[seq_len(k), , drop = FALSE]
-      }
+  # Both directions of every event, in processing order; each touched node
+  # gets its new partners newest first, followed by its previous entries.
+  a <- as.integer(rbind(src, dst))
+  b <- as.integer(rbind(dst, src))
+  tt <- rep(t, each = 2L)
+  ev <- rep(seq_along(src), each = 2L)
+  o <- order(a, -seq_along(a), method = "radix")
+  a <- a[o]
+  u <- unique(a)
+  cnt <- tabulate(match(a, u), length(u))
+  r <- sequence(cnt)
+  g <- rep(seq_along(u), cnt)
+  # Column j of a touched row takes new item j when j <= cnt, otherwise the
+  # old entry j - cnt.
+  j <- matrix(seq_len(k), length(u), k, byrow = TRUE)
+  from_new <- j <= cnt
+  old_col <- j - cnt
+  pick_new <- function(v) {
+    m <- matrix(v[1L], length(u), k)
+    keep <- r <= k
+    m[cbind(g[keep], r[keep])] <- v[o][keep]
+    m
+  }
+  shift <- function(old_rows, new_rows) {
+    out <- new_rows
+    oc <- old_col[!from_new]
+    ri <- row(j)[!from_new]
+    out[!from_new] <- old_rows[cbind(ri, oc)]
+    out
+  }
+  store$nb[u, ] <- shift(store$nb[u, , drop = FALSE], pick_new(b))
+  store$t[u, ] <- shift(store$t[u, , drop = FALSE], pick_new(tt))
+  if (!is.null(store$e)) {
+    for (f in seq_len(dim(store$e)[3L])) {
+      old <- matrix(store$e[u, , f], length(u), k)
+      store$e[u, , f] <- shift(old, pick_new(edge_attr[ev, f]))
     }
   }
   store
