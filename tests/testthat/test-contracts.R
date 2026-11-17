@@ -957,3 +957,10 @@ test_that("SAINT warns about uncorrected edges and averages over every draw", {
   w <- sl$node_norm[1]
   expect_equal(fit$history$train_loss[1], hits * w / 16, tolerance = 1e-6)
 })
+
+test_that("regression losses reject outputs that would broadcast against targets", {
+  skip_if_no_torch()
+  g <- graph_data(x = diag(2), edge_index = rbind(1, 2), y = c(1, 3), train_mask = c(TRUE, TRUE))
+  m <- gnn_model("graph_conv", 2, 2, 2, num_layers = 1)
+  expect_error(train_graph_model(m, g, epochs = 1, task = "node_regression"), "shape")
+})

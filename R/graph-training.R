@@ -276,8 +276,15 @@ resolve_loss <- function(loss, default, class_weights, dev) {
   }
   name <- loss %||% default
   w <- if (!is.null(class_weights)) torch_tensor(as.double(class_weights), device = dev)
+  # One output column meets a vector target; any other mismatch would be
+  # broadcast silently, aligning targets with output columns.
   as_target <- function(pred, target) {
-    if (pred$dim() == 2L && pred$size(2L) == 1L && target$dim() == 1L) pred$squeeze(2L) else pred
+    if (pred$dim() == 2L && pred$size(2L) == 1L && target$dim() == 1L) pred <- pred$squeeze(2L)
+    if (!identical(pred$shape, target$shape)) {
+      stopf("Model output has shape (%s) but the target has shape (%s).",
+            paste(pred$shape, collapse = ", "), paste(target$shape, collapse = ", "))
+    }
+    pred
   }
   switch(match.arg(name, c("cross_entropy", "mse", "l1", "huber", "bce", "bce_masked", "focal")),
     bce_masked = function(pred, target, reduction = "mean") {
