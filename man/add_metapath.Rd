@@ -25,7 +25,9 @@ relations of \code{path} in order from \eqn{u} to \eqn{w}. Each pair is kept
 once (walk counts are not recorded). Metapaths such as
 paper, author, paper are the input of HAN style models
 (\code{hetero_gnn_model(conv = "han")}). Build metapaths from training edges
-only when the composed relations will be evaluated.
+only when the composed relations will be evaluated: the new relation
+records the relations it was built from, and \code{\link[=split_edges_hetero]{split_edges_hetero()}}
+refuses to split a relation that a metapath was built from.
 }
 \examples{
 hg <- add_reverse_relations(dataset_synthetic_hetero(seed = 1))

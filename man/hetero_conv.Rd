@@ -13,7 +13,8 @@ hetero_conv(
 }
 \arguments{
 \item{convs}{Named list of layers keyed by relation key; each is called as
-\code{layer(list(x_src, x_dst), edge_index)}.}
+\code{layer(list(x_src, x_dst), edge_index)}, with \code{edge_weight} too when
+the relation has weights and the layer accepts them.}
 
 \item{aggr}{\code{"sum"}, \code{"mean"} or \code{"semantic"} over relations.}
 
@@ -22,7 +23,7 @@ hetero_conv(
 \item{semantic_dim}{Hidden size of the semantic attention.}
 }
 \value{
-An \code{nn_module} called as \code{module(x_dict, edge_index_dict)}.
+An \code{nn_module} called as \code{module(x_dict, edge_index_dict, edge_weight_dict = NULL, batch_dict = NULL, num_graphs = NULL)}.
 }
 \description{
 Applies one bipartite layer per relation and sums (or averages) the
@@ -35,9 +36,11 @@ With \code{aggr = "semantic"}, relations arriving at a node type are combined
 by the semantic attention of HAN (Wang et al. 2019): relation \eqn{r}
 gets the score \eqn{w_r = \frac{1}{N}\sum_i q^\top \tanh(W z_i^{r} + b)}
 (one \eqn{q, W, b} per target type), \eqn{\beta = \mathrm{softmax}(w)},
-and the output is \eqn{\sum_r \beta_r z^{r}}. The last weights are kept
-in \code{module$last_semantic_attention} for inspection (they show how the
-layer weighted relations, not causal importance).
+and the output is \eqn{\sum_r \beta_r z^{r}}. For a batch of several
+graphs (\code{batch_dict} given), the node mean and the softmax are taken
+within each graph. The last weights are kept in
+\code{module$last_semantic_attention} for inspection (they show how the layer
+weighted relations, not causal importance).
 }
 \examples{
 if (torch::torch_is_installed()) {

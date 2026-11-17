@@ -250,7 +250,9 @@ add_reverse_relations <- function(hg, prefix = "rev_") {
 #' once (walk counts are not recorded). Metapaths such as
 #' paper, author, paper are the input of HAN style models
 #' (`hetero_gnn_model(conv = "han")`). Build metapaths from training edges
-#' only when the composed relations will be evaluated.
+#' only when the composed relations will be evaluated: the new relation
+#' records the relations it was built from, and [split_edges_hetero()]
+#' refuses to split a relation that a metapath was built from.
 #'
 #' @param hg A `hetero_graph_data` object.
 #' @param path Relation keys (`"src__rel__dst"`), where the target type of
@@ -289,7 +291,13 @@ add_metapath <- function(hg, path, name = NULL) {
   hg$edges[[key]] <- list(src = es[[1L]]$src, rel = rel, dst = es[[length(es)]]$dst,
                           edge_index = rbind(as.integer(pairs$a), as.integer(pairs$b)),
                           edge_attr = NULL, edge_weight = NULL, edge_y = NULL, edge_time = NULL,
-                          reverse = NULL, reverse_of = NULL)
+                          reverse = NULL, reverse_of = NULL,
+                          # Relations it was composed from, so a later link
+                          # split can refuse a metapath that holds its
+                          # held out links.
+                          derived_from = unique(unlist(lapply(path, function(k) {
+                            c(k, hg$edges[[k]]$derived_from)
+                          }))))
   hg
 }
 
@@ -609,6 +617,14 @@ split_edges_hetero <- function(hg, relation, val = 0.1, test = 0.1, neg_ratio = 
                                seed = NULL) {
   if (!relation %in% names(hg$edges)) stopf("Unknown relation `%s`.", relation)
   e <- hg$edges[[relation]]
+  linked <- c(relation, e$reverse, e$reverse_of)
+  dep <- names(hg$edges)[vapply(hg$edges, function(r) any(r$derived_from %in% linked), logical(1))]
+  if (length(dep)) {
+    stopf(paste0("Relation%s %s %s built from `%s` with add_metapath() and would keep held out links; ",
+                 "split first, then build metapaths on `split$train_graph`."),
+          if (length(dep) > 1L) "s" else "", paste0("`", dep, "`", collapse = ", "),
+          if (length(dep) > 1L) "were" else "was", relation)
+  }
   same <- identical(e$src, e$dst)
   un <- pair_units(e$edge_index, symmetric = same)
   pairs <- e$edge_index[, un$first, drop = FALSE]

@@ -1061,3 +1061,12 @@ test_that("OGB readers reject unknown and overlapping splits", {
   close(con)
   expect_error(read_ogb_node(dir), "both the train and val")
 })
+
+test_that("link splits refuse relations that a metapath was built from", {
+  hg <- hetero_graph_data(list(a = 3, b = 3),
+                          list(a__r__b = rbind(1:3, 1:3), b__id__b = rbind(1:3, 1:3)))
+  mp <- add_metapath(hg, c("a__r__b", "b__id__b"))
+  expect_error(split_edges_hetero(mp, "a__r__b", val = 1 / 3, test = 1 / 3, seed = 1), "add_metapath")
+  sp <- split_edges_hetero(hg, "a__r__b", val = 1 / 3, test = 1 / 3, seed = 1)
+  expect_s3_class(add_metapath(sp$train_graph, c("a__r__b", "b__id__b")), "hetero_graph_data")
+})
