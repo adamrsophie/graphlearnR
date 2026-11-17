@@ -46,6 +46,7 @@ NULL
 # probability mass is dropped.
 check_scores <- function(truth, score) {
   if (anyNA(truth)) stopf("`truth` has missing values.")
+  if (anyNA(score)) stopf("The scores have missing values.")
   if (NROW(score) != length(truth)) {
     stopf("`truth` has %d values but the scores have %d rows.", length(truth), NROW(score))
   }

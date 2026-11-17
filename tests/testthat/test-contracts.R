@@ -646,3 +646,7 @@ test_that("SAINT and LADIES warn for models whose aggregation they do not correc
   expect_no_warning(train_graph_model(gnn_model("sage", ncol(g$x), 4, 2), g, "node_classification",
                                       epochs = 1, loader = cluster_loader(g, 2, seed = 1), seed = 1))
 })
+
+test_that("score metrics reject missing scores", {
+  expect_error(metric_roc_auc(c(1, 0), c(.2, NA_real_)), "missing values")
+})
