@@ -240,7 +240,7 @@ to_dense_adj <- function(edge_index, batch, edge_weight = NULL) {
   batch <- batch$to(device = dev)
   # Index arithmetic stays in torch; only the two sizes B and L come back to R.
   B <- if (batch$numel()) as.integer(batch$max()$item()) else 0L
-  cnt <- torch_zeros(B, dtype = torch_long(), device = dev)$index_add(1L, batch, torch_ones_like(batch))
+  cnt <- scatter_count(batch, B, dtype = torch_long())
   L <- max(as.integer(cnt$max()$item()), 1L)
   start <- torch_cumsum(cnt, dim = 1L) - cnt
   pos <- torch_arange(0, batch$numel() - 1, dtype = torch_long(), device = dev) - start$index_select(1L, batch)

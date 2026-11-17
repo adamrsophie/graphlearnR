@@ -64,9 +64,12 @@ scatter_sum <- function(src, index, dim_size) {
 #' @export
 scatter_count <- function(index, dim_size, dtype = torch_float(), device = NULL) {
   index <- as_index_tensor(index, device)
-  ones <- torch_ones(index$numel(), dtype = dtype, device = index$device)
-  out <- torch_zeros(dim_size, dtype = dtype, device = index$device)
-  if (index$numel() == 0L) out else out$index_add(1L, index, ones)
+  # Counted in float32 (exact up to 2^24 per entry) and cast, since some
+  # backends (MPS) have no integer index_add.
+  ones <- torch_ones(index$numel(), dtype = torch_float(), device = index$device)
+  out <- torch_zeros(dim_size, dtype = torch_float(), device = index$device)
+  out <- if (index$numel() == 0L) out else out$index_add(1L, index, ones)
+  if (dtype == torch_long()) out$round()$to(dtype = dtype) else out$to(dtype = dtype)
 }
 
 #' @rdname scatter

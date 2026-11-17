@@ -141,6 +141,9 @@ train_graph_model <- function(model, data,
     stopf("%s not supported for this task and data; training is full batch.",
           paste0("`", unused, "`", collapse = ", "))
   }
+  # Masks may be set after construction; check shapes and disjointness here.
+  if (inherits(data, "hetero_graph_data")) validate_hetero_graph(data)
+  else if (inherits(data, "graph_data")) validate_graph(data)
   if (!is.null(seed)) torch_manual_seed(seed)
   model$to(device = dev)
 

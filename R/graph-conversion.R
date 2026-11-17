@@ -114,6 +114,7 @@ from_igraph <- function(ig, x_attrs = NULL, y_attr = "y", edge_attrs = NULL,
     m <- opt_e(a)
     if (!is.null(m)) g[[a]] <- if (directed) m else m[g$edge_pair]
   }
+  validate_graph(g)
   g
 }
 

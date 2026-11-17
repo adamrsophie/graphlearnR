@@ -765,3 +765,11 @@ test_that("graph evaluation never scores training graphs as held out data", {
   expect_s3_class(evaluate_graph_model(fit, split = "train"), "data.frame")
   expect_s3_class(evaluate_graph_model(fit, gs[3:4]), "data.frame")
 })
+
+test_that("training rejects overlapping masks set after construction", {
+  skip_if_no_torch()
+  g <- split_nodes(dataset_karate(), seed = 1)
+  g$val_mask <- g$train_mask
+  expect_error(train_graph_model(gnn_model("sage", 34, 4, 2), g, "node_classification", epochs = 1),
+               "overlap")
+})
