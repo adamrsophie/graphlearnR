@@ -939,3 +939,21 @@ test_that("FAVOR attention stays exact when queries and keys peak apart", {
   expect_false(any(is.na(as.numeric(torch::as_array(a$qkv$weight$grad)))))
   expect_equal(dim(torch::as_array(a(torch::torch_zeros(0, 1))$detach())), c(0L, 1L))
 })
+
+test_that("SAINT warns about uncorrected edges and averages over every draw", {
+  skip_if_no_torch()
+  g <- graph_data(x = matrix(1, 4, 1), edge_index = rbind(c(1, 3), c(2, 4)), y = c(0, 0, 0, 0),
+                  train_mask = c(TRUE, FALSE, FALSE, FALSE))
+  expect_warning(sl <- saint_loader(g, batch_size = 1, walk_length = 0, num_steps = 16, seed = 1),
+                 "never fell inside")
+  # loss 1 on the one training node: the per draw mean counts empty draws
+  m <- gnn_model("graph_conv", 1, 2, 1, num_layers = 1)
+  hits <- sum(vapply(loader_batches(sl, 1), function(b) any(b$train_mask), logical(1)))
+  lf <- function(input, target, reduction = "mean") {
+    per <- (input[, 1] * 0 + 1)
+    if (reduction == "none") per else per$mean()
+  }
+  fit <- suppressWarnings(train_graph_model(m, g, loader = sl, epochs = 1, loss = lf, lr = 0, seed = 1))
+  w <- sl$node_norm[1]
+  expect_equal(fit$history$train_loss[1], hits * w / 16, tolerance = 1e-6)
+})

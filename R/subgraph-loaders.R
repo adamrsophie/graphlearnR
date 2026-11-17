@@ -145,6 +145,14 @@ saint_loader <- function(g, batch_size = 100L, walk_length = 2L, num_steps = 10L
     loader$node_norm <- ifelse(node_count > 0, num_samples / pmax(node_count, 1) / n, 0)
     loader$edge_norm <- pmin(ifelse(edge_count > 0, node_count[ei[2L, ]] / pmax(edge_count, 1), 1), 1e4)
     loader$num_samples <- num_samples
+    unseen <- sum(edge_count == 0 & ei[1L, ] != ei[2L, ])
+    if (unseen) {
+      warning(sprintf(paste0(
+        "%d of %d edges never fell inside a pilot subgraph, so their aggregation is not ",
+        "corrected (they may be impossible to sample, or `sample_coverage` is too small). ",
+        "Increase `walk_length`, `batch_size` or `sample_coverage`."), unseen, ncol(ei)),
+        call. = FALSE)
+    }
   }
   loader
 }

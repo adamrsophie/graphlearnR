@@ -455,7 +455,13 @@ subgraph_epoch <- function(model, loader, epoch, dev, opt, loss_fn, grad_clip) {
   tot <- 0
   cnt <- 0
   for (sg in loader_batches(loader, epoch)) {
-    if (!any(sg$train_mask)) next
+    if (!any(sg$train_mask)) {
+      # A weighted (GraphSAINT) batch without training nodes is a draw whose
+      # estimate is zero: it counts towards the mean over draws, though no
+      # optimizer step is taken.
+      if (!is.null(sg$node_norm)) cnt <- cnt + 1
+      next
+    }
     bt <- graph_tensors(sg, dev)
     idx <- tensor_which(bt$train_mask)
     out <- model_forward(model, bt)$index_select(1L, idx)
