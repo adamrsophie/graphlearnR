@@ -865,3 +865,19 @@ test_that("rewriting a disk dataset into its own directory keeps the data", {
   expect_equal(ds2[[2]]$x, gs[[2]]$x)
   expect_false(any(grepl("staging", list.files(dir, all.files = TRUE))))
 })
+
+test_that("saved fits carry no cached training topology", {
+  skip_if_no_torch()
+  g <- graph_data(x = diag(4), edge_index = rbind(1:3, 2:4), y = c(1L, 2L, 1L, 2L),
+                  train_mask = rep(TRUE, 4))
+  m <- graph_transformer_model(input_dim = 4, hidden_dim = 4, output_dim = 2, heads = 1, pool = NULL)
+  fit <- train_graph_model(m, g, epochs = 1, seed = 1)
+  expect_true(length(fit$model$dist_cache$entries) > 0)
+  f <- tempfile(fileext = ".rds")
+  save_graph_fit(fit, f)
+  expect_true(length(fit$model$dist_cache$entries) > 0)
+  back <- load_graph_fit(f)
+  expect_length(back$model$dist_cache$entries, 0L)
+  expect_true(all(vapply(back$model$modules, function(z) is.null(z$last_attention), logical(1))))
+  expect_equal(predict(back, g, type = "prob"), predict(fit, g, type = "prob"), tolerance = 1e-6)
+})

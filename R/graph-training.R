@@ -775,8 +775,8 @@ save_graph_fit <- function(fit, path) {
   }
   obj <- list(
     link_schema = fit$link_schema %||% link_schema(fit$data),
-    model = torch_serialize(fit$model),
-    decoder = if (!is.null(fit$decoder)) torch_serialize(fit$decoder),
+    model = serialize_without_caches(fit$model),
+    decoder = if (!is.null(fit$decoder)) serialize_without_caches(fit$decoder),
     task = fit$task, history = fit$history, best_epoch = fit$best_epoch,
     levels = fit$levels, target_type = fit$target_type,
     metric_name = fit$metric_name, reproducibility = fit$reproducibility,
@@ -854,4 +854,25 @@ link_exclusions <- function(split) {
     m <- split[[f]]
     if (is.null(m)) matrix(integer(), 2L, 0L) else m
   }))
+}
+
+# Serialize a module without its transient forward records: cached shortest
+# path distances and attention weights describe the last graphs seen, which
+# would otherwise carry training topology into a saved fit. The live module
+# keeps them.
+serialize_without_caches <- function(model) {
+  saved <- list()
+  for (m in model$modules) {
+    att <- tryCatch(m$last_attention, error = function(e) NULL)
+    dc <- tryCatch(m$dist_cache, error = function(e) NULL)
+    if (is.null(att) && !is.environment(dc)) next
+    saved[[length(saved) + 1L]] <- list(m = m, att = att, dc = if (is.environment(dc)) dc$entries)
+    if (!is.null(att)) m$last_attention <- NULL
+    if (is.environment(dc)) dc$entries <- list()
+  }
+  on.exit(for (s in saved) {
+    if (!is.null(s$att)) s$m$last_attention <- s$att
+    if (!is.null(s$dc)) s$m$dist_cache$entries <- s$dc
+  })
+  torch_serialize(model)
 }
