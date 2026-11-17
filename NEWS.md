@@ -100,6 +100,9 @@ First release.
   provides FAVOR+ and elu kernel attention per graph.
 - `tgn_model(num_layers = )` stacks TGAT style temporal attention over
   multiple hops of earlier interactions.
+- `pg_explainer()` (PGExplainer: an amortized edge mask network) and
+  `subgraphx()` (SubgraphX: Monte Carlo tree search for subgraphs scored by
+  Shapley values) explain predictions.
 - `meta_layer()` composes edge, node and graph level updates (graph network
   block, as PyG's `MetaLayer`).
 - `evolve_gcn_cell()` (EvolveGCN-O: GCN weights evolve with a GRU across

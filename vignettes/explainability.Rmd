@@ -101,6 +101,34 @@ head(gx$edges[order(-gx$edges$attribution), ])
 range(gx$edges$attribution)
 ```
 
+### PGExplainer
+
+`pg_explainer()` (Luo et al. 2020) trains one small network that predicts
+the edge mask of any target from the model's node embeddings, so after
+training each new explanation costs one forward pass. It is trained here on
+the training nodes and then applied to node 1.
+
+```{r}
+pg <- pg_explainer(fit, g, epochs = 20, edge_size = 0.05, seed = 1)
+px <- predict(pg, g, target = 1)
+head(px$edges[order(-px$edges$attribution), ])
+```
+
+### SubgraphX
+
+`subgraphx()` (Yuan et al. 2021) searches, by Monte Carlo tree search, for a
+small connected subgraph around the target whose Shapley value (its average
+contribution when added to random coalitions of nearby nodes) is largest.
+It removes nodes instead of reweighting edges, so it also explains models
+that ignore `edge_weight`, at the price of many forward passes.
+
+```{r}
+sx <- subgraphx(fit, g, target = 1, max_nodes = 5, rollouts = 5, samples = 8, seed = 1)
+sx$subgraph_nodes
+sx$score
+head(sx$candidates)
+```
+
 ### Explanation subgraphs
 
 `explanation_subgraph()` turns any edge attribution into a small graph: the
@@ -142,7 +170,9 @@ better).
 
 ```{r}
 rbind(gradient = explanation_fidelity(fit, g, eg, k = 5),
-      gnn_explainer = explanation_fidelity(fit, g, gx, k = 5))
+      gnn_explainer = explanation_fidelity(fit, g, gx, k = 5),
+      pg_explainer = explanation_fidelity(fit, g, px, k = 5),
+      subgraphx = explanation_fidelity(fit, g, sx, k = sum(sx$edges$attribution)))
 ```
 
 ### Stability

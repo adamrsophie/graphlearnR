@@ -157,6 +157,8 @@ reference:
 - title: Explainability
   contents:
   - explain
+  - pg_explainer
+  - subgraphx
   - explanation_fidelity
   - explanation_subgraph
   - attention_weights
