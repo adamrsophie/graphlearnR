@@ -176,7 +176,8 @@ them updates the memory.</p></dd>
 <dd><p>Optional seed for weights, negatives and the epoch order.
 Each event gets one random negative destination that differs from its
 own source and destination. The three periods of <code>split</code> must follow
-each other in time.</p></dd>
+each other in time, each starting strictly after the previous one ends
+(<code><a href="split_temporal.html">split_temporal()</a></code> keeps events at one time in the same period).</p></dd>
 
 
 <dt id="arg-device">device<a class="anchor" aria-label="anchor" href="#arg-device"></a></dt>

@@ -209,11 +209,11 @@ fit_tgn$history
 #> 3      3  0.4855788 0.8057086
 #> 4      4  0.4264535 0.8403753
 #> 5      5  0.3848646 0.8578963
-#> 6      6  0.3400036 0.8775309
+#> 6      6  0.3400035 0.8775309
 #> 7      7  0.3274034 0.8930765
 #> 8      8  0.3020271 0.8911210
-#> 9      9  0.2973747 0.8774914
-#> 10    10  0.2969318 0.8906667
+#> 9      9  0.2973747 0.8775111
+#> 10    10  0.2969317 0.8906667
 fit_tgn$test_metrics
 #>           roc_auc average_precision 
 #>         0.8712898         0.8767697
@@ -240,7 +240,7 @@ tgn_att <- tgn_model(stream$num_nodes, memory_dim = 32, time_dim = 8, embedding_
 fit_att <- train_tgn(tgn_att, sp_t, epochs = 10, batch_size = 50, lr = 0.01, seed = 1)
 fit_att$test_metrics
 #>           roc_auc average_precision 
-#>         0.8633801         0.8615132
+#>         0.8633703         0.8617635
 ```
 
 The implementation has one embedding layer (one hop) and keeps the most

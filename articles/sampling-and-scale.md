@@ -121,7 +121,7 @@ evaluate_graph_model(fit, big)
 #> 4      recall_macro 0.994444444
 #> 5          f1_macro 0.994444059
 #> 6               ece 0.004808865
-#> 7             brier 0.012243922
+#> 7             brier 0.012243923
 #> 8           roc_auc 0.997314815
 #> 9 average_precision 0.996850348
 ```
@@ -158,7 +158,7 @@ evaluate_graph_model(fit_cl, big)
 #> 3   precision_macro 0.98907104
 #> 4      recall_macro 0.98888889
 #> 5          f1_macro 0.98884064
-#> 6               ece 0.03582429
+#> 6               ece 0.03582430
 #> 7             brier 0.02780312
 #> 8           roc_auc 0.99699074
 #> 9 average_precision 0.99643901
@@ -170,7 +170,12 @@ induced by the nodes that short random walks visit. Nodes and edges are
 not sampled uniformly, so the loader estimates how often each one
 appears and corrects for it: the loss of each node is weighted by
 `node_norm` and edge weights are rescaled, as in PyTorch Geometric’s
-`GraphSAINTSampler`.
+`GraphSAINTSampler`. The corrected edge weights estimate a full graph
+weighted sum over incoming edges, so the model should sum weighted
+messages: `gnn_model("graph_conv")`. A mean aggregator such as SAGE’s
+would divide by the sampled degree again, and
+[`train_graph_model()`](https://adamrsophie.github.io/graphlearnR/reference/train_graph_model.md)
+warns about it.
 
 ``` r
 
@@ -185,19 +190,19 @@ summary(b$node_norm)
 #>     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
 #> 0.002192 0.003244 0.004056 0.004095 0.004506 0.008111
 torch_manual_seed(2)
-fit_sl <- train_graph_model(gnn_model("sage", 8, 32, 3), big, "node_classification",
+fit_sl <- train_graph_model(gnn_model("graph_conv", 8, 32, 3), big, "node_classification",
                             epochs = 15, loader = sl, seed = 2)
 evaluate_graph_model(fit_sl, big)
-#>              metric     value
-#> 1          accuracy 0.9611111
-#> 2 balanced_accuracy 0.9611111
-#> 3   precision_macro 0.9629630
-#> 4      recall_macro 0.9611111
-#> 5          f1_macro 0.9607759
-#> 6               ece 0.1829428
-#> 7             brier 0.1303652
-#> 8           roc_auc 0.9972685
-#> 9 average_precision 0.9954860
+#>              metric      value
+#> 1          accuracy 0.99444444
+#> 2 balanced_accuracy 0.99444444
+#> 3   precision_macro 0.99453552
+#> 4      recall_macro 0.99444444
+#> 5          f1_macro 0.99444406
+#> 6               ece 0.02102171
+#> 7             brier 0.01944634
+#> 8           roc_auc 0.99935185
+#> 9 average_precision 0.99883273
 ```
 
 [`ladies_loader()`](https://adamrsophie.github.io/graphlearnR/reference/ladies_loader.md)
@@ -209,8 +214,9 @@ reweights the kept edges by the inverse probability (normalized per
 target node). The number of nodes per batch is bounded by the seeds plus
 the layer sizes, whatever the degrees, unlike neighbor sampling whose
 size grows with the fanout product. Only the seeds carry `train_mask`,
-so the loss uses them alone. Use a model that reads `edge_weight`, such
-as SAGE.
+so the loss uses them alone. The weights of each node’s incoming edges
+sum to one, so they already form a weighted mean: use a model that sums
+weighted messages, such as `gnn_model("graph_conv")`.
 
 ``` r
 
@@ -222,19 +228,19 @@ c(nodes = num_nodes(b), edges = num_edges(b), seeds = sum(b$train_mask))
 #> nodes edges seeds 
 #>   268   513    64
 torch_manual_seed(2)
-fit_ld <- train_graph_model(gnn_model("sage", 8, 32, 3), big, "node_classification",
+fit_ld <- train_graph_model(gnn_model("graph_conv", 8, 32, 3), big, "node_classification",
                             epochs = 15, loader = ld, seed = 2)
 evaluate_graph_model(fit_ld, big)
-#>              metric      value
-#> 1          accuracy 0.99444444
-#> 2 balanced_accuracy 0.99444444
-#> 3   precision_macro 0.99453552
-#> 4      recall_macro 0.99444444
-#> 5          f1_macro 0.99444406
-#> 6               ece 0.01418162
-#> 7             brier 0.01848900
-#> 8           roc_auc 0.99689815
-#> 9 average_precision 0.99662898
+#>              metric       value
+#> 1          accuracy 0.994444444
+#> 2 balanced_accuracy 0.994444444
+#> 3   precision_macro 0.994535519
+#> 4      recall_macro 0.994444444
+#> 5          f1_macro 0.994444059
+#> 6               ece 0.005554326
+#> 7             brier 0.011111111
+#> 8           roc_auc 0.998287037
+#> 9 average_precision 0.993955088
 ```
 
 All three loaders return `graph_data` batches whose `node_ids` hold the

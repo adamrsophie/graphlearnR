@@ -69,7 +69,9 @@ loader_batches(loader, epoch = 1L)
 
 ## Value
 
-A loader object; use `loader_batches()` to get batches.
+A loader object; use `loader_batches()` to get batches. A node loader
+caches its incoming edge index; assigning a new `loader$graph` is
+allowed, and the cache is rebuilt when its edges or weights differ.
 
 ## Examples
 

@@ -173,9 +173,13 @@ with a <code>reduction</code> argument; in expectation this is the mean loss ove
 all nodes of the graph. The edge correction makes the sampled
 aggregation an unbiased estimate of a full graph weighted <strong>sum</strong> over
 incoming edges, so use a layer that sums weighted messages
-(<code>gnn_model("graph_conv")</code>, or <code>"gcn"</code>, which renormalizes the weights
-it receives); a mean aggregator (the default of <code>"sage"</code>) divides again
-by the random sampled degree and loses that property.</p></li>
+(<code>gnn_model("graph_conv")</code> with its default <code>aggr = "sum"</code>). A mean
+aggregator (the default of <code>"sage"</code>) divides again by the random
+sampled degree, and <code>"gcn"</code> renormalizes the corrected weights with
+sampled degrees; neither estimates its own full graph operator, and
+<code><a href="train_graph_model.html">train_graph_model()</a></code> warns for such built in models. The correction
+is for the linear aggregation; predictions and losses of a nonlinear
+model are not unbiased.</p></li>
 </ul><p>Batches are drawn in R on the CPU.</p>
     </div>
     <div class="section level2">

@@ -115,6 +115,14 @@ A list with attribution matrices or vectors and metadata, of class
 - `gnn_explainer()`: learns a soft edge mask and feature mask that keep
   the prediction while staying sparse (Ying et al. 2019).
 
+The model is called as
+[`predict()`](https://rdrr.io/r/stats/predict.html) calls it. On an all
+neighbor sample from
+[`sample_neighbors()`](https://adamrsophie.github.io/graphlearnR/reference/sample_neighbors.md),
+feature explanations keep the full graph degrees that the prediction
+uses; edge interventions (masks and removed edges) normalize over the
+intervened graph.
+
 ## Examples
 
 ``` r
@@ -130,6 +138,6 @@ if (torch::torch_is_installed()) {
 #> 20   20   12  1  0.04931039
 #> 18   18   11  1  0.03672072
 #> 16   16    9  1 -0.03600540
-#> 26   26   18  1  0.03063825
+#> 26   26   18  1  0.03063824
 #> 8     8    5  1  0.02874542
 ```

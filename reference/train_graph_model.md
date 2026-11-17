@@ -89,13 +89,16 @@ train_graph_model(
 - fanouts:
 
   Neighbor sampling fanouts for node mini-batches. For a homogeneous
-  graph the full graph is never moved to the device: batches are built
-  one at a time, and validation runs in batches on all neighbor
-  subgraphs of the validation nodes with as many hops as `fanouts`,
-  which equals full graph validation for layers that aggregate incoming
-  edges (all
-  [`gnn_model()`](https://adamrsophie.github.io/graphlearnR/reference/gnn_model.md)
-  architectures). For a heterogeneous node task they go to
+  graph batches are built one at a time. Validation runs in batches on
+  all neighbor subgraphs of the validation nodes, as deep as the model's
+  receptive field
+  ([`gnn_model()`](https://adamrsophie.github.io/graphlearnR/reference/gnn_model.md):
+  `num_layers`;
+  [`appnp_model()`](https://adamrsophie.github.io/graphlearnR/reference/appnp.md):
+  `K`; a custom module may set a `receptive_depth` field), with full
+  graph degrees, so it equals full graph validation and the full graph
+  never moves to the device. For other models validation runs on the
+  full graph. For a heterogeneous node task they go to
   [`sample_hetero_neighbors()`](https://adamrsophie.github.io/graphlearnR/reference/sample_hetero_neighbors.md)
   (a vector applied to every relation, or a named list per relation),
   with training nodes of `target_type` as seeds; the loss uses the seeds
@@ -189,7 +192,7 @@ An object of class `graph_fit`.
 neighborhoods
 ([`node_loader()`](https://adamrsophie.github.io/graphlearnR/reference/node_loader.md));
 the loss uses only the seed nodes of each batch, never the sampled
-context nodes. Validation uses the full graph.
+context nodes. Validation equals full graph validation (see `fanouts`).
 
 **Subgraph batches.** With `loader` from
 [`cluster_loader()`](https://adamrsophie.github.io/graphlearnR/reference/cluster_loader.md)
@@ -230,8 +233,8 @@ if (torch::torch_is_installed()) {
 }
 #>   .row node_id .pred_class .prob_Mr. Hi .prob_Officer
 #> 1    1       1      Mr. Hi    0.9745257    0.02547433
-#> 2    2       2      Mr. Hi    0.9680582    0.03194176
-#> 3    3       3      Mr. Hi    0.8855029    0.11449708
+#> 2    2       2      Mr. Hi    0.9680582    0.03194175
+#> 3    3       3      Mr. Hi    0.8855029    0.11449710
 #> 4    4       4      Mr. Hi    0.9868816    0.01311841
 #> 5    5       5      Mr. Hi    0.9835723    0.01642764
 #> 6    6       6      Mr. Hi    0.9881732    0.01182682

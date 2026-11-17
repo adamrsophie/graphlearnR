@@ -184,7 +184,11 @@ use <code>edge_weight</code> (<code>"gcn"</code>, <code>"sage"</code>, <code>"gr
 each incoming edge of the target, is removed.</p></li>
 <li><p><code>gnn_explainer()</code>: learns a soft edge mask and feature mask that keep the
 prediction while staying sparse (Ying et al. 2019).</p></li>
-</ul></div>
+</ul><p>The model is called as <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> calls it. On an all neighbor sample
+from <code><a href="sample_neighbors.html">sample_neighbors()</a></code>, feature explanations keep the full graph
+degrees that the prediction uses; edge interventions (masks and removed
+edges) normalize over the intervened graph.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
@@ -200,7 +204,7 @@ prediction while staying sparse (Ying et al. 2019).</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 20   20   12  1  0.04931039</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 18   18   11  1  0.03672072</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 16   16    9  1 -0.03600540</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 26   26   18  1  0.03063825</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 26   26   18  1  0.03063824</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 8     8    5  1  0.02874542</span>
 </code></pre></div>
     </div>
