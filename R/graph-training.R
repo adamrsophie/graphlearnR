@@ -394,11 +394,9 @@ node_task_runner <- function(model, data, task, dev, fanouts, batch_size, seed, 
       stopf("`loader` must come from cluster_loader(), saint_loader() or ladies_loader().")
     }
     if (!is.null(fanouts)) stopf("Use either `fanouts` or `loader`, not both.")
-    lg <- subgraph_loader$graph
-    same_w <- is.null(lg$edge_weight) == is.null(data$edge_weight) &&
-      (is.null(lg$edge_weight) || isTRUE(all.equal(lg$edge_weight, data$edge_weight)))
-    if (!identical(lg$num_nodes, data$num_nodes) ||
-        !isTRUE(all.equal(lg$edge_index, data$edge_index, check.attributes = FALSE)) || !same_w) {
+    # Compare with the graph the loader's cached adjacency, weights, walk
+    # statistics and partitions were built from, not its current field.
+    if (!identical(subgraph_loader$built_on %||% loader_key(subgraph_loader$graph), loader_key(data))) {
       stopf("`loader` was built on a different graph (nodes, edges or edge weights differ).")
     }
     # The loader keeps its own copy of the graph; with the same topology, all
@@ -838,7 +836,10 @@ exact_receptive_depth <- function(model) {
 check_sampler_operator <- function(model, loader) {
   if (!inherits(model, "graph_model") || inherits(loader, "cluster_loader")) return(invisible())
   cfg <- model$config
-  if (identical(cfg$architecture, "graph_conv") && (cfg$aggr %||% "sum") == "sum") return(invisible())
+  aggr <- cfg$aggr %||% "sum"
+  if (identical(cfg$architecture, "graph_conv") && length(aggr) == 1L && aggr %in% c("sum", "add")) {
+    return(invisible())
+  }
   warning(sprintf(paste0(
     "%s() edge weights are meant for a layer that sums weighted messages; ",
     "gnn_model(\"%s\") aggregates differently, so training estimates a different ",

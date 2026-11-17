@@ -896,3 +896,22 @@ test_that("LADIES keeps census weights and one normalized row per target", {
     expect_equal(unname(as.vector(rs)), rep(1, length(rs)))
   }
 })
+
+test_that("subgraph loaders are bound to the graph they were built on", {
+  skip_if_no_torch()
+  g <- graph_data(x = diag(3), num_nodes = 3, edge_index = rbind(c(2, 3), c(1, 1)),
+                  edge_weight = c(1, 2), y = c(1, 2, 3), train_mask = c(TRUE, FALSE, FALSE))
+  ld <- ladies_loader(g, batch_size = 1, layer_sizes = 2, seed = 1)
+  g2 <- g
+  g2$edge_weight <- c(2, 1)
+  ld$graph <- g2
+  m <- gnn_model("graph_conv", 3, 2, 1, num_layers = 1)
+  expect_error(train_graph_model(m, g2, loader = ld, epochs = 1), "different graph")
+  expect_silent(suppressMessages(train_graph_model(
+    gnn_model("graph_conv", 3, 2, 1, num_layers = 1, aggr = "sum"), g,
+    loader = ladies_loader(g, batch_size = 1, layer_sizes = 2), epochs = 1)))
+  expect_warning(train_graph_model(gnn_model("graph_conv", 3, 2, 1, num_layers = 1,
+                                             aggr = c("mean", "max")),
+                                   g, loader = ladies_loader(g, batch_size = 1, layer_sizes = 2),
+                                   epochs = 1), "sums weighted")
+})

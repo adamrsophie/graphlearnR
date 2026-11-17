@@ -81,7 +81,7 @@ cluster_loader <- function(g, num_parts = 10L, clusters_per_batch = 1L,
       part
     }
   })
-  structure(list(graph = g, parts = unname(split(seq_len(n), factor(part, seq_len(num_parts)))),
+  structure(list(graph = g, built_on = loader_key(g), parts = unname(split(seq_len(n), factor(part, seq_len(num_parts)))),
                  clusters_per_batch = clusters_per_batch, shuffle = shuffle, seed = seed,
                  method = method),
             class = c("cluster_loader", "subgraph_loader", "graph_loader_base"))
@@ -121,7 +121,7 @@ saint_loader <- function(g, batch_size = 100L, walk_length = 2L, num_steps = 10L
   ord <- order(ei[1L, ])
   csr <- list(ptr = c(0L, cumsum(tabulate(ei[1L, ], g$num_nodes))), dst = ei[2L, ord],
               eid = ord)
-  loader <- structure(list(graph = g, csr = csr, batch_size = batch_size,
+  loader <- structure(list(graph = g, built_on = loader_key(g), csr = csr, batch_size = batch_size,
                            walk_length = walk_length, num_steps = num_steps, seed = seed,
                            node_norm = NULL, edge_norm = NULL),
                       class = c("saint_loader", "subgraph_loader", "graph_loader_base"))
@@ -266,7 +266,7 @@ ladies_loader <- function(g, batch_size = 64L, layer_sizes = c(256L, 256L), shuf
   ahat <- w / sqrt(deg[ei[1L, ]] * deg[ei[2L, ]])
   ord <- order(ei[2L, ], method = "radix")
   csc <- list(ptr = c(0L, cumsum(tabulate(ei[2L, ], n))), eid = ord)
-  structure(list(graph = g, batch_size = batch_size, layer_sizes = layer_sizes,
+  structure(list(graph = g, built_on = loader_key(g), batch_size = batch_size, layer_sizes = layer_sizes,
                  shuffle = shuffle, seed = seed, ahat = ahat, csc = csc),
             class = c("ladies_loader", "subgraph_loader", "graph_loader_base"))
 }
@@ -344,4 +344,10 @@ length.saint_loader <- function(x) as.integer(x$num_steps)
 #' @export
 length.ladies_loader <- function(x) {
   as.integer(ceiling(sum(x$graph$train_mask %||% logical()) / x$batch_size))
+}
+
+# Exact topology a subgraph loader's cached structures were computed from.
+loader_key <- function(g) {
+  list(as.integer(g$num_nodes), matrix(as.integer(g$edge_index), 2L),
+       if (!is.null(g$edge_weight)) as.double(g$edge_weight))
 }
