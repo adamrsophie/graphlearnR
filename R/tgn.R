@@ -312,7 +312,8 @@ tgn_store_query <- function(store, nodes) {
 #' @param seed Optional seed for weights, negatives and the epoch order.
 #'   Each event gets one random negative destination that differs from its
 #'   own source and destination. The three periods of `split` must follow
-#'   each other in time.
+#'   each other in time, each starting strictly after the previous one ends
+#'   ([split_temporal()] keeps events at one time in the same period).
 #' @param device Device.
 #' @return `train_tgn()`: a `temporal_fit` with `history`, `val_metrics` and
 #'   `test_metrics` (ROC AUC and average precision against one random
@@ -330,8 +331,10 @@ train_tgn <- function(model, split, epochs = 10L, batch_size = 200L, lr = 1e-3, 
     if (length(s$t)) c(min(s$t), max(s$t)) else c(NA_real_, NA_real_)
   }, numeric(2))
   bounds <- ends[, !is.na(ends[1L, ]), drop = FALSE]
-  if (ncol(bounds) > 1L && any(bounds[2L, -ncol(bounds)] > bounds[1L, -1L])) {
-    stopf("`split` periods overlap in time: train, val and test must follow each other.")
+  # Strictly: events at one time are scored before any of them updates the
+  # memory, which only holds within a period.
+  if (ncol(bounds) > 1L && any(bounds[2L, -ncol(bounds)] >= bounds[1L, -1L])) {
+    stopf("`split` periods overlap in time: each of train, val and test must start strictly after the previous one ends.")
   }
   if (model$edge_dim > 0L && is.null(split$train$edge_attr)) stopf("The model expects event features.")
   epochs <- check_count(epochs, "epochs", 1L)

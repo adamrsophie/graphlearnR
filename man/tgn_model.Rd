@@ -68,7 +68,8 @@ them updates the memory.}
 \item{seed}{Optional seed for weights, negatives and the epoch order.
 Each event gets one random negative destination that differs from its
 own source and destination. The three periods of \code{split} must follow
-each other in time.}
+each other in time, each starting strictly after the previous one ends
+(\code{\link[=split_temporal]{split_temporal()}} keeps events at one time in the same period).}
 
 \item{device}{Device.}
 }

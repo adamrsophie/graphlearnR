@@ -529,3 +529,13 @@ test_that("reverse pairing ignores relation order and negative rounding matches"
   expect_equal(c(ncol(b$val_neg), ncol(b$test_neg)), c(ncol(a$val_neg), ncol(a$test_neg)))
   expect_equal(c(ncol(b$val_neg), ncol(b$test_neg)), c(1L, 1L))
 })
+
+test_that("TGN rejects periods that share a timestamp", {
+  skip_if_no_torch()
+  tg <- dataset_synthetic_temporal(num_events = 60, seed = 2)
+  sp <- split_temporal(tg)
+  expect_s3_class(train_tgn(tgn_model(tg$num_nodes, 4, 2, 4), sp, epochs = 1, seed = 1), "temporal_fit")
+  bad <- sp
+  bad$val$t[1] <- max(sp$train$t)
+  expect_error(train_tgn(tgn_model(tg$num_nodes, 4, 2, 4), bad, epochs = 1), "strictly after")
+})
