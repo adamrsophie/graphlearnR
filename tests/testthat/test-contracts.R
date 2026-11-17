@@ -711,3 +711,25 @@ test_that("metrics handle large sizes, named columns for any truth type and bad 
   expect_error(metric_hits_at_k(0, c(NA_real_, 1), 2), "missing")
   expect_error(metric_ari(1, 1), "at least two")
 })
+
+test_that("scatter extremes, weighted vector messages and GCN normalization edge cases", {
+  skip_if_no_torch()
+  for (r in list(list(f = scatter_max, v = c(0, -1)), list(f = scatter_min, v = c(0, 1)))) {
+    s <- torch_tensor(r$v, requires_grad = TRUE)
+    out <- r$f(s, c(1L, 1L), 2)
+    expect_equal(as.numeric(as_r_array(out)), c(0, 0))
+    out$sum()$backward()
+    expect_equal(as.numeric(as_r_array(s$grad)), c(1, 0))
+  }
+  x <- torch_tensor(c(2, 3, 0))
+  ei <- torch_tensor(rbind(c(1L, 2L), c(3L, 3L)), dtype = torch_long())
+  expect_equal(as.numeric(as_r_array(message_passing(x, ei, edge_weight = torch_tensor(c(5, 7))))),
+               c(0, 0, 31))
+  w <- torch_tensor(-2, requires_grad = TRUE)
+  n1 <- gcn_norm(torch_tensor(rbind(1L, 2L), dtype = torch_long()), 2, w)
+  expect_false(any(is.nan(as_r_array(n1$edge_weight))))
+  w0 <- torch_tensor(0, requires_grad = TRUE)
+  n0 <- gcn_norm(torch_tensor(rbind(1L, 2L), dtype = torch_long()), 2, w0, add_self_loops = FALSE)
+  n0$edge_weight$sum()$backward()
+  expect_false(is.nan(as.numeric(w0$grad)))
+})

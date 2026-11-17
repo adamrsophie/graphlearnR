@@ -55,7 +55,9 @@ message_passing <- function(x, edge_index, message = NULL, aggr = "sum",
   x_j <- x_src$index_select(1L, src)
   msg <- if (is.null(message)) {
     # The default message uses sources only, so targets are not gathered.
-    if (is.null(edge_weight)) x_j else x_j * edge_weight$unsqueeze(-1L)
+    if (is.null(edge_weight)) x_j
+    else if (x_j$dim() == 1L) x_j * edge_weight
+    else x_j * edge_weight$unsqueeze(-1L)
   } else {
     x_i <- if (is.null(x_dst)) NULL else x_dst$index_select(1L, dst)
     message(x_i = x_i, x_j = x_j, edge_attr = edge_attr,
@@ -165,8 +167,10 @@ gcn_norm <- function(edge_index, num_nodes, edge_weight = NULL,
     node_degree$degree$to(dtype = edge_weight$dtype) +
       fill * (!node_degree$self_loop)$to(dtype = edge_weight$dtype)
   }
-  dinv <- deg$pow(-0.5)
-  dinv <- dinv$masked_fill(torch_isinf(dinv), 0)
+  # A node whose total incoming weight is not positive gets no normalized
+  # edges. The clamp keeps both the value and its gradient finite.
+  pos <- deg > 0
+  dinv <- torch_where(pos, deg$clamp(min = 1e-30)$pow(-0.5), torch_zeros_like(deg))
   w <- dinv$index_select(1L, edge_index[1L, ]) * edge_weight *
     dinv$index_select(1L, edge_index[2L, ])
   list(edge_index = edge_index, edge_weight = w)

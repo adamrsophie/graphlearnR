@@ -81,12 +81,18 @@ scatter_mean <- function(src, index, dim_size) {
 scatter_extreme <- function(src, index, dim_size, reduce) {
   index <- as_index_tensor(index, src$device)
   with_2d(src, function(s) {
-    out <- torch_zeros(dim_size, s$size(2L), dtype = s$dtype, device = s$device)
     if (index$numel() == 0L) {
+      out <- torch_zeros(dim_size, s$size(2L), dtype = s$dtype, device = s$device)
       return(out + s$sum() * 0)
     }
+    # Start from the neutral element, not zero: a zero start takes part in
+    # the backward tie count and halves the gradient of a winning zero.
+    out <- torch_full(c(dim_size, s$size(2L)), if (reduce == "amax") -Inf else Inf,
+                      dtype = s$dtype, device = s$device)
     idx <- index$unsqueeze(2L)$expand(c(-1L, s$size(2L)))
-    out$scatter_reduce(1L, idx, s, reduce = reduce, include_self = FALSE)
+    res <- out$scatter_reduce(1L, idx, s, reduce = reduce, include_self = FALSE)
+    empty <- scatter_count(index, dim_size, dtype = torch_long(), device = s$device) == 0L
+    res$masked_fill(empty$unsqueeze(2L), 0)
   })
 }
 
