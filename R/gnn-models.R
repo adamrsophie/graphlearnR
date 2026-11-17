@@ -138,13 +138,21 @@ graph_model_module <- nn_module(
   },
   forward = function(x, edge_index, edge_weight = NULL, edge_attr = NULL,
                      batch = NULL, num_graphs = NULL, edge_type = NULL,
-                     return_embedding = FALSE, ...) {
+                     return_embedding = FALSE, node_degree = NULL, ...) {
     act <- activation_fn(self$config$activation)
     h <- x
+    # GCN layers share one normalization of the graph per forward pass.
+    norm <- if (self$config$architecture == "gcn" && length(self$convs) > 1L) {
+      c1 <- self$convs[[1L]]
+      if (c1$normalize) gcn_norm(edge_index, x$size(1L), edge_weight, c1$add_loops, c1$improved,
+                                 dtype = x$dtype, node_degree = node_degree)
+    }
     for (i in seq_along(self$convs)) {
       conv <- self$convs[[i]]
       out <- if (self$config$architecture == "rgcn") {
         conv(h, edge_index, edge_type = edge_type)
+      } else if (self$config$architecture == "gcn") {
+        conv(h, edge_index, edge_weight = edge_weight, node_degree = node_degree, norm = norm)
       } else {
         conv(h, edge_index, edge_weight = edge_weight, edge_attr = edge_attr)
       }
@@ -171,6 +179,12 @@ graph_model_module <- nn_module(
 
 # Call a model on graph tensors, passing the standard arguments by name.
 model_forward <- function(model, tt, ...) {
+  if (!is.null(tt$node_degree)) {
+    return(model(tt$x, tt$edge_index, edge_weight = tt$edge_weight,
+                 edge_attr = tt$edge_attr, batch = tt$batch,
+                 num_graphs = tt$num_graphs, edge_type = tt$edge_type,
+                 node_degree = tt$node_degree, ...))
+  }
   model(tt$x, tt$edge_index, edge_weight = tt$edge_weight,
         edge_attr = tt$edge_attr, batch = tt$batch,
         num_graphs = tt$num_graphs, edge_type = tt$edge_type, ...)

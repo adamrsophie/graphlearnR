@@ -203,3 +203,74 @@ test_that("spatiotemporal training works with a single training origin", {
   expect_equal(nrow(fit$history), 1L)
   expect_error(train_spatiotemporal_model(sig, lags = 0), "lags")
 })
+
+test_that("dynamic link prediction refuses snapshots with another node order", {
+  skip_if_no_torch()
+  snaps <- temporal_snapshots(dataset_synthetic_temporal(seed = 1), breaks = 4)
+  fit <- train_dynamic_link_model(snaps, hidden_dim = 4, epochs = 1, seed = 1)
+  ok <- predict(fit, snaps, pairs = rbind(1, 2), step = 2)
+  expect_length(ok, 1L)
+  perm <- snaps
+  perm$graphs <- lapply(perm$graphs, function(g) { g$node_ids <- rev(g$node_ids); g })
+  expect_error(predict(fit, perm, pairs = rbind(1, 2), step = 2), "node_ids")
+})
+
+test_that("GCN on an all neighbor sample matches the full graph at the seeds", {
+  skip_if_no_torch()
+  set.seed(3)
+  g <- graph_data(x = matrix(rnorm(12 * 3), 12, 3),
+                  edge_index = rbind(c(1:11, 3, 7), c(2:12, 9, 1)), directed = FALSE,
+                  edge_weight = runif(13) + 0.5)
+  torch::torch_manual_seed(1)
+  m <- gnn_model("gcn", 3, 4, 2, num_layers = 2, dropout = 0)
+  m$eval()
+  full <- as_r_array(torch::with_no_grad(model_forward(m, graph_tensors(g))))
+  seeds <- c(5, 1)
+  sg <- sample_neighbors(g, seeds, c(-1, -1))
+  sub <- as_r_array(torch::with_no_grad(model_forward(m, graph_tensors(sg))))
+  expect_equal(sub[seq_along(seeds), ], full[seeds, ], tolerance = 1e-5)
+  expect_null(sample_neighbors(g, seeds, c(2, 2), seed = 1)$node_degree)
+})
+
+test_that("shared ranking and loader caches give the reference results", {
+  ref_mrr <- function(pos, neg) {
+    neg <- matrix(neg, length(pos), length(neg), byrow = TRUE)
+    mean(1 / (1 + rowSums(neg > pos) + 0.5 * rowSums(neg == pos)))
+  }
+  set.seed(4)
+  for (i in 1:50) {
+    p <- round(rnorm(sample(1:10, 1)), 1)
+    n <- round(rnorm(sample(1:15, 1)), 1)
+    expect_equal(metric_mrr(p, n), ref_mrr(p, n))
+  }
+  expect_equal(metric_mrr(1, c(1, 1)), 0.5)
+  expect_equal(metric_hits_at_k(1, c(1, 1), k = 2), 0)
+  expect_error(metric_mrr(c(1, NA), 1), "missing")
+  g <- dataset_karate()
+  ld <- node_loader(g, nodes = 1:20, batch_size = 7, fanouts = c(3, 2), seed = 5)
+  b <- loader_batches(ld, epoch = 2)
+  s <- sub_seeds(ld$seed + 2, length(b))
+  parts <- batch_split(20, 7, TRUE, ld$seed + 2)
+  for (i in seq_along(b)) {
+    expect_identical(b[[i]], sample_neighbors(g, (1:20)[parts[[i]]], c(3, 2), seed = s[i]))
+  }
+})
+
+test_that("a GCN model and graph GRU equal their layer by layer computation", {
+  skip_if_no_torch()
+  g <- dataset_karate()
+  tt <- graph_tensors(g)
+  torch::torch_manual_seed(2)
+  m <- gnn_model("gcn", 34, 8, 2, num_layers = 3, dropout = 0)
+  m$eval()
+  out <- m(tt$x, tt$edge_index)
+  h <- tt$x
+  for (i in 1:3) h <- torch::nnf_relu(m$convs[[i]](h, tt$edge_index)) + if (i > 1 && m$config$residual) h else 0
+  expect_equal(as_r_array(out), as_r_array(m$head(h)), tolerance = 1e-5)
+  cell <- graph_gru_cell(34, 4)
+  hh <- cell(tt$x, tt$edge_index)
+  z <- torch::torch_sigmoid(cell$xz(tt$x, tt$edge_index))
+  ht <- torch::torch_tanh(cell$xh(tt$x, tt$edge_index))
+  expect_equal(as_r_array(hh), as_r_array((1 - z) * ht + z * torch::torch_zeros_like(ht)),
+               tolerance = 1e-5)
+})

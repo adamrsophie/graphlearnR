@@ -129,11 +129,14 @@ gcn_conv <- nn_module(
     nn_init_xavier_uniform_(self$lin$weight)
     if (bias) self$bias <- nn_parameter(torch_zeros(out_features))
   },
-  forward = function(x, edge_index, edge_weight = NULL, ...) {
+  forward = function(x, edge_index, edge_weight = NULL, node_degree = NULL, norm = NULL, ...) {
     n <- x$size(1L)
     h <- self$lin(x)
     if (self$normalize) {
-      nrm <- gcn_norm(edge_index, n, edge_weight, self$add_loops, self$improved, dtype = x$dtype)
+      # `norm`: a gcn_norm() result for this graph computed once by the
+      # caller and shared by several layers in one forward pass.
+      nrm <- norm %||% gcn_norm(edge_index, n, edge_weight, self$add_loops, self$improved,
+                                dtype = x$dtype, node_degree = node_degree)
       edge_index <- nrm$edge_index
       edge_weight <- nrm$edge_weight
     } else if (self$add_loops) {

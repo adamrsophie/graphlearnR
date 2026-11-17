@@ -344,9 +344,12 @@ graph_gru_cell <- nn_module(
   },
   forward = function(x, edge_index, h = NULL, edge_weight = NULL) {
     if (is.null(h)) h <- torch_zeros(x$size(1L), self$hidden, device = x$device)
-    z <- torch_sigmoid(self$xz(x, edge_index, edge_weight) + self$hz(h, edge_index, edge_weight))
-    r <- torch_sigmoid(self$xr(x, edge_index, edge_weight) + self$hr(h, edge_index, edge_weight))
-    ht <- torch_tanh(self$xh(x, edge_index, edge_weight) + self$hh(r * h, edge_index, edge_weight))
+    # All six gates use the same graph: normalize it once.
+    nm <- gcn_norm(edge_index, x$size(1L), edge_weight, dtype = x$dtype)
+    g <- function(conv, v) conv(v, edge_index, edge_weight, norm = nm)
+    z <- torch_sigmoid(g(self$xz, x) + g(self$hz, h))
+    r <- torch_sigmoid(g(self$xr, x) + g(self$hr, h))
+    ht <- torch_tanh(g(self$xh, x) + g(self$hh, r * h))
     z * h + (1 - z) * ht
   }
 )
@@ -672,7 +675,8 @@ train_dynamic_link_model <- function(snapshots, train_steps = NULL, hidden_dim =
                  test_metrics = if (!is.null(step_metrics)) colMeans(step_metrics[, -1L, drop = FALSE]),
                  baseline_metrics = if (length(eval_steps)) dynamic_link_baseline(snapshots, eval_steps, neg_ratio, seed),
                  task = "dynamic link prediction", device = dev, seed = seed,
-                 num_nodes = n, identity_features = is.null(feats[[1L]])),
+                 num_nodes = n, identity_features = is.null(feats[[1L]]),
+                 node_ids = snapshots$graphs[[1L]]$node_ids %||% seq_len(n)),
             class = "temporal_fit")
 }
 

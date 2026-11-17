@@ -23,7 +23,8 @@ gcn_norm(
   edge_weight = NULL,
   add_self_loops = TRUE,
   improved = FALSE,
-  dtype = NULL
+  dtype = NULL,
+  node_degree = NULL
 )
 }
 \arguments{
@@ -48,6 +49,11 @@ edge feature of their incoming edges (zero if none).}
 \item{dtype}{Floating point type of the weights (default float32); layers
 pass the dtype of their input so double precision models normalize in
 double precision.}
+
+\item{node_degree}{Optional full graph degrees for a sampled subgraph, a
+list with tensors \code{degree} (weighted in degree) and \code{self_loop} (logical),
+as \code{\link[=graph_tensors]{graph_tensors()}} builds from \code{\link[=sample_neighbors]{sample_neighbors()}} output; it replaces
+the degrees computed from \code{edge_index}.}
 }
 \value{
 A list with \code{edge_index}, \code{edge_weight} and \code{edge_attr}.

@@ -88,6 +88,11 @@ predict.temporal_fit <- function(object, new_data = NULL, pairs = NULL, time = N
     K <- length(snaps$graphs)
     if (is.null(step) || step < 2L || step > K + 1L) stopf("`step` must be between 2 and %d.", K + 1L)
     if (snaps$num_nodes != object$num_nodes) stopf("`new_data` has a different number of nodes.")
+    # The recurrent state is indexed by row: the nodes must be in training order.
+    ids <- snaps$graphs[[1L]]$node_ids %||% seq_len(snaps$num_nodes)
+    if (!is.null(object$node_ids) && !identical(ids, object$node_ids)) {
+      stopf("`new_data` lists its nodes in a different order (`node_ids`) than the training snapshots.")
+    }
     dev <- object$device
     cell <- object$model
     cell$eval()

@@ -278,8 +278,15 @@ metric_hits_at_k <- function(pos, neg, k = 10L) {
 #' @rdname metrics
 #' @export
 metric_mrr <- function(pos, neg) {
-  if (!is.matrix(neg)) neg <- matrix(neg, length(pos), length(neg), byrow = TRUE)
-  mean(1 / positive_ranks(pos, neg))
+  if (anyNA(pos) || anyNA(neg)) stopf("`pos` and `neg` must not have missing scores.")
+  if (is.matrix(neg)) return(mean(1 / positive_ranks(pos, neg)))
+  # Shared negatives: sort once and count by binary search, O((P + Q) log Q)
+  # instead of a P by Q comparison matrix; ties still count one half.
+  s <- sort(neg)
+  q <- length(s)
+  greater <- q - findInterval(pos, s)
+  at_least <- q - findInterval(pos, s, left.open = TRUE)
+  mean(1 / (1 + greater + 0.5 * (at_least - greater)))
 }
 
 #' @rdname metrics

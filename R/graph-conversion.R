@@ -393,6 +393,9 @@ graph_tensors <- function(g, device = NULL, dtype = torch_float()) {
       torch_tensor(if (is.matrix(ga)) ga else matrix(ga, nrow = 1L), dtype = dtype, device = dev)
     },
     batch = torch_tensor(g$batch %||% rep(1L, n), dtype = torch_long(), device = dev),
+    node_degree = if (!is.null(g$node_degree)) {
+      list(degree = ft(g$node_degree), self_loop = mask(g$node_self_loop))
+    },
     num_graphs = g$num_graphs %||% 1L,
     train_mask = mask(g$train_mask),
     val_mask = mask(g$val_mask),

@@ -11,7 +11,11 @@
 #' with target side normalization only (sum, mean or max aggregation, as in
 #' `"sage"`, `"gin"` and `"graph_conv"`). They differ for `"gcn"`, whose
 #' symmetric normalization uses the degree of source nodes, which is
-#' incomplete at the boundary of the sampled subgraph.
+#' incomplete at the boundary of the sampled subgraph, unless the subgraph
+#' carries the full graph degrees: with every fanout `-1` the result has
+#' `node_degree` (weighted full graph in degree) and `node_self_loop`, which
+#' [gcn_conv()] uses, through [gnn_model()] and [train_graph_model()], so
+#' GCN seed outputs are exact as well.
 #'
 #' The result is a `graph_data` object with local indices and these extra
 #' fields:
@@ -45,6 +49,13 @@
 #' sg$n_id
 #' @export
 sample_neighbors <- function(g, seeds, fanouts, replace = FALSE, seed = NULL) {
+  sample_neighbors_impl(g, seeds, fanouts, replace, seed)
+}
+
+# `csc` and `full_deg` are the cached incoming index and full graph degrees of
+# a node loader, so batches do not rebuild them.
+sample_neighbors_impl <- function(g, seeds, fanouts, replace = FALSE, seed = NULL,
+                                  csc = NULL, full_deg = NULL) {
   seeds <- as.integer(seeds)
   n <- g$num_nodes
   if (!length(seeds) || anyNA(seeds) || any(seeds < 1L | seeds > n)) {
@@ -52,7 +63,7 @@ sample_neighbors <- function(g, seeds, fanouts, replace = FALSE, seed = NULL) {
   }
   if (anyDuplicated(seeds)) stopf("`seeds` must not contain duplicates.")
   fanouts <- as.integer(fanouts)
-  csc <- incoming_index(g)
+  csc <- csc %||% incoming_index(g)
   with_optional_seed(seed, {
     local <- integer(n)
     local[seeds] <- seq_along(seeds)
@@ -74,8 +85,24 @@ sample_neighbors <- function(g, seeds, fanouts, replace = FALSE, seed = NULL) {
       frontier <- new
     }
     if (!replace) e_keep <- unique(e_keep)
-    induced_from_edges(g, n_id, local, e_keep, hop, length(seeds))
+    sg <- induced_from_edges(g, n_id, local, e_keep, hop, length(seeds))
+    # With all neighbors, the sampled nodes keep their full graph in degrees,
+    # so symmetric (GCN) normalization matches the full graph at the seeds.
+    if (all(fanouts < 0L)) {
+      full_deg <- full_deg %||% full_degrees(g)
+      sg$node_degree <- full_deg$degree[n_id]
+      sg$node_self_loop <- full_deg$self_loop[n_id]
+    }
+    sg
   })
+}
+
+full_degrees <- function(g) {
+  n <- g$num_nodes
+  w <- g$edge_weight %||% rep(1, ncol(g$edge_index))
+  loop <- logical(n)
+  loop[g$edge_index[2L, g$edge_index[1L, ] == g$edge_index[2L, ]]] <- TRUE
+  list(degree = tapply_sum(w, g$edge_index[2L, ], n), self_loop = loop)
 }
 
 # Edges grouped by target: ord lists edge ids sorted by target, ptr gives the
@@ -183,9 +210,13 @@ k_hop_subgraph <- function(g, nodes, k) {
 node_loader <- function(g, nodes = NULL, batch_size = 64L, fanouts = c(10L, 10L),
                         shuffle = TRUE, seed = NULL) {
   nodes <- nodes %||% if (!is.null(g$train_mask)) which(g$train_mask) else seq_len(g$num_nodes)
+  fanouts <- as.integer(fanouts)
+  # The incoming edge index (and full degrees) are built once per loader.
   structure(list(graph = g, nodes = as.integer(nodes),
                  batch_size = check_count(batch_size, "batch_size", 1L),
-                 fanouts = as.integer(fanouts), shuffle = shuffle, seed = seed),
+                 fanouts = fanouts, shuffle = shuffle, seed = seed,
+                 csc = incoming_index(g),
+                 full_deg = if (all(fanouts < 0L)) full_degrees(g)),
             class = c("node_loader", "graph_loader_base"))
 }
 
@@ -216,7 +247,8 @@ loader_batches.node_loader <- function(loader, epoch = 1L) {
   parts <- batch_split(length(loader$nodes), loader$batch_size, loader$shuffle, s)
   seeds <- sub_seeds(s, length(parts))
   lapply(seq_along(parts), function(i) {
-    sample_neighbors(loader$graph, loader$nodes[parts[[i]]], loader$fanouts, seed = seeds[i])
+    sample_neighbors_impl(loader$graph, loader$nodes[parts[[i]]], loader$fanouts, seed = seeds[i],
+                          csc = loader$csc, full_deg = loader$full_deg)
   })
 }
 

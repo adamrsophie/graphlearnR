@@ -53,10 +53,11 @@ message_passing <- function(x, edge_index, message = NULL, aggr = "sum",
   src <- edge_index[1L, ]
   dst <- edge_index[2L, ]
   x_j <- x_src$index_select(1L, src)
-  x_i <- if (is.null(x_dst)) NULL else x_dst$index_select(1L, dst)
   msg <- if (is.null(message)) {
+    # The default message uses sources only, so targets are not gathered.
     if (is.null(edge_weight)) x_j else x_j * edge_weight$unsqueeze(-1L)
   } else {
+    x_i <- if (is.null(x_dst)) NULL else x_dst$index_select(1L, dst)
     message(x_i = x_i, x_j = x_j, edge_attr = edge_attr,
             edge_weight = edge_weight, index = dst, num_nodes = num_nodes)
   }
@@ -134,9 +135,14 @@ remove_self_loops_tensor <- function(edge_index, edge_weight = NULL, edge_attr =
 #' @param dtype Floating point type of the weights (default float32); layers
 #'   pass the dtype of their input so double precision models normalize in
 #'   double precision.
+#' @param node_degree Optional full graph degrees for a sampled subgraph, a
+#'   list with tensors `degree` (weighted in degree) and `self_loop` (logical),
+#'   as [graph_tensors()] builds from [sample_neighbors()] output; it replaces
+#'   the degrees computed from `edge_index`.
 #' @export
 gcn_norm <- function(edge_index, num_nodes, edge_weight = NULL,
-                     add_self_loops = TRUE, improved = FALSE, dtype = NULL) {
+                     add_self_loops = TRUE, improved = FALSE, dtype = NULL,
+                     node_degree = NULL) {
   dev <- edge_index$device
   if (is.null(edge_weight)) {
     edge_weight <- torch_ones(edge_index$size(2L), dtype = dtype %||% torch_float(), device = dev)
@@ -150,7 +156,15 @@ gcn_norm <- function(edge_index, num_nodes, edge_weight = NULL,
     edge_index <- sl$edge_index
     edge_weight <- sl$edge_weight
   }
-  deg <- scatter_sum(edge_weight, edge_index[2L, ], num_nodes)
+  deg <- if (is.null(node_degree)) {
+    scatter_sum(edge_weight, edge_index[2L, ], num_nodes)
+  } else {
+    # Full graph degrees of a sampled subgraph: in degree plus the loop
+    # weight a node without a loop receives.
+    fill <- if (!add_self_loops) 0 else if (improved) 2 else 1
+    node_degree$degree$to(dtype = edge_weight$dtype) +
+      fill * (!node_degree$self_loop)$to(dtype = edge_weight$dtype)
+  }
   dinv <- deg$pow(-0.5)
   dinv <- dinv$masked_fill(torch_isinf(dinv), 0)
   w <- dinv$index_select(1L, edge_index[1L, ]) * edge_weight *

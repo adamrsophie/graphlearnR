@@ -33,7 +33,11 @@ equal full graph outputs for layers that aggregate over incoming edges
 with target side normalization only (sum, mean or max aggregation, as in
 \code{"sage"}, \code{"gin"} and \code{"graph_conv"}). They differ for \code{"gcn"}, whose
 symmetric normalization uses the degree of source nodes, which is
-incomplete at the boundary of the sampled subgraph.
+incomplete at the boundary of the sampled subgraph, unless the subgraph
+carries the full graph degrees: with every fanout \code{-1} the result has
+\code{node_degree} (weighted full graph in degree) and \code{node_self_loop}, which
+\code{\link[=gcn_conv]{gcn_conv()}} uses, through \code{\link[=gnn_model]{gnn_model()}} and \code{\link[=train_graph_model]{train_graph_model()}}, so
+GCN seed outputs are exact as well.
 }
 \details{
 The result is a \code{graph_data} object with local indices and these extra
