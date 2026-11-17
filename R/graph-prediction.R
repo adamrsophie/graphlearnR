@@ -170,7 +170,9 @@ format_predictions <- function(out, type, object, ids, id_name) {
 #' Computes task metrics on a held out set, using [evaluate_predictions()].
 #'
 #' * Node tasks: nodes in `new_data`'s `split` mask (`"test"` by default).
-#' * Graph tasks: every graph in `new_data`.
+#' * Graph tasks: every graph in `new_data`, which is required unless
+#'   `split = "train"` (the training graphs are the only graphs a fit
+#'   holds).
 #' * Link prediction: `split$test_pos` against `split$test_neg` (or the
 #'   validation pairs with `split = "val"`), with message passing on the
 #'   training graph only. ROC-AUC and average precision use those pairs;
@@ -217,6 +219,10 @@ evaluate_graph_model <- function(fit, new_data = NULL, split = c("test", "val", 
     return(eval_rows(fit, y, p, mask, classif))
   }
   if (task %in% c("graph_classification", "graph_regression")) {
+    if (is.null(new_data) && split != "train") {
+      stopf("Graph tasks need `new_data`: pass the %s graphs (the fit holds only the training graphs).",
+            if (split == "val") "validation" else "test")
+    }
     if (inherits(data, "graph_data")) data <- list(data)
     y <- stack_graph_labels(lapply(seq_len(length(data)), function(i) data[[i]]$graph_y))
     p <- predict(fit, data, type = if (classif) "prob" else "response")

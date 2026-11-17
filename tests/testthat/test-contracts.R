@@ -754,3 +754,14 @@ test_that("training negatives never include evaluation pairs", {
   expect_gt(length(seen$train), 0)
   expect_false(any(seen$train %in% ev))
 })
+
+test_that("graph evaluation never scores training graphs as held out data", {
+  skip_if_no_torch()
+  gs <- lapply(1:4, function(i) graph_data(x = matrix(i, 2, 1), edge_index = rbind(1L, 2L), graph_y = i))
+  fit <- train_graph_model(gnn_model("sage", 1, 2, 1, num_layers = 1, pool = "mean"), gs[1:2],
+                           "graph_regression", epochs = 1, seed = 1)
+  expect_error(evaluate_graph_model(fit), "need `new_data`")
+  expect_error(evaluate_graph_model(fit, split = "val"), "validation graphs")
+  expect_s3_class(evaluate_graph_model(fit, split = "train"), "data.frame")
+  expect_s3_class(evaluate_graph_model(fit, gs[3:4]), "data.frame")
+})
