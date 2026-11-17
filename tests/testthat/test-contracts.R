@@ -1035,3 +1035,16 @@ test_that("hetero layers use relation weights, keep graphs apart and read counts
              list(a__r__b = e1, a__s__b = e1))$b
   expect_equal(as.numeric(torch::as_array(both[1, ])), as.numeric(torch::as_array(one[1, ])), tolerance = 1e-6)
 })
+
+test_that("sampling a hetero sample keeps original node indices and edge labels", {
+  hg <- hetero_graph_data(list(a = 5, b = 2),
+                          list(a__r__b = list(edge_index = rbind(c(3, 4), c(1, 2)), edge_y = c(1, 0)),
+                               b__s__a = rbind(c(1, 2), c(3, 4))))
+  s1 <- sample_hetero_neighbors(hg, list(b = 1:2), fanouts = -1)
+  expect_equal(sort(s1$n_id$a), c(3L, 4L))
+  expect_false(is.null(s1$edges$a__r__b$edge_y))
+  la <- match(3L, s1$n_id$a)
+  s2 <- sample_hetero_neighbors(s1, list(a = la), fanouts = -1)
+  expect_true(3L %in% s2$n_id$a)
+  expect_true(all(s2$n_id$a %in% c(3L, 4L)))
+})

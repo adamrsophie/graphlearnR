@@ -570,10 +570,14 @@ sample_hetero_neighbors <- function(hg, seeds, fanouts, seed = NULL) {
                                              local[[e$dst]][e$edge_index[2L, ids]])
                       else matrix(integer(), 2L, 0L),
          edge_attr = take_rows(e$edge_attr, ids), edge_weight = take_rows(e$edge_weight, ids),
-         edge_time = take_rows(e$edge_time, ids), reverse = e$reverse, reverse_of = e$reverse_of)
+         edge_time = take_rows(e$edge_time, ids), edge_y = take_rows(e$edge_y, ids),
+         reverse = e$reverse, reverse_of = e$reverse_of)
   })
   out <- hetero_graph_data(nodes, edges, metadata = hg$metadata)
-  out$n_id <- n_id
+  # Sampling a sample keeps indices into the original graph.
+  out$n_id <- lapply(stats::setNames(types, types), function(t) {
+    if (!is.null(hg$n_id[[t]])) hg$n_id[[t]][n_id[[t]]] else n_id[[t]]
+  })
   out$num_seeds <- vapply(stats::setNames(types, types),
                           function(t) length(seeds[[t]] %||% integer()), integer(1))
   class(out) <- c("sampled_hetero_graph", class(out))
