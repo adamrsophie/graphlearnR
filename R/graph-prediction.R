@@ -74,6 +74,8 @@ predict.graph_fit <- function(object, new_data = NULL,
         if (inherits(model, c("graph_model", "graph_transformer"))) {
           return(model_forward(model, bt, return_embedding = "graph"))
         }
+        # DiffPool's embedding is already one row per graph.
+        if (inherits(model, "diffpool_model")) return(model_forward(model, bt, return_embedding = TRUE))
         pool_graph_embedding(model, model_forward(model, bt, return_embedding = TRUE), bt)
       }), dim = 1L)
       return(format_predictions(out, type, object, seq_len(out$size(1L)), "graph"))
@@ -135,6 +137,8 @@ predict.graph_fit <- function(object, new_data = NULL,
 # with the model's own readout (`config$pool`, mean when it has none).
 pool_graph_embedding <- function(model, h, bt) {
   ng <- bt$num_graphs %||% 1L
+  # Rows that are not nodes are already per graph.
+  if (h$size(1L) != bt$x$size(1L)) return(h)
   pool <- tryCatch(model$config$pool, error = function(e) NULL) %||% "mean"
   switch(pool,
     sum = global_add_pool(h, bt$batch, ng),

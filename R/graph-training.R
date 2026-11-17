@@ -517,7 +517,9 @@ node_metric <- function(classif) {
     function(out, target) mean(as_r_array(out$argmax(dim = 2L)) == as_r_array(target))
   } else {
     function(out, target) {
-      metric_rmse(as.vector(as_r_array(target)), as.vector(as_r_array(out)))
+      o <- as.vector(as_r_array(out))
+      # A diverging run reports NaN rather than stopping training.
+      if (anyNA(o)) NaN else metric_rmse(as.vector(as_r_array(target)), o)
     }
   }
 }

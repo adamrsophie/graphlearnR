@@ -64,7 +64,8 @@ Functions that return a modified copy of a \code{graph_data} object.
 New loops get weight \code{fill_weight} and zero edge features.
 \item \code{remove_self_loops()}: drop all loops.
 \item \code{coalesce_edges()}: merge duplicate stored edges, summing weights and
-averaging edge features; keeps the first label.
+averaging edge features; keeps the first label. Without weights, merged
+edges get their multiplicity as weight, so weighted sums are unchanged.
 \item \code{induced_subgraph()}: keep \code{nodes} (in the given order) and the edges
 among them.
 \item \code{as_undirected()}: turn a directed graph into an undirected one, keeping

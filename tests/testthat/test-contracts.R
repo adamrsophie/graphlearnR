@@ -1002,6 +1002,7 @@ test_that("DiffPool keeps one row per graph, including empty graphs", {
   fit <- train_graph_model(diffpool_model(1, 4, 2, num_clusters = 2), list(g1, g2),
                            task = "graph_classification", epochs = 1, seed = 1)
   expect_equal(nrow(predict(fit, list(g1, g0))), 2L)
+  expect_equal(dim(predict(fit, list(g1, g0, g1), type = "embedding")), c(3L, 4L))
   p0 <- predict(fit, list(g0, g0), type = "prob")
   expect_equal(nrow(p0), 2L)
   expect_false(anyNA(p0))
