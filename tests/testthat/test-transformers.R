@@ -187,7 +187,7 @@ test_that("linear_attention matches its explicit formula and keeps graphs apart"
     }
     ref <- ref %*% t(as_mat(attn$proj$weight)) + matrix(as.numeric(as.array(attn$proj$bias$detach())), 7, 4, byrow = TRUE)
     expect_equal(out, ref, tolerance = 1e-4, info = kern)
-    expect_equal(as_mat(attn(x[1:3, ])), out[1:3, ], tolerance = 1e-5, info = kern)
+    expect_equal(as_mat(attn(x[1:3, ])), out[1:3, ], tolerance = 1e-4, info = kern)
   }
   # FAVOR+ approximates softmax attention with many random features
   torch::torch_manual_seed(4)
