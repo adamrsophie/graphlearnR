@@ -228,7 +228,9 @@ k_hop_subgraph <- function(g, nodes, k) {
 #' @param fanouts Fanout per hop, see [sample_neighbors()].
 #' @param shuffle Shuffle before splitting into batches.
 #' @param seed Optional integer seed.
-#' @return A loader object; use [loader_batches()] to get batches.
+#' @return A loader object; use [loader_batches()] to get batches. A node
+#'   loader caches its incoming edge index; assigning a new `loader$graph`
+#'   is allowed, and the cache is rebuilt when its edges or weights differ.
 #' @examples
 #' g <- dataset_karate()
 #' ld <- node_loader(g, nodes = 1:20, batch_size = 8, fanouts = c(5, 5), seed = 1)
@@ -238,13 +240,32 @@ node_loader <- function(g, nodes = NULL, batch_size = 64L, fanouts = c(10L, 10L)
                         shuffle = TRUE, seed = NULL) {
   nodes <- nodes %||% if (!is.null(g$train_mask)) which(g$train_mask) else seq_len(g$num_nodes)
   fanouts <- as.integer(fanouts)
-  # The incoming edge index (and full degrees) are built once per loader.
-  structure(list(graph = g, nodes = as.integer(nodes),
-                 batch_size = check_count(batch_size, "batch_size", 1L),
-                 fanouts = fanouts, shuffle = shuffle, seed = seed,
-                 csc = incoming_index(g),
-                 full_deg = if (all(fanouts < 0L)) full_degrees(g)),
-            class = c("node_loader", "graph_loader_base"))
+  ld <- structure(list(graph = g, nodes = as.integer(nodes),
+                       batch_size = check_count(batch_size, "batch_size", 1L),
+                       fanouts = fanouts, shuffle = shuffle, seed = seed),
+                  class = c("node_loader", "graph_loader_base"))
+  refresh_node_loader(ld)
+}
+
+# The incoming edge index (and full degrees) are built once per loader and
+# rebuilt at the start of an epoch when `loader$graph` has different edges
+# or weights (an O(E) fingerprint check), so replacing the graph is safe.
+# Feature or label changes keep the caches.
+refresh_node_loader <- function(loader) {
+  key <- topology_key(loader$graph)
+  if (!identical(loader$topology_key, key)) {
+    loader$csc <- incoming_index(loader$graph)
+    loader$full_deg <- if (all(loader$fanouts < 0L)) full_degrees(loader$graph)
+    loader$topology_key <- key
+  }
+  loader
+}
+
+topology_key <- function(g) {
+  ei <- g$edge_index
+  i <- as.numeric(seq_len(ncol(ei)))
+  w <- g$edge_weight %||% rep(1, ncol(ei))
+  c(g$num_nodes, ncol(ei), sum(ei[1L, ] * i), sum(ei[2L, ] * i), sum(w * i), sum(w * w))
 }
 
 #' @rdname node_loader
@@ -272,6 +293,7 @@ for_each_batch <- function(loader, epoch, fun) {
     parts <- batch_split(length(loader$dataset), loader$batch_size, loader$shuffle, s)
     for (ix in parts) fun(graph_batch(lapply(ix, function(i) loader$dataset[[i]])))
   } else if (inherits(loader, "node_loader")) {
+    loader <- refresh_node_loader(loader)
     parts <- batch_split(length(loader$nodes), loader$batch_size, loader$shuffle, s)
     seeds <- sub_seeds(s, length(parts))
     for (i in seq_along(parts)) {
@@ -291,6 +313,7 @@ batch_split <- function(n, size, shuffle, seed) {
 
 #' @export
 loader_batches.node_loader <- function(loader, epoch = 1L) {
+  loader <- refresh_node_loader(loader)
   s <- if (is.null(loader$seed)) NULL else loader$seed + epoch
   parts <- batch_split(length(loader$nodes), loader$batch_size, loader$shuffle, s)
   seeds <- sub_seeds(s, length(parts))

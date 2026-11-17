@@ -601,3 +601,33 @@ test_that("feature explanations of a sampled graph use the prediction's normaliz
   ig <- explain_integrated_gradients(fit, sg, target = 1, output = 1, baseline = 0, steps = 10)
   expect_equal(sum(ig$node_feature), pred, tolerance = 1e-5)
 })
+
+test_that("loaders follow replaced graphs and current edge inputs", {
+  g <- graph_data(x = matrix(1:3, 3, 1), edge_index = rbind(c(2, 3), c(1, 2)), edge_weight = c(2, 3))
+  ld <- node_loader(g, nodes = 1, fanouts = -1, shuffle = FALSE, seed = 1)
+  ld$graph <- graph_data(x = g$x, edge_index = rbind(c(2, 3), c(3, 1)), edge_weight = c(5, 7))
+  expected <- sample_neighbors(ld$graph, seeds = 1, fanouts = -1)
+  actual <- loader_batches(ld)[[1]]
+  expect_identical(actual$edge_index, expected$edge_index)
+  expect_identical(actual$n_id, expected$n_id)
+  expect_identical(actual$node_degree, expected$node_degree)
+  b <- list()
+  for_each_batch(ld, 1L, function(x) b[[length(b) + 1L]] <<- x)
+  expect_identical(b[[1]]$edge_index, expected$edge_index)
+  skip_if_no_torch()
+  g <- graph_data(x = matrix(1, 3, 1), edge_index = rbind(c(1L, 2L), c(2L, 3L)),
+                  edge_attr = matrix(1, 2, 1), y = rep(0, 3),
+                  train_mask = c(FALSE, TRUE, FALSE), val_mask = c(FALSE, FALSE, TRUE))
+  old <- cluster_loader(g, num_parts = 1L, method = "random", seed = 1)
+  g$edge_attr <- matrix(10, 2, 1)
+  edge_probe <- nn_module(initialize = function() self$scale <- nn_parameter(torch_tensor(1)),
+                          forward = function(x, edge_index, edge_attr = NULL, ...) {
+                            scatter_sum(edge_attr * self$scale, edge_index[2L, ], x$size(1L))
+                          })
+  losses <- lapply(list(old, cluster_loader(g, num_parts = 1L, method = "random", seed = 1)), function(l) {
+    fit <- train_graph_model(edge_probe(), g, "node_regression", epochs = 1, lr = 0, loader = l, seed = 1)
+    c(fit$history$train_loss, fit$history$val_loss)
+  })
+  expect_equal(losses[[1]], losses[[2]])
+  expect_equal(losses[[1]], c(100, 100))
+})

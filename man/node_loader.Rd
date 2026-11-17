@@ -39,7 +39,9 @@ loader_batches(loader, epoch = 1L)
 \item{epoch}{Epoch number, used to derive the epoch seed.}
 }
 \value{
-A loader object; use \code{\link[=loader_batches]{loader_batches()}} to get batches.
+A loader object; use \code{\link[=loader_batches]{loader_batches()}} to get batches. A node
+loader caches its incoming edge index; assigning a new \code{loader$graph}
+is allowed, and the cache is rebuilt when its edges or weights differ.
 }
 \description{
 \code{node_loader()} splits seed nodes into batches and samples each batch's

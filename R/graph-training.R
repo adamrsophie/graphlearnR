@@ -397,11 +397,10 @@ node_task_runner <- function(model, data, task, dev, fanouts, batch_size, seed, 
         !isTRUE(all.equal(lg$edge_index, data$edge_index, check.attributes = FALSE)) || !same_w) {
       stopf("`loader` was built on a different graph (nodes, edges or edge weights differ).")
     }
-    # The loader keeps its own copy of the graph; features, labels and masks
-    # come from `data`, so updated features are used.
-    subgraph_loader$graph$x <- data$x
-    subgraph_loader$graph$train_mask <- data$train_mask
-    subgraph_loader$graph$y <- data$y
+    # The loader keeps its own copy of the graph; with the same topology, all
+    # node and edge inputs (features, edge features and types, labels,
+    # masks) come from `data`, so updated inputs are used.
+    subgraph_loader$graph <- data
   }
   list(
     default_loss = if (classif) "cross_entropy" else "mse",
