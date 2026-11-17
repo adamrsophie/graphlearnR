@@ -61,7 +61,11 @@ a numeric label matrix.}
 tasks with \code{fanouts}).}
 
 \item{fanouts}{Neighbor sampling fanouts for node mini-batches. For a
-heterogeneous node task they go to \code{\link[=sample_hetero_neighbors]{sample_hetero_neighbors()}} (a
+homogeneous graph the full graph is never moved to the device: batches
+are built one at a time, and validation runs in batches on all neighbor
+subgraphs of the validation nodes with as many hops as \code{fanouts}, which
+equals full graph validation for layers that aggregate incoming edges
+(all \code{\link[=gnn_model]{gnn_model()}} architectures). For a heterogeneous node task they go to \code{\link[=sample_hetero_neighbors]{sample_hetero_neighbors()}} (a
 vector applied to every relation, or a named list per relation), with
 training nodes of \code{target_type} as seeds; the loss uses the seeds only
 and validation runs on the full graph.}

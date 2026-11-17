@@ -274,3 +274,18 @@ test_that("a GCN model and graph GRU equal their layer by layer computation", {
   expect_equal(as_r_array(hh), as_r_array((1 - z) * ht + z * torch::torch_zeros_like(ht)),
                tolerance = 1e-5)
 })
+
+test_that("sampled training validates on exact subgraphs without the full graph", {
+  skip_if_no_torch()
+  g <- split_nodes(dataset_karate(), seed = 1)
+  torch::torch_manual_seed(1)
+  m <- gnn_model("gcn", 34, 8, 2, dropout = 0)
+  fit <- train_graph_model(m, g, "node_classification", epochs = 2, fanouts = c(3, 3),
+                           batch_size = 8, seed = 1)
+  m$eval()
+  full <- torch::with_no_grad(model_forward(m, graph_tensors(g)))
+  v <- which(g$val_mask)
+  pred <- as.integer(as_r_array(full$argmax(dim = 2)))[v]
+  acc <- mean(pred == as.integer(g$y)[v])
+  expect_equal(utils::tail(fit$history$val_metric, 1), acc, tolerance = 1e-6)
+})

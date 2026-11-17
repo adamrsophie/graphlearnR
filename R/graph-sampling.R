@@ -236,6 +236,27 @@ graph_loader <- function(dataset, batch_size = 32L, shuffle = TRUE, seed = NULL)
 #' @export
 loader_batches <- function(loader, epoch = 1L) UseMethod("loader_batches")
 
+# Calls `fun` on each batch of one epoch, building every batch only when it
+# is needed, so an epoch is never held in memory as a whole. Batches and
+# their order are those of loader_batches().
+for_each_batch <- function(loader, epoch, fun) {
+  s <- if (is.null(loader$seed)) NULL else loader$seed + epoch
+  if (inherits(loader, "graph_loader")) {
+    parts <- batch_split(length(loader$dataset), loader$batch_size, loader$shuffle, s)
+    for (ix in parts) fun(graph_batch(lapply(ix, function(i) loader$dataset[[i]])))
+  } else if (inherits(loader, "node_loader")) {
+    parts <- batch_split(length(loader$nodes), loader$batch_size, loader$shuffle, s)
+    seeds <- sub_seeds(s, length(parts))
+    for (i in seq_along(parts)) {
+      fun(sample_neighbors_impl(loader$graph, loader$nodes[parts[[i]]], loader$fanouts,
+                                seed = seeds[i], csc = loader$csc, full_deg = loader$full_deg))
+    }
+  } else {
+    for (b in loader_batches(loader, epoch)) fun(b)
+  }
+  invisible()
+}
+
 batch_split <- function(n, size, shuffle, seed) {
   idx <- with_optional_seed(seed, if (shuffle) sample.int(n) else seq_len(n))
   split(idx, ceiling(seq_along(idx) / size))

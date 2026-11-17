@@ -58,7 +58,11 @@
 #' @param batch_size Graphs per batch (graph tasks) or seeds per batch (node
 #'   tasks with `fanouts`).
 #' @param fanouts Neighbor sampling fanouts for node mini-batches. For a
-#'   heterogeneous node task they go to [sample_hetero_neighbors()] (a
+#'   homogeneous graph the full graph is never moved to the device: batches
+#'   are built one at a time, and validation runs in batches on all neighbor
+#'   subgraphs of the validation nodes with as many hops as `fanouts`, which
+#'   equals full graph validation for layers that aggregate incoming edges
+#'   (all [gnn_model()] architectures). For a heterogeneous node task they go to [sample_hetero_neighbors()] (a
 #'   vector applied to every relation, or a named list per relation), with
 #'   training nodes of `target_type` as seeds; the loss uses the seeds only
 #'   and validation runs on the full graph.
@@ -361,13 +365,21 @@ node_task_runner <- function(model, data, task, dev, fanouts, batch_size, seed, 
     stopf("Node tasks need `train_mask`; use split_nodes() first.")
   }
   data$y <- prep_labels(data$y, classif, what = "node labels")
-  tt <- graph_tensors(data, dev)
-  train_idx <- tensor_which(tt$train_mask)
-  val_idx <- if (!is.null(tt$val_mask) && any(data$val_mask)) tensor_which(tt$val_mask)
+  has_val <- !is.null(data$val_mask) && any(data$val_mask)
   metric_fn <- node_metric(classif)
   loader <- if (!is.null(fanouts)) {
     node_loader(data, which(data$train_mask), batch_size %||% 64L, fanouts, TRUE, seed)
   }
+  # With neighbor sampling the full graph never moves to the device:
+  # validation runs on exact all neighbor subgraphs of the validation nodes,
+  # as deep as the sampled training subgraphs, in batches.
+  val_loader <- if (!is.null(fanouts) && has_val) {
+    node_loader(data, which(data$val_mask), batch_size %||% 64L, rep(-1L, length(fanouts)),
+                FALSE, NULL)
+  }
+  tt <- if (is.null(fanouts)) graph_tensors(data, dev)
+  train_idx <- if (!is.null(tt)) tensor_which(tt$train_mask)
+  val_idx <- if (!is.null(tt) && has_val) tensor_which(tt$val_mask)
   if (!is.null(subgraph_loader)) {
     if (!inherits(subgraph_loader, "subgraph_loader")) {
       stopf("`loader` must come from cluster_loader(), saint_loader() or ladies_loader().")
@@ -399,16 +411,30 @@ node_task_runner <- function(model, data, task, dev, fanouts, batch_size, seed, 
         loss <- loss_fn(out$index_select(1L, train_idx), tt$y$index_select(1L, train_idx))
         return(step_optimizer(opt, loss, grad_clip, all_params(opt)))
       }
-      losses <- vapply(loader_batches(loader, epoch), function(sg) {
+      tot <- 0
+      for_each_batch(loader, epoch, function(sg) {
         bt <- graph_tensors(sg, dev)
         seeds <- torch_arange(1L, sg$num_seeds, dtype = torch_long(), device = dev)
         out <- model_forward(model, bt)
         loss <- loss_fn(out$index_select(1L, seeds), bt$y$index_select(1L, seeds))
-        step_optimizer(opt, loss, grad_clip, all_params(opt)) * sg$num_seeds
-      }, numeric(1))
-      sum(losses) / length(loader$nodes)
+        tot <<- tot + step_optimizer(opt, loss, grad_clip, all_params(opt)) * sg$num_seeds
+      })
+      tot / length(loader$nodes)
     },
     validate = function(loss_fn) {
+      if (!is.null(val_loader)) {
+        outs <- list()
+        targets <- list()
+        for_each_batch(val_loader, 1L, function(sg) {
+          bt <- graph_tensors(sg, dev)
+          seeds <- torch_arange(1L, sg$num_seeds, dtype = torch_long(), device = dev)
+          outs[[length(outs) + 1L]] <<- model_forward(model, bt)$index_select(1L, seeds)$to(device = "cpu")
+          targets[[length(targets) + 1L]] <<- bt$y$index_select(1L, seeds)$to(device = "cpu")
+        })
+        out <- torch_cat(outs, dim = 1L)
+        target <- torch_cat(targets, dim = 1L)
+        return(list(loss = as.numeric(loss_fn(out, target)$item()), metric = metric_fn(out, target)))
+      }
       if (is.null(val_idx)) return(list())
       out <- model_forward(model, tt)$index_select(1L, val_idx)
       target <- tt$y$index_select(1L, val_idx)
@@ -496,10 +522,11 @@ graph_task_runner <- function(model, data, val_data, task, dev, batch_size, seed
     b
   }
   loader <- graph_loader(data, batch_size, TRUE, seed)
-  val_batches <- if (!is.null(val_data)) {
-    loader_batches(graph_loader(as_graph_list(val_data, "val_data"), batch_size, FALSE))
+  # Validation graphs stay on the host; each batch moves to the device only
+  # while it is evaluated.
+  val_loader <- if (!is.null(val_data)) {
+    graph_loader(as_graph_list(val_data, "val_data"), batch_size, FALSE)
   }
-  val_tt <- lapply(val_batches, function(b) graph_tensors(prep(b), device = dev))
   metric_fn <- node_metric(classif)
   list(
     default_loss = if (classif) "cross_entropy" else "mse",
@@ -508,22 +535,29 @@ graph_task_runner <- function(model, data, val_data, task, dev, batch_size, seed
     train_epoch = function(epoch, opt, loss_fn, grad_clip) {
       tot <- 0
       n <- 0
-      for (b in loader_batches(loader, epoch)) {
+      for_each_batch(loader, epoch, function(b) {
         bt <- graph_tensors(prep(b), dev)
         out <- model_forward(model, bt)
         loss <- loss_fn(out, bt$graph_y)
         # Models with auxiliary objectives (such as diffpool_model) expose them here.
         if (!is.null(model$aux_loss)) loss <- loss + model$aux_loss
-        tot <- tot + step_optimizer(opt, loss, grad_clip, all_params(opt)) * b$num_graphs
-        n <- n + b$num_graphs
-      }
+        tot <<- tot + step_optimizer(opt, loss, grad_clip, all_params(opt)) * b$num_graphs
+        n <<- n + b$num_graphs
+      })
       tot / n
     },
     validate = function(loss_fn) {
-      if (!length(val_tt)) return(list())
-      outs <- lapply(val_tt, function(bt) model_forward(model, bt))
+      if (is.null(val_loader)) return(list())
+      # Only the outputs (one row per graph) are kept, on the host.
+      outs <- list()
+      targets <- list()
+      for_each_batch(val_loader, 1L, function(b) {
+        bt <- graph_tensors(prep(b), dev)
+        outs[[length(outs) + 1L]] <<- model_forward(model, bt)$to(device = "cpu")
+        targets[[length(targets) + 1L]] <<- bt$graph_y$to(device = "cpu")
+      })
       out <- torch_cat(outs, dim = 1L)
-      target <- torch_cat(lapply(val_tt, `[[`, "graph_y"), dim = 1L)
+      target <- torch_cat(targets, dim = 1L)
       list(loss = as.numeric(loss_fn(out, target)$item()), metric = metric_fn(out, target))
     }
   )
