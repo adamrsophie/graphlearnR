@@ -353,8 +353,13 @@ luz_node_dataloader <- function(g, mask = c("train", "val", "test")) {
   tt <- graph_tensors(g)
   idx <- tensor_which(tt[[paste0(mask, "_mask")]])
   input <- list(x = tt$x, edge_index = tt$edge_index, idx = idx)
-  # NULL entries do not survive the dataloader, so the weight is added only when present.
-  if (!is.null(tt$edge_weight)) input$edge_weight <- tt$edge_weight
+  # NULL entries do not survive the dataloader, so the optional model inputs
+  # are added only when present.
+  for (f in c("edge_weight", "edge_attr", "edge_type")) if (!is.null(tt[[f]])) input[[f]] <- tt[[f]]
+  if (!is.null(tt$node_degree)) {
+    input$degree <- tt$node_degree$degree
+    input$self_loop <- tt$node_degree$self_loop
+  }
   item <- list(input, tt$y$index_select(1L, idx))
   ds <- torch::dataset(
     name = "graph_node_batch",
@@ -373,7 +378,8 @@ luz_node_module <- nn_module(
     self$model <- model
   },
   forward = function(input) {
-    out <- self$model(input$x, input$edge_index, edge_weight = input$edge_weight)
-    out$index_select(1L, input$idx)
+    tt <- input
+    if (!is.null(input$degree)) tt$node_degree <- list(degree = input$degree, self_loop = input$self_loop)
+    model_forward(self$model, tt)$index_select(1L, input$idx)
   }
 )

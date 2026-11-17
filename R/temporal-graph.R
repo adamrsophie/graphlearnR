@@ -366,7 +366,7 @@ graph_gru_cell <- nn_module(
     self$hh <- gcn_conv(hidden_features, hidden_features)
   },
   forward = function(x, edge_index, h = NULL, edge_weight = NULL) {
-    if (is.null(h)) h <- torch_zeros(x$size(1L), self$hidden, device = x$device)
+    if (is.null(h)) h <- torch_zeros(x$size(1L), self$hidden, dtype = x$dtype, device = x$device)
     # All six gates use the same graph: normalize it once.
     nm <- gcn_norm(edge_index, x$size(1L), edge_weight, dtype = x$dtype)
     g <- function(conv, v) conv(v, edge_index, edge_weight, norm = nm)
@@ -379,7 +379,8 @@ graph_gru_cell <- nn_module(
 
 #' Evolving GCN cell (EvolveGCN-O)
 #'
-#' The EvolveGCN-O cell of Pareja et al. (2020): the GCN weight matrix, not a
+#' A GRU variant of the EvolveGCN-O cell of Pareja et al. (2020), whose paper
+#' version evolves the weights with an LSTM: the GCN weight matrix, not a
 #' node state, is the recurrent state. At each snapshot
 #' \deqn{W_t = \mathrm{GRU}(W_{t-1}, W_{t-1}),\quad
 #'       H_t = \mathrm{ReLU}(\hat A_t X_t W_t),}

@@ -72,7 +72,7 @@ heterogeneous and temporal graphs, graph transformers, and explainability.
   neighbors.
 - Temporal graph networks (`tgn_model()`, `train_tgn()`) with node memory and
   time, graph sum, or multi layer graph attention embeddings.
-- Dynamic link prediction with a graph GRU or EvolveGCN-O
+- Dynamic link prediction with a graph GRU or a GRU variant of EvolveGCN-O
   (`evolve_gcn_cell()`), and spatiotemporal forecasting.
 - `predict()` for temporal fits uses only information available before the
   prediction time; temporal fits can be saved and loaded.
@@ -85,8 +85,8 @@ heterogeneous and temporal graphs, graph transformers, and explainability.
 - `graph_transformer_model()`: a Graphormer style transformer with
   shortest path and edge feature attention biases.
 - `gps_layer()`: GPS layers combining local message passing with global
-  attention, exact or linear (`linear_attention()`, with Performer FAVOR+ and
-  elu kernels).
+  attention, exact or linear (`linear_attention()`, with positive random
+  feature (Performer style) and elu kernels).
 
 ## Explainability
 

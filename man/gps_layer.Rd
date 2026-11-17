@@ -27,7 +27,8 @@ gps_layer(
 \item{attn_dropout}{Dropout on attention weights (\code{"multihead"} only).}
 
 \item{attn_type}{\code{"multihead"} (exact softmax attention) or
-\code{"performer"} (FAVOR+ linear attention).}
+\code{"performer"} (linear attention with positive IID Gaussian random
+features, the FAVOR+ estimator without orthogonal blocks).}
 
 \item{num_features}{Random features for \code{"performer"}.}
 }

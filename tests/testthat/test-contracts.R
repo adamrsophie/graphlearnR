@@ -1193,3 +1193,18 @@ test_that("mixed graph label types batch the same in any order and augment keeps
   au <- generics::augment(fit, gs)
   expect_equal(dim(au$.truth), c(2L, 2L))
 })
+
+test_that("GRU cells follow the input dtype and HAN skips empty types", {
+  skip_if_no_torch()
+  cell <- graph_gru_cell(2, 3)
+  cell$to(dtype = torch::torch_double())
+  x <- torch::torch_randn(3, 2, dtype = torch::torch_double())
+  ei <- torch::torch_tensor(rbind(1:2, 2:3), dtype = torch::torch_long())
+  expect_true(cell(x, ei)$dtype == torch::torch_double())
+  sem <- hetero_conv(list(a__r__b = graph_conv(c(1, 1), 2), a__s__b = graph_conv(c(1, 1), 2)),
+                     aggr = "semantic", dim = 2, semantic_dim = 2)
+  e0 <- torch::torch_empty(2, 0, dtype = torch::torch_long())
+  out <- sem(list(a = torch::torch_ones(2, 1), b = torch::torch_zeros(0, 1)), list(a__r__b = e0, a__s__b = e0))
+  expect_equal(out$b$size(1), 0)
+  expect_null(sem$last_semantic_attention$b)
+})

@@ -412,7 +412,8 @@ graph_transformer_model <- nn_module(
 #' @param dropout Dropout after each part.
 #' @param attn_dropout Dropout on attention weights (`"multihead"` only).
 #' @param attn_type `"multihead"` (exact softmax attention) or
-#'   `"performer"` (FAVOR+ linear attention).
+#'   `"performer"` (linear attention with positive IID Gaussian random
+#'   features, the FAVOR+ estimator without orthogonal blocks).
 #' @param num_features Random features for `"performer"`.
 #' @return An `nn_module` called as
 #'   `layer(x, edge_index, batch = NULL, ...)`; `...` (for example

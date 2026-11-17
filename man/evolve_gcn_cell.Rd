@@ -15,7 +15,8 @@ evolve_gcn_cell(in_features, hidden_features)
 An \code{nn_module} called as \code{cell(x, edge_index, h, edge_weight)}.
 }
 \description{
-The EvolveGCN-O cell of Pareja et al. (2020): the GCN weight matrix, not a
+A GRU variant of the EvolveGCN-O cell of Pareja et al. (2020), whose paper
+version evolves the weights with an LSTM: the GCN weight matrix, not a
 node state, is the recurrent state. At each snapshot
 \deqn{W_t = \mathrm{GRU}(W_{t-1}, W_{t-1}),\quad
       H_t = \mathrm{ReLU}(\hat A_t X_t W_t),}

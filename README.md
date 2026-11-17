@@ -131,7 +131,8 @@ times were of the same order as PyG's. Scripts are in `benchmarks/pyg`.
   simulation tool, not a trainable neural ODE layer.
 * `graph_ode_block()` integrates with a fixed number of steps; it is not an
   adaptive solver.
-* TGN has one embedding layer (one hop) and last message aggregation.
+* TGN uses last message aggregation; its graph attention embedding stacks
+  `num_layers` hops, at a cost of `num_neighbors^num_layers` per query.
 * OGB link property datasets (ogbl) ship splits as PyTorch files and are
   not readable; node (ogbn) and graph (ogbg) datasets are.
 * The sibling bridges are tested in continuous integration on Linux only;

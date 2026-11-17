@@ -769,6 +769,11 @@ hetero_conv <- nn_module(
       for (d in names(out)) {
         hs <- out[[d]]
         b <- batch_dict[[d]]
+        # No node of this type in the graph: nothing to weight.
+        if (hs[[1L]]$size(1L) == 0L) {
+          out[[d]] <- hs[[1L]]
+          next
+        }
         if (is.null(b)) {
           w <- torch_stack(lapply(unname(hs), function(z) self$semantic[[d]](z)$mean()))
           beta <- nnf_softmax(w, dim = 1L)
