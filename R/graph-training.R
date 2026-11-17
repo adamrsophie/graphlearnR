@@ -505,8 +505,7 @@ node_metric <- function(classif) {
     function(out, target) mean(as_r_array(out$argmax(dim = 2L)) == as_r_array(target))
   } else {
     function(out, target) {
-      o <- as_r_array(out)
-      sqrt(mean((as.vector(o) - as.vector(as_r_array(target)))^2))
+      metric_rmse(as.vector(as_r_array(target)), as.vector(as_r_array(out)))
     }
   }
 }

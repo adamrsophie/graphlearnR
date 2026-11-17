@@ -1107,3 +1107,8 @@ test_that("binary metrics map vector scores to one positive class", {
   expect_equal(metric_ece(c(1L, 1L), c(.9, .9)), 0.1)
   expect_error(metric_roc_auc(c(1, 2), c(.1, .9)), "0/1")
 })
+
+test_that("regression metrics skip missing targets", {
+  expect_equal(metric_rmse(c(1, NA, 3), c(2, 5, 3)), sqrt(0.5))
+  expect_error(metric_mse(c(1, 2), c(1, NA)), "missing")
+})

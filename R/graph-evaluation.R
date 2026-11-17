@@ -19,6 +19,10 @@
 #'   above the K-th highest negative (the OGB `ogbl-collab` convention).
 #'   With a matrix of per positive negatives (one row per positive), the rank
 #'   of each positive among its own negatives is used, ties counted one half.
+#' * Regression metrics (`metric_mse()`, `metric_rmse()`, `metric_mae()`,
+#'   `metric_r2()`) score the observed entries only: missing targets, such
+#'   as the NA entries of multi task labels, are skipped, as in the masked
+#'   losses. Missing predictions are an error.
 #'
 #' @param truth True values: factor or integer classes, 0/1 or logical for
 #'   binary ranking metrics, numeric for regression.
@@ -252,8 +256,19 @@ metric_brier <- function(truth, prob) {
 #' @rdname metrics
 #' @export
 metric_mse <- function(truth, estimate) {
+  o <- observed_pairs(truth, estimate)
+  mean((o$t - o$e)^2)
+}
+
+# Regression metrics use the observed entries only: a missing target (the
+# NA entries of multi task labels) is not scored, as in the masked losses.
+# Missing predictions are an error.
+observed_pairs <- function(truth, estimate) {
   check_same_length(truth, estimate)
-  mean((truth - estimate)^2)
+  if (anyNA(estimate)) stopf("`estimate` has missing values.")
+  keep <- !is.na(truth)
+  if (!any(keep)) stopf("`truth` has no observed values.")
+  list(t = as.vector(truth)[keep], e = as.vector(estimate)[keep])
 }
 
 check_same_length <- function(truth, estimate) {
@@ -269,15 +284,15 @@ metric_rmse <- function(truth, estimate) sqrt(metric_mse(truth, estimate))
 #' @rdname metrics
 #' @export
 metric_mae <- function(truth, estimate) {
-  check_same_length(truth, estimate)
-  mean(abs(truth - estimate))
+  o <- observed_pairs(truth, estimate)
+  mean(abs(o$t - o$e))
 }
 
 #' @rdname metrics
 #' @export
 metric_r2 <- function(truth, estimate) {
-  check_same_length(truth, estimate)
-  1 - sum((truth - estimate)^2) / sum((truth - mean(truth))^2)
+  o <- observed_pairs(truth, estimate)
+  1 - sum((o$t - o$e)^2) / sum((o$t - mean(o$t))^2)
 }
 
 positive_ranks <- function(pos, neg) {

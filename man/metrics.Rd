@@ -109,6 +109,10 @@ vector of shared negatives, Hits@K is the fraction of positives scored
 above the K-th highest negative (the OGB \code{ogbl-collab} convention).
 With a matrix of per positive negatives (one row per positive), the rank
 of each positive among its own negatives is used, ties counted one half.
+\item Regression metrics (\code{metric_mse()}, \code{metric_rmse()}, \code{metric_mae()},
+\code{metric_r2()}) score the observed entries only: missing targets, such
+as the NA entries of multi task labels, are skipped, as in the masked
+losses. Missing predictions are an error.
 }
 }
 \examples{
