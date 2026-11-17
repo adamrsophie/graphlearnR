@@ -79,7 +79,8 @@ per graph;
 
 The model's \code{forward(x, edge_index, edge_weight, edge_attr, batch, num_graphs, edge_type)} takes tensors from \code{\link[=graph_tensors]{graph_tensors()}}. Setting
 \code{return_embedding = TRUE} returns the last hidden node representation
-instead of the head output. The construction arguments are kept in
+instead of the head output; \code{return_embedding = "graph"} returns the
+pooled graph representation that the head receives. The construction arguments are kept in
 \code{model$config} so that \code{\link[=save_graph_fit]{save_graph_fit()}} can rebuild the model.
 }
 \examples{

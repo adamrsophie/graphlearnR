@@ -138,6 +138,8 @@ add_positional_encoding <- function(g, type = c("random_walk", "laplacian"), k =
 #' @param x Node feature tensor (N by F).
 #' @param batch Graph membership (integer vector, `1:B`, nodes of a graph
 #'   contiguous as produced by [graph_batch()]).
+#' @param num_graphs Number of graphs `B`; defaults to the largest
+#'   membership, which misses trailing graphs without nodes.
 #' @return A list with `x`, `mask` and `index` (the flat positions).
 #' @examples
 #' if (torch::torch_is_installed()) {
@@ -147,9 +149,9 @@ add_positional_encoding <- function(g, type = c("random_walk", "laplacian"), k =
 #'   from_dense_batch(d)$shape
 #' }
 #' @export
-to_dense_batch <- function(x, batch) {
+to_dense_batch <- function(x, batch, num_graphs = NULL) {
   b <- as.integer(as_r_array(batch))
-  B <- if (length(b)) max(b) else 0L
+  B <- num_graphs %||% if (length(b)) max(b) else 0L
   cnt <- tabulate(b, B)
   L <- max(cnt, 1L)
   pos <- sequence(cnt)

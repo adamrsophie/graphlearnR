@@ -216,6 +216,7 @@ topk_select <- function(x, score, edge_index, batch, ratio) {
 #' @param edge_index Long tensor, 2 by E, 1-based.
 #' @param batch Graph membership of each node (R vector or tensor).
 #' @param edge_weight Optional edge weights.
+#' @param num_graphs Number of graphs; defaults to the largest membership.
 #' @param x Dense node features, `B` by `L` by `F`.
 #' @param adj Dense adjacency, `B` by `L` by `L`.
 #' @param s Assignment logits, `B` by `L` by `C`.
@@ -234,14 +235,14 @@ topk_select <- function(x, score, edge_index, batch, ratio) {
 #'   dim(pooled$adj)
 #' }
 #' @export
-to_dense_adj <- function(edge_index, batch, edge_weight = NULL) {
+to_dense_adj <- function(edge_index, batch, edge_weight = NULL, num_graphs = NULL) {
   dev <- edge_index$device
   if (!inherits(batch, "torch_tensor")) batch <- torch_tensor(as.integer(batch), dtype = torch_long(), device = dev)
   batch <- batch$to(device = dev)
   # Index arithmetic stays in torch; only the two sizes B and L come back to R.
-  B <- if (batch$numel()) as.integer(batch$max()$item()) else 0L
+  B <- num_graphs %||% if (batch$numel()) as.integer(batch$max()$item()) else 0L
   cnt <- scatter_count(batch, B, dtype = torch_long())
-  L <- max(as.integer(cnt$max()$item()), 1L)
+  L <- if (B > 0L) max(as.integer(cnt$max()$item()), 1L) else 1L
   start <- torch_cumsum(cnt, dim = 1L) - cnt
   pos <- torch_arange(0, batch$numel() - 1, dtype = torch_long(), device = dev) - start$index_select(1L, batch)
   w <- edge_weight %||% torch_ones(edge_index$size(2L), device = dev)
@@ -268,9 +269,9 @@ dense_diff_pool <- function(x, adj, s, mask = NULL) {
   st <- s$transpose(2L, 3L)
   out_x <- torch_matmul(st, x)
   out_adj <- torch_matmul(torch_matmul(st, adj), s)
-  link <- (adj - torch_matmul(s, st))$norm(p = 2) / adj$numel()
+  link <- (adj - torch_matmul(s, st))$norm(p = 2) / max(adj$numel(), 1)
   ent <- (-s * torch_log(s + 1e-15))$sum(dim = -1L)
-  ent <- if (is.null(mask)) ent$mean() else ent$sum() / mask$sum()
+  ent <- if (is.null(mask)) ent$sum() / max(ent$numel(), 1) else ent$sum() / mask$sum()$clamp(min = 1)
   list(x = out_x, adj = out_adj, s = s, link_loss = link, entropy_loss = ent)
 }
 
@@ -335,8 +336,10 @@ diffpool_model <- nn_module(
                         num_layers = num_layers)
     self$aux_loss <- NULL
   },
-  forward = function(x, edge_index, batch = NULL, return_embedding = FALSE, ...) {
+  forward = function(x, edge_index, batch = NULL, num_graphs = NULL, return_embedding = FALSE, ...) {
     batch <- batch %||% torch_ones(x$size(1L), dtype = torch_long(), device = x$device)
+    # One row per graph, including trailing graphs without nodes.
+    num_graphs <- num_graphs %||% if (batch$numel()) as.integer(batch$max()$item()) else 1L
     run <- function(layers, h, act_last) {
       for (i in seq_along(layers)) {
         h <- layers[[i]](h, edge_index)
@@ -346,9 +349,9 @@ diffpool_model <- nn_module(
     }
     z <- run(self$embed, x, TRUE)
     s <- run(self$assign, x, FALSE)
-    dz <- to_dense_batch(z, batch)
-    ds <- to_dense_batch(s, batch)
-    adj <- to_dense_adj(edge_index, batch)
+    dz <- to_dense_batch(z, batch, num_graphs)
+    ds <- to_dense_batch(s, batch, num_graphs)
+    adj <- to_dense_adj(edge_index, batch, num_graphs = num_graphs)
     pooled <- dense_diff_pool(dz$x, adj, ds$x, dz$mask)
     self$aux_loss <- self$aux_weight * (pooled$link_loss + pooled$entropy_loss)
     h <- nnf_relu(self$post(pooled$x, pooled$adj))$mean(dim = 2L)

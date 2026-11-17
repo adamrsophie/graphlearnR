@@ -6,7 +6,7 @@
 \alias{dense_graph_conv}
 \title{Dense adjacency and differentiable pooling}
 \usage{
-to_dense_adj(edge_index, batch, edge_weight = NULL)
+to_dense_adj(edge_index, batch, edge_weight = NULL, num_graphs = NULL)
 
 dense_diff_pool(x, adj, s, mask = NULL)
 
@@ -18,6 +18,8 @@ dense_graph_conv(in_features, out_features, normalize = TRUE)
 \item{batch}{Graph membership of each node (R vector or tensor).}
 
 \item{edge_weight}{Optional edge weights.}
+
+\item{num_graphs}{Number of graphs; defaults to the largest membership.}
 
 \item{x}{Dense node features, \code{B} by \code{L} by \code{F}.}
 

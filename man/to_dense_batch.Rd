@@ -5,7 +5,7 @@
 \alias{from_dense_batch}
 \title{Dense batch layout}
 \usage{
-to_dense_batch(x, batch)
+to_dense_batch(x, batch, num_graphs = NULL)
 
 from_dense_batch(dense)
 }
@@ -14,6 +14,9 @@ from_dense_batch(dense)
 
 \item{batch}{Graph membership (integer vector, \code{1:B}, nodes of a graph
 contiguous as produced by \code{\link[=graph_batch]{graph_batch()}}).}
+
+\item{num_graphs}{Number of graphs \code{B}; defaults to the largest
+membership, which misses trailing graphs without nodes.}
 
 \item{dense}{Result of \code{to_dense_batch()} with \code{x} replaced by a new
 \code{B} by \code{L} by \verb{F'} tensor.}
