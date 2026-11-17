@@ -45,7 +45,8 @@ hetero_graph_data <- function(nodes, edges, metadata = list(), validate = TRUE) 
     if (is.list(v) && !is.data.frame(v)) {
       v$x <- as_feature_matrix(v$x, "x")
       v
-    } else if (is.numeric(v) && length(v) == 1L) {
+    } else if (is.numeric(v) && length(v) == 1L && is.null(dim(v))) {
+      if (!is.finite(v) || v < 0 || v != round(v)) stopf("A node count must be a whole number, got %s.", v)
       list(num_nodes = as.integer(v))
     } else {
       list(x = as_feature_matrix(v, "x"))
@@ -409,7 +410,12 @@ hetero_tensors <- function(hg, device = NULL) {
       if (!is.null(hg$n_id[[t]])) torch_tensor(as.integer(hg$n_id[[t]]), dtype = torch_long(), device = dev)
     }),
     num_nodes = num_nodes(hg), node_types = hg$node_types,
-    relations = edge_types(hg), device = dev
+    relations = edge_types(hg), device = dev,
+    # Graph membership per type, for batches of several graphs.
+    batch = if (!is.null(hg$batch)) lapply(hg$batch, function(b) {
+      torch_tensor(as.integer(b), dtype = torch_long(), device = dev)
+    }),
+    num_graphs = hg$num_graphs
   )
   structure(out, class = "hetero_tensors")
 }
@@ -673,16 +679,20 @@ print.hetero_link_split <- function(x, ...) {
 #' by the semantic attention of HAN (Wang et al. 2019): relation \eqn{r}
 #' gets the score \eqn{w_r = \frac{1}{N}\sum_i q^\top \tanh(W z_i^{r} + b)}
 #' (one \eqn{q, W, b} per target type), \eqn{\beta = \mathrm{softmax}(w)},
-#' and the output is \eqn{\sum_r \beta_r z^{r}}. The last weights are kept
-#' in `module$last_semantic_attention` for inspection (they show how the
-#' layer weighted relations, not causal importance).
+#' and the output is \eqn{\sum_r \beta_r z^{r}}. For a batch of several
+#' graphs (`batch_dict` given), the node mean and the softmax are taken
+#' within each graph. The last weights are kept in
+#' `module$last_semantic_attention` for inspection (they show how the layer
+#' weighted relations, not causal importance).
 #'
 #' @param convs Named list of layers keyed by relation key; each is called as
-#'   `layer(list(x_src, x_dst), edge_index)`.
+#'   `layer(list(x_src, x_dst), edge_index)`, with `edge_weight` too when
+#'   the relation has weights and the layer accepts them.
 #' @param aggr `"sum"`, `"mean"` or `"semantic"` over relations.
 #' @param dim Output size of the layers, needed for `"semantic"`.
 #' @param semantic_dim Hidden size of the semantic attention.
-#' @return An `nn_module` called as `module(x_dict, edge_index_dict)`.
+#' @return An `nn_module` called as `module(x_dict, edge_index_dict,
+#'   edge_weight_dict = NULL, batch_dict = NULL, num_graphs = NULL)`.
 #' @references Wang et al. (2019) Heterogeneous graph attention network.
 #'   The Web Conference (WWW).
 #' @examples
@@ -708,7 +718,8 @@ hetero_conv <- nn_module(
       }))
     }
   },
-  forward = function(x_dict, edge_index_dict) {
+  forward = function(x_dict, edge_index_dict, edge_weight_dict = NULL, batch_dict = NULL,
+                     num_graphs = NULL) {
     out <- list()
     cnt <- list()
     for (k in self$keys) {
@@ -717,7 +728,14 @@ hetero_conv <- nn_module(
       d <- parts[3L]
       ei <- edge_index_dict[[k]]
       if (is.null(ei) || is.null(x_dict[[s]]) || is.null(x_dict[[d]])) next
-      h <- self$convs[[k]](list(x_dict[[s]], x_dict[[d]]), ei)
+      conv <- self$convs[[k]]
+      ew <- edge_weight_dict[[k]]
+      # Relation weights reach every layer that uses edge weights.
+      h <- if (!is.null(ew) && "edge_weight" %in% names(formals(conv$forward))) {
+        conv(list(x_dict[[s]], x_dict[[d]]), ei, edge_weight = ew)
+      } else {
+        conv(list(x_dict[[s]], x_dict[[d]]), ei)
+      }
       if (self$aggr == "semantic") {
         out[[d]] <- c(out[[d]], stats::setNames(list(h), k))
         next
@@ -730,10 +748,25 @@ hetero_conv <- nn_module(
       att <- list()
       for (d in names(out)) {
         hs <- out[[d]]
-        w <- torch_stack(lapply(unname(hs), function(z) self$semantic[[d]](z)$mean()))
-        beta <- nnf_softmax(w, dim = 1L)
-        att[[d]] <- stats::setNames(as.numeric(as.array(beta$detach()$cpu())), names(hs))
-        out[[d]] <- Reduce(`+`, lapply(seq_along(hs), function(r) beta[r] * hs[[r]]))
+        b <- batch_dict[[d]]
+        if (is.null(b)) {
+          w <- torch_stack(lapply(unname(hs), function(z) self$semantic[[d]](z)$mean()))
+          beta <- nnf_softmax(w, dim = 1L)
+          att[[d]] <- stats::setNames(as.numeric(as.array(beta$detach()$cpu())), names(hs))
+          out[[d]] <- Reduce(`+`, lapply(seq_along(hs), function(r) beta[r] * hs[[r]]))
+        } else {
+          # Several graphs: node means and the softmax over relations are
+          # taken within each graph, so graphs never affect each other.
+          G <- num_graphs %||% as.integer(b$max()$item())
+          w <- torch_stack(lapply(unname(hs), function(z) {
+            scatter_mean(self$semantic[[d]](z)$squeeze(2L), b, G)
+          }))
+          beta <- nnf_softmax(w, dim = 1L)
+          att[[d]] <- `rownames<-`(as.matrix(as.array(beta$detach()$cpu())), names(hs))
+          out[[d]] <- Reduce(`+`, lapply(seq_along(hs), function(r) {
+            beta[r, ]$index_select(1L, b)$unsqueeze(2L) * hs[[r]]
+          }))
+        }
       }
       self$last_semantic_attention <- att
     }
@@ -898,7 +931,8 @@ hetero_gnn <- nn_module(
       } else if (self$config$conv == "hgt") {
         h <- conv(h, ht$edge_index, ht$edge_time)
       } else {
-        h <- conv(h, ht$edge_index)
+        h <- conv(h, ht$edge_index, edge_weight_dict = ht$edge_weight, batch_dict = ht$batch,
+                  num_graphs = ht$num_graphs)
       }
       # The last layer stays linear when it gives the embedding, as in gnn_model().
       last <- layer == length(self$layers)

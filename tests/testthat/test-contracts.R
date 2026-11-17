@@ -1007,3 +1007,31 @@ test_that("DiffPool keeps one row per graph, including empty graphs", {
   expect_equal(nrow(p0), 2L)
   expect_false(anyNA(p0))
 })
+
+test_that("hetero layers use relation weights, keep graphs apart and read counts safely", {
+  expect_equal(num_nodes(hetero_graph_data(list(a = matrix(7, 1, 1)), list()))[["a"]], 1L)
+  expect_error(hetero_graph_data(list(a = 2.5), list()), "whole number")
+  skip_if_no_torch()
+  conv <- hetero_conv(list(a__r__b = graph_conv(c(1, 1), 1)))
+  torch::with_no_grad(for (p in conv$parameters) p$fill_(1))
+  x <- list(a = torch::torch_ones(2, 1), b = torch::torch_ones(1, 1))
+  ei <- list(a__r__b = torch::torch_tensor(rbind(c(1L, 2L), c(1L, 1L)), dtype = torch::torch_long()))
+  o1 <- conv(x, ei, list(a__r__b = torch::torch_tensor(c(1, 1))))$b
+  o2 <- conv(x, ei, list(a__r__b = torch::torch_tensor(c(1, 20))))$b
+  expect_false(isTRUE(all.equal(as.numeric(o1$item()), as.numeric(o2$item()))))
+  # semantic attention per graph
+  torch::torch_manual_seed(1)
+  sem <- hetero_conv(list(a__r__b = graph_conv(c(1, 1), 2), a__s__b = graph_conv(c(1, 1), 2)),
+                     aggr = "semantic", dim = 2, semantic_dim = 2)
+  xa <- torch::torch_tensor(matrix(c(1, -10), 2, 1))
+  xb <- torch::torch_zeros(2, 1)
+  e <- torch::torch_tensor(rbind(1:2, 1:2), dtype = torch::torch_long())
+  both <- sem(list(a = xa, b = xb), list(a__r__b = e, a__s__b = e),
+              batch_dict = list(a = torch::torch_tensor(1:2, dtype = torch::torch_long()),
+                                b = torch::torch_tensor(1:2, dtype = torch::torch_long())),
+              num_graphs = 2L)$b
+  e1 <- torch::torch_tensor(rbind(1L, 1L), dtype = torch::torch_long())
+  one <- sem(list(a = xa[1:1, , drop = FALSE], b = xb[1:1, , drop = FALSE]),
+             list(a__r__b = e1, a__s__b = e1))$b
+  expect_equal(as.numeric(torch::as_array(both[1, ])), as.numeric(torch::as_array(one[1, ])), tolerance = 1e-6)
+})

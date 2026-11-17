@@ -336,13 +336,14 @@ diffpool_model <- nn_module(
                         num_layers = num_layers)
     self$aux_loss <- NULL
   },
-  forward = function(x, edge_index, batch = NULL, num_graphs = NULL, return_embedding = FALSE, ...) {
+  forward = function(x, edge_index, batch = NULL, num_graphs = NULL, return_embedding = FALSE,
+                     edge_weight = NULL, ...) {
     batch <- batch %||% torch_ones(x$size(1L), dtype = torch_long(), device = x$device)
     # One row per graph, including trailing graphs without nodes.
     num_graphs <- num_graphs %||% if (batch$numel()) as.integer(batch$max()$item()) else 1L
     run <- function(layers, h, act_last) {
       for (i in seq_along(layers)) {
-        h <- layers[[i]](h, edge_index)
+        h <- layers[[i]](h, edge_index, edge_weight = edge_weight)
         if (i < length(layers) || act_last) h <- nnf_relu(h)
       }
       h
@@ -351,7 +352,7 @@ diffpool_model <- nn_module(
     s <- run(self$assign, x, FALSE)
     dz <- to_dense_batch(z, batch, num_graphs)
     ds <- to_dense_batch(s, batch, num_graphs)
-    adj <- to_dense_adj(edge_index, batch, num_graphs = num_graphs)
+    adj <- to_dense_adj(edge_index, batch, edge_weight, num_graphs = num_graphs)
     pooled <- dense_diff_pool(dz$x, adj, ds$x, dz$mask)
     self$aux_loss <- self$aux_weight * (pooled$link_loss + pooled$entropy_loss)
     h <- nnf_relu(self$post(pooled$x, pooled$adj))$mean(dim = 2L)
