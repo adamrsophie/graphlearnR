@@ -36,5 +36,6 @@ if (torch::torch_is_installed()) {
 }
 #>  [1] "x"           "y"           "train_mask"  "val_mask"    "test_mask"  
 #>  [6] "edge_index"  "edge_attr"   "edge_weight" "edge_time"   "node_index" 
-#> [11] "num_nodes"   "node_types"  "relations"   "device"     
+#> [11] "num_nodes"   "node_types"  "relations"   "device"      "batch"      
+#> [16] "num_graphs" 
 ```

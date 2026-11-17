@@ -92,7 +92,8 @@ features.</p>
 
 <dl><dt id="arg-convs">convs<a class="anchor" aria-label="anchor" href="#arg-convs"></a></dt>
 <dd><p>Named list of layers keyed by relation key; each is called as
-<code>layer(list(x_src, x_dst), edge_index)</code>.</p></dd>
+<code>layer(list(x_src, x_dst), edge_index)</code>, with <code>edge_weight</code> too when
+the relation has weights and the layer accepts them.</p></dd>
 
 
 <dt id="arg-aggr">aggr<a class="anchor" aria-label="anchor" href="#arg-aggr"></a></dt>
@@ -109,7 +110,7 @@ features.</p>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>An <code>nn_module</code> called as <code>module(x_dict, edge_index_dict)</code>.</p>
+    <p>An <code>nn_module</code> called as <code>module(x_dict, edge_index_dict, edge_weight_dict = NULL, batch_dict = NULL, num_graphs = NULL)</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -117,9 +118,11 @@ features.</p>
 by the semantic attention of HAN (Wang et al. 2019): relation \(r\)
 gets the score \(w_r = \frac{1}{N}\sum_i q^\top \tanh(W z_i^{r} + b)\)
 (one \(q, W, b\) per target type), \(\beta = \mathrm{softmax}(w)\),
-and the output is \(\sum_r \beta_r z^{r}\). The last weights are kept
-in <code>module$last_semantic_attention</code> for inspection (they show how the
-layer weighted relations, not causal importance).</p>
+and the output is \(\sum_r \beta_r z^{r}\). For a batch of several
+graphs (<code>batch_dict</code> given), the node mean and the softmax are taken
+within each graph. The last weights are kept in
+<code>module$last_semantic_attention</code> for inspection (they show how the layer
+weighted relations, not causal importance).</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>

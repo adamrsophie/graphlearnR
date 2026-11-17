@@ -177,7 +177,8 @@ per graph;</p></li>
 <code>hidden_dim</code>, for link prediction or representation learning.</p></li>
 </ul><p>The model's <code>forward(x, edge_index, edge_weight, edge_attr, batch, num_graphs, edge_type)</code> takes tensors from <code><a href="graph_tensors.html">graph_tensors()</a></code>. Setting
 <code>return_embedding = TRUE</code> returns the last hidden node representation
-instead of the head output. The construction arguments are kept in
+instead of the head output; <code>return_embedding = "graph"</code> returns the
+pooled graph representation that the head receives. The construction arguments are kept in
 <code>model$config</code> so that <code><a href="save_graph_fit.html">save_graph_fit()</a></code> can rebuild the model.</p>
     </div>
 

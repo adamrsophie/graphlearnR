@@ -8,8 +8,11 @@ k / \sqrt{C})\\ is replaced by a feature map product \\\phi(q)^\top
 \sum\_{j \in g} \phi(k_j)}.\$\$ With `kernel = "favor"` (Performer,
 Choromanski et al. 2021), \\\phi(x) = m^{-1/2} \exp(W^\top x' - \lVert
 x' \rVert^2 / 2)\\ with \\x' = x / C^{1/4}\\ and `num_features` fixed
-Gaussian random features \\W\\, an unbiased estimate of the softmax
-kernel; with `kernel = "elu"` (Katharopoulos et al. 2020), \\\phi(x) =
+Gaussian random features \\W\\ drawn independently (the IID variant,
+without the orthogonal blocks of the paper), an unbiased estimate of the
+softmax kernel. The ratio is computed in log space, so it stays exact
+when queries and keys peak on different features at any scale; with
+`kernel = "elu"` (Katharopoulos et al. 2020), \\\phi(x) =
 \mathrm{elu}(x) + 1\\. The per graph sums use scatter operations, so
 graphs are never padded and never attend to each other. Memory is \\O(N
 H m C)\\.

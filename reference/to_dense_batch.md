@@ -7,7 +7,7 @@ real nodes. `from_dense_batch()` inverts it.
 ## Usage
 
 ``` r
-to_dense_batch(x, batch)
+to_dense_batch(x, batch, num_graphs = NULL)
 
 from_dense_batch(dense)
 ```
@@ -23,6 +23,11 @@ from_dense_batch(dense)
   Graph membership (integer vector, `1:B`, nodes of a graph contiguous
   as produced by
   [`graph_batch()`](https://adamrsophie.github.io/graphlearnR/reference/graph_batch.md)).
+
+- num_graphs:
+
+  Number of graphs `B`; defaults to the largest membership, which misses
+  trailing graphs without nodes.
 
 - dense:
 

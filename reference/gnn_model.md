@@ -109,8 +109,9 @@ The model's
 takes tensors from
 [`graph_tensors()`](https://adamrsophie.github.io/graphlearnR/reference/graph_tensors.md).
 Setting `return_embedding = TRUE` returns the last hidden node
-representation instead of the head output. The construction arguments
-are kept in `model$config` so that
+representation instead of the head output; `return_embedding = "graph"`
+returns the pooled graph representation that the head receives. The
+construction arguments are kept in `model$config` so that
 [`save_graph_fit()`](https://adamrsophie.github.io/graphlearnR/reference/save_graph_fit.md)
 can rebuild the model.
 

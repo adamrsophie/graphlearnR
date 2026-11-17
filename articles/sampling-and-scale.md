@@ -121,7 +121,7 @@ evaluate_graph_model(fit, big)
 #> 4      recall_macro 0.994444444
 #> 5          f1_macro 0.994444059
 #> 6               ece 0.004808865
-#> 7             brier 0.012243922
+#> 7             brier 0.012243923
 #> 8           roc_auc 0.997314815
 #> 9 average_precision 0.996850348
 ```
@@ -158,7 +158,7 @@ evaluate_graph_model(fit_cl, big)
 #> 3   precision_macro 0.98907104
 #> 4      recall_macro 0.98888889
 #> 5          f1_macro 0.98884064
-#> 6               ece 0.03582429
+#> 6               ece 0.03582430
 #> 7             brier 0.02780312
 #> 8           roc_auc 0.99699074
 #> 9 average_precision 0.99643901
@@ -226,7 +226,7 @@ ld
 b <- loader_batches(ld)[[1]]
 c(nodes = num_nodes(b), edges = num_edges(b), seeds = sum(b$train_mask))
 #> nodes edges seeds 
-#>   268   513    64
+#>   285   517    64
 torch_manual_seed(2)
 fit_ld <- train_graph_model(gnn_model("graph_conv", 8, 32, 3), big, "node_classification",
                             epochs = 15, loader = ld, seed = 2)
@@ -237,10 +237,10 @@ evaluate_graph_model(fit_ld, big)
 #> 3   precision_macro 0.994535519
 #> 4      recall_macro 0.994444444
 #> 5          f1_macro 0.994444059
-#> 6               ece 0.005554326
+#> 6               ece 0.005555556
 #> 7             brier 0.011111111
-#> 8           roc_auc 0.998287037
-#> 9 average_precision 0.993955088
+#> 8           roc_auc 0.998425926
+#> 9 average_precision 0.994188297
 ```
 
 All three loaders return `graph_data` batches whose `node_ids` hold the

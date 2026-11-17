@@ -75,7 +75,7 @@ real nodes. <code>from_dense_batch()</code> inverts it.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">to_dense_batch</span><span class="op">(</span><span class="va">x</span>, <span class="va">batch</span><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">to_dense_batch</span><span class="op">(</span><span class="va">x</span>, <span class="va">batch</span>, num_graphs <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">from_dense_batch</span><span class="op">(</span><span class="va">dense</span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -91,6 +91,11 @@ real nodes. <code>from_dense_batch()</code> inverts it.</p>
 <dt id="arg-batch">batch<a class="anchor" aria-label="anchor" href="#arg-batch"></a></dt>
 <dd><p>Graph membership (integer vector, <code>1:B</code>, nodes of a graph
 contiguous as produced by <code><a href="graph_batch.html">graph_batch()</a></code>).</p></dd>
+
+
+<dt id="arg-num-graphs">num_graphs<a class="anchor" aria-label="anchor" href="#arg-num-graphs"></a></dt>
+<dd><p>Number of graphs <code>B</code>; defaults to the largest
+membership, which misses trailing graphs without nodes.</p></dd>
 
 
 <dt id="arg-dense">dense<a class="anchor" aria-label="anchor" href="#arg-dense"></a></dt>

@@ -6,7 +6,10 @@ relations of `path` in order from \\u\\ to \\w\\. Each pair is kept once
 (walk counts are not recorded). Metapaths such as paper, author, paper
 are the input of HAN style models (`hetero_gnn_model(conv = "han")`).
 Build metapaths from training edges only when the composed relations
-will be evaluated.
+will be evaluated: the new relation records the relations it was built
+from, and
+[`split_edges_hetero()`](https://adamrsophie.github.io/graphlearnR/reference/split_edges_hetero.md)
+refuses to split a relation that a metapath was built from.
 
 ## Usage
 

@@ -78,7 +78,7 @@ from local node <code>j</code> to local node <code>i</code> of graph <code>b</co
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">to_dense_adj</span><span class="op">(</span><span class="va">edge_index</span>, <span class="va">batch</span>, edge_weight <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">to_dense_adj</span><span class="op">(</span><span class="va">edge_index</span>, <span class="va">batch</span>, edge_weight <span class="op">=</span> <span class="cn">NULL</span>, num_graphs <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">dense_diff_pool</span><span class="op">(</span><span class="va">x</span>, <span class="va">adj</span>, <span class="va">s</span>, mask <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span></span>
@@ -99,6 +99,10 @@ from local node <code>j</code> to local node <code>i</code> of graph <code>b</co
 
 <dt id="arg-edge-weight">edge_weight<a class="anchor" aria-label="anchor" href="#arg-edge-weight"></a></dt>
 <dd><p>Optional edge weights.</p></dd>
+
+
+<dt id="arg-num-graphs">num_graphs<a class="anchor" aria-label="anchor" href="#arg-num-graphs"></a></dt>
+<dd><p>Number of graphs; defaults to the largest membership.</p></dd>
 
 
 <dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>

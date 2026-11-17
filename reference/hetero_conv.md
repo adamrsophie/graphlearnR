@@ -21,7 +21,8 @@ hetero_conv(
 - convs:
 
   Named list of layers keyed by relation key; each is called as
-  `layer(list(x_src, x_dst), edge_index)`.
+  `layer(list(x_src, x_dst), edge_index)`, with `edge_weight` too when
+  the relation has weights and the layer accepts them.
 
 - aggr:
 
@@ -37,7 +38,8 @@ hetero_conv(
 
 ## Value
 
-An `nn_module` called as `module(x_dict, edge_index_dict)`.
+An `nn_module` called as
+`module(x_dict, edge_index_dict, edge_weight_dict = NULL, batch_dict = NULL, num_graphs = NULL)`.
 
 ## Details
 
@@ -45,7 +47,9 @@ With `aggr = "semantic"`, relations arriving at a node type are combined
 by the semantic attention of HAN (Wang et al. 2019): relation \\r\\ gets
 the score \\w_r = \frac{1}{N}\sum_i q^\top \tanh(W z_i^{r} + b)\\ (one
 \\q, W, b\\ per target type), \\\beta = \mathrm{softmax}(w)\\, and the
-output is \\\sum_r \beta_r z^{r}\\. The last weights are kept in
+output is \\\sum_r \beta_r z^{r}\\. For a batch of several graphs
+(`batch_dict` given), the node mean and the softmax are taken within
+each graph. The last weights are kept in
 `module$last_semantic_attention` for inspection (they show how the layer
 weighted relations, not causal importance).
 

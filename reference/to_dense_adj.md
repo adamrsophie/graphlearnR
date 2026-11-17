@@ -9,7 +9,7 @@ add up.
 ## Usage
 
 ``` r
-to_dense_adj(edge_index, batch, edge_weight = NULL)
+to_dense_adj(edge_index, batch, edge_weight = NULL, num_graphs = NULL)
 
 dense_diff_pool(x, adj, s, mask = NULL)
 
@@ -29,6 +29,10 @@ dense_graph_conv(in_features, out_features, normalize = TRUE)
 - edge_weight:
 
   Optional edge weights.
+
+- num_graphs:
+
+  Number of graphs; defaults to the largest membership.
 
 - x:
 

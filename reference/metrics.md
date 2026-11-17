@@ -120,6 +120,11 @@ A numeric scalar.
   rank of each positive among its own negatives is used, ties counted
   one half.
 
+- Regression metrics (`metric_mse()`, `metric_rmse()`, `metric_mae()`,
+  `metric_r2()`) score the observed entries only: missing targets, such
+  as the NA entries of multi task labels, are skipped, as in the masked
+  losses. Missing predictions are an error.
+
 ## Examples
 
 ``` r

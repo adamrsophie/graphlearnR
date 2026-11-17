@@ -5,13 +5,17 @@ relations of path in order from \(u\) to \(w\). Each pair is kept
 once (walk counts are not recorded). Metapaths such as
 paper, author, paper are the input of HAN style models
 (hetero_gnn_model(conv = &quot;han&quot;)). Build metapaths from training edges
-only when the composed relations will be evaluated."><meta property="og:description" content="Composes a chain of relations into one new relation, as PyG's
+only when the composed relations will be evaluated: the new relation
+records the relations it was built from, and split_edges_hetero()
+refuses to split a relation that a metapath was built from."><meta property="og:description" content="Composes a chain of relations into one new relation, as PyG's
 AddMetaPaths: an edge \(u \to w\) is added when some walk follows the
 relations of path in order from \(u\) to \(w\). Each pair is kept
 once (walk counts are not recorded). Metapaths such as
 paper, author, paper are the input of HAN style models
 (hetero_gnn_model(conv = &quot;han&quot;)). Build metapaths from training edges
-only when the composed relations will be evaluated."><meta property="og:image" content="https://adamrsophie.github.io/graphlearnR/logo.svg"></head><body>
+only when the composed relations will be evaluated: the new relation
+records the relations it was built from, and split_edges_hetero()
+refuses to split a relation that a metapath was built from."><meta property="og:image" content="https://adamrsophie.github.io/graphlearnR/logo.svg"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -82,7 +86,9 @@ relations of <code>path</code> in order from \(u\) to \(w\). Each pair is kept
 once (walk counts are not recorded). Metapaths such as
 paper, author, paper are the input of HAN style models
 (<code>hetero_gnn_model(conv = "han")</code>). Build metapaths from training edges
-only when the composed relations will be evaluated.</p>
+only when the composed relations will be evaluated: the new relation
+records the relations it was built from, and <code><a href="split_edges_hetero.html">split_edges_hetero()</a></code>
+refuses to split a relation that a metapath was built from.</p>
     </div>
 
     <div class="section level2">

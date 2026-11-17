@@ -9,8 +9,12 @@ $$p(u) \propto \sum_{v \in S_l} \hat A_{vu}^2,$$
 where \(\hat A = D^{-1/2}(A + I)D^{-1/2}\) (degrees are weighted in
 degrees plus one). Layer \(l + 1\) is the sampled set plus the layer
 \(l\) nodes. Each kept edge \(u \to v\) gets the weight
-\(\hat A_{vu} / p(u)\), normalized to sum to one over the incoming
-edges of \(v\) in that layer (the row normalization of LADIES)."><meta property="og:description" content="Builds node mini batches by layer dependent importance sampling (Zou et
+\(\hat A_{vu} / q(u)\), where \(q(u) = \min(1, s\,p(u))\)
+approximates the inclusion probability for s draws (and is one when
+every candidate is kept), normalized to sum to one over the incoming
+edges of \(v\) (the row normalization of LADIES). Self loops are not
+part of the sampled operator; the root weight of the layer plays that
+role."><meta property="og:description" content="Builds node mini batches by layer dependent importance sampling (Zou et
 al. 2019), the successor of FastGCN (Chen, Ma and Xiao 2018). For each
 batch, batch_size training nodes are the seeds (layer 0). Going from
 layer \(l\) to layer \(l + 1\), candidates are the sources of edges
@@ -20,8 +24,12 @@ $$p(u) \propto \sum_{v \in S_l} \hat A_{vu}^2,$$
 where \(\hat A = D^{-1/2}(A + I)D^{-1/2}\) (degrees are weighted in
 degrees plus one). Layer \(l + 1\) is the sampled set plus the layer
 \(l\) nodes. Each kept edge \(u \to v\) gets the weight
-\(\hat A_{vu} / p(u)\), normalized to sum to one over the incoming
-edges of \(v\) in that layer (the row normalization of LADIES)."><meta property="og:image" content="https://adamrsophie.github.io/graphlearnR/logo.svg"></head><body>
+\(\hat A_{vu} / q(u)\), where \(q(u) = \min(1, s\,p(u))\)
+approximates the inclusion probability for s draws (and is one when
+every candidate is kept), normalized to sum to one over the incoming
+edges of \(v\) (the row normalization of LADIES). Self loops are not
+part of the sampled operator; the root weight of the layer plays that
+role."><meta property="og:image" content="https://adamrsophie.github.io/graphlearnR/logo.svg"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -96,8 +104,12 @@ $$p(u) \propto \sum_{v \in S_l} \hat A_{vu}^2,$$
 where \(\hat A = D^{-1/2}(A + I)D^{-1/2}\) (degrees are weighted in
 degrees plus one). Layer \(l + 1\) is the sampled set plus the layer
 \(l\) nodes. Each kept edge \(u \to v\) gets the weight
-\(\hat A_{vu} / p(u)\), normalized to sum to one over the incoming
-edges of \(v\) in that layer (the row normalization of LADIES).</p>
+\(\hat A_{vu} / q(u)\), where \(q(u) = \min(1, s\,p(u))\)
+approximates the inclusion probability for <code>s</code> draws (and is one when
+every candidate is kept), normalized to sum to one over the incoming
+edges of \(v\) (the row normalization of LADIES). Self loops are not
+part of the sampled operator; the root weight of the layer plays that
+role.</p>
     </div>
 
     <div class="section level2">
@@ -145,9 +157,12 @@ or to <code><a href="node_loader.html">loader_batches()</a></code>.</p>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The batch is one <code>graph_data</code> subgraph that holds the edges of all
-layers together (with the weight of the first layer that kept an edge),
-so it works with any model in <code><a href="train_graph_model.html">train_graph_model()</a></code>; this is a common
-simplification of the layer by layer bipartite blocks of the paper.
+layers together, so it works with any model in <code><a href="train_graph_model.html">train_graph_model()</a></code>;
+this is a common simplification of the layer by layer bipartite blocks
+of the paper. Each node is a target once, in the first layer that
+reaches it: layer \(l + 1\) samples sources only for the nodes newly
+added at layer \(l\), so the incoming weights of every target sum to
+exactly one and the same operator is used at every model layer.
 The weights of the incoming edges of each target sum to one, so they
 already define a weighted mean: use a model that <strong>sums</strong> weighted
 messages, such as <code>gnn_model("graph_conv")</code>. A mean aggregator (the
@@ -172,7 +187,7 @@ networks via importance sampling. ICLR.</p>
 <span class="r-in"><span><span class="va">b</span> <span class="op">&lt;-</span> <span class="fu"><a href="node_loader.html">loader_batches</a></span><span class="op">(</span><span class="va">ld</span>, epoch <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>nodes <span class="op">=</span> <span class="va">b</span><span class="op">$</span><span class="va">num_nodes</span>, seeds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">b</span><span class="op">$</span><span class="va">train_mask</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> nodes seeds </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    17     8 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    19     8 </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
