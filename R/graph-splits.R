@@ -187,8 +187,7 @@ edge_subset <- function(g, cols) {
   }
   out$edge_pair <- match(g$edge_pair[cols], unique(g$edge_pair[cols]))
   if (!is.null(g$e_id)) out$e_id <- g$e_id[cols]
-  # Changed edges invalidate a sampled graph's full graph degree cache.
-  drop_degree_cache(out)
+  edit_degree_cache(g, out)
 }
 
 #' Split labeled edges for edge classification or regression

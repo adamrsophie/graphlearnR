@@ -89,7 +89,7 @@ sample_neighbors_impl <- function(g, seeds, fanouts, replace = FALSE, seed = NUL
     # With all neighbors, the sampled nodes keep their full graph in degrees,
     # so symmetric (GCN) normalization matches the full graph at the seeds.
     if (all(fanouts < 0L)) {
-      full_deg <- full_deg %||% full_degrees(g)
+      full_deg <- full_deg %||% context_degrees(g)
       sg <- set_degree_cache(sg, full_deg$degree[n_id], full_deg$self_loop[n_id])
     }
     sg
@@ -97,31 +97,47 @@ sample_neighbors_impl <- function(g, seeds, fanouts, replace = FALSE, seed = NUL
 }
 
 # The full graph degree cache of a sampled graph: in degree and self loop
-# flag of each node in the graph it was sampled from, with a fingerprint of
-# the sampled edges it was attached to. Edge changes drop it (or, when the
-# fingerprint no longer matches, graph_tensors() refuses it), so it never
-# describes a graph it was not made for.
+# flag of each node in the graph it was sampled from, keyed by the exact
+# edges and weights it was attached to (the key shares memory with them, so
+# it costs no copy). Edge edits through the package update it by the change
+# in local degrees; a graph whose edges were changed by hand fails the key
+# check, so the cache never describes a graph it was not made for.
 set_degree_cache <- function(g, degree, self_loop) {
   g$node_degree <- degree
   g$node_self_loop <- self_loop
-  g$degree_key <- if (!is.null(degree)) degree_fingerprint(g)
+  g$degree_key <- if (!is.null(degree)) degree_key(g)
   g
 }
 
 drop_degree_cache <- function(g) set_degree_cache(g, NULL, NULL)
 
-degree_fingerprint <- function(g) {
-  w <- g$edge_weight %||% rep(1, ncol(g$edge_index))
-  c(g$num_nodes, ncol(g$edge_index), sum(g$edge_index[1L, ] * w), sum(g$edge_index[2L, ] * w))
-}
+degree_key <- function(g) list(g$num_nodes, g$edge_index, g$edge_weight)
 
 check_degree_cache <- function(g) {
   if (is.null(g$node_degree)) return(invisible(TRUE))
   if (length(g$node_degree) != g$num_nodes || length(g$node_self_loop) != g$num_nodes ||
-      !isTRUE(all.equal(g$degree_key, degree_fingerprint(g)))) {
+      !identical(g$degree_key, degree_key(g))) {
     stopf("`node_degree` no longer matches the graph's nodes or edges; clear it with `g$node_degree <- NULL` or resample.")
   }
   invisible(TRUE)
+}
+
+# Degrees a GCN layer should use for `g`: its valid cache, else its own.
+context_degrees <- function(g) {
+  if (is.null(g$node_degree)) return(full_degrees(g))
+  check_degree_cache(g)
+  list(degree = g$node_degree, self_loop = g$node_self_loop)
+}
+
+# `new` has the nodes of `old` with edited edges. A cache moves by the change
+# in local degrees, so an identity edit keeps it exactly.
+edit_degree_cache <- function(old, new) {
+  if (is.null(old$node_degree)) return(drop_degree_cache(new))
+  check_degree_cache(old)
+  a <- full_degrees(old)
+  b <- full_degrees(new)
+  set_degree_cache(new, old$node_degree + b$degree - a$degree,
+                   (old$node_self_loop & !a$self_loop) | b$self_loop)
 }
 
 full_degrees <- function(g) {
@@ -249,24 +265,19 @@ node_loader <- function(g, nodes = NULL, batch_size = 64L, fanouts = c(10L, 10L)
 
 # The incoming edge index (and full degrees) are built once per loader and
 # rebuilt at the start of an epoch when `loader$graph` has different edges
-# or weights (an O(E) fingerprint check), so replacing the graph is safe.
+# or weights (an exact O(E) comparison), so replacing the graph is safe.
 # Feature or label changes keep the caches.
 refresh_node_loader <- function(loader) {
   key <- topology_key(loader$graph)
   if (!identical(loader$topology_key, key)) {
     loader$csc <- incoming_index(loader$graph)
-    loader$full_deg <- if (all(loader$fanouts < 0L)) full_degrees(loader$graph)
+    loader$full_deg <- if (all(loader$fanouts < 0L)) context_degrees(loader$graph)
     loader$topology_key <- key
   }
   loader
 }
 
-topology_key <- function(g) {
-  ei <- g$edge_index
-  i <- as.numeric(seq_len(ncol(ei)))
-  w <- g$edge_weight %||% rep(1, ncol(ei))
-  c(g$num_nodes, ncol(ei), sum(ei[1L, ] * i), sum(ei[2L, ] * i), sum(w * i), sum(w * w))
-}
+topology_key <- function(g) list(g$num_nodes, g$edge_index, g$edge_weight, g$node_degree)
 
 #' @rdname node_loader
 #' @param dataset A list of `graph_data` objects or a `graph_dataset`.

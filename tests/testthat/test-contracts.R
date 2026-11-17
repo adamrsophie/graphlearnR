@@ -559,9 +559,11 @@ test_that("the full graph degree cache follows transforms and batching", {
   small <- induced_subgraph(sg, 1:2)
   expect_length(small$node_degree, 2L)
   expect_silent(validate_graph(small))
-  expect_null(remove_self_loops(sg)$node_degree)
-  expect_null(add_self_loops(sg)$node_degree)
-  expect_null(coalesce_edges(sg)$node_degree)
+  # edge edits move the cache by the change in local degrees
+  local_in <- tabulate(sg$edge_index[2, ], sg$num_nodes)
+  has_loop <- tabulate(sg$edge_index[2, sg$edge_index[1, ] == sg$edge_index[2, ]], sg$num_nodes) > 0
+  expect_equal(add_self_loops(sg)$node_degree, sg$node_degree + !has_loop)
+  expect_equal(coalesce_edges(sg)$node_degree, sg$node_degree)
   # one sampled graph in a batch keeps its seed output; unbatch restores it
   b <- graph_batch(list(sg))
   expect_equal(gcn_out(b), gcn_out(sg), tolerance = 1e-6)
@@ -649,4 +651,50 @@ test_that("SAINT and LADIES warn for models whose aggregation they do not correc
 
 test_that("score metrics reject missing scores", {
   expect_error(metric_roc_auc(c(1, 0), c(.2, NA_real_)), "missing values")
+})
+
+test_that("degree caches are exact, follow edge edits and nest", {
+  skip_if_no_torch()
+  # loader key collision: same weighted index sums, different edges
+  g <- graph_data(x = matrix(1, 4, 1), edge_index = rbind(c(1, 3), c(2, 2)))
+  ld <- node_loader(g, nodes = 2, fanouts = -1, shuffle = FALSE)
+  ld$graph <- graph_data(x = matrix(1, 4, 1), edge_index = rbind(c(1, 3), c(4, 1)))
+  expect_identical(loader_batches(ld)[[1]]$edge_index,
+                   sample_neighbors(ld$graph, 2, -1)$edge_index)
+  # degree cache key collision
+  g <- graph_data(x = matrix(1, 4, 1), edge_index = rbind(c(1, 2), c(2, 4)))
+  sg <- sample_neighbors(g, 1:4, -1)
+  bad <- sg
+  bad$edge_index[2, ] <- c(3L, 3L)
+  expect_error(graph_tensors(bad), "no longer matches")
+  # nested all neighbor sampling keeps the first sample's degrees
+  gcn1 <- function(h) {
+    m <- gcn_conv(1, 1, bias = FALSE)
+    with_no_grad(m$lin$weight$fill_(1))
+    tt <- graph_tensors(h)
+    as.numeric(as_r_array(with_no_grad(m(tt$x, tt$edge_index, tt$edge_weight,
+                                           node_degree = tt$node_degree))))[1]
+  }
+  ch <- graph_data(x = matrix(c(0, 1, 0), 3, 1), edge_index = rbind(c(3, 2), c(2, 1)))
+  s1 <- sample_neighbors(ch, 1, -1)
+  s2 <- sample_neighbors(s1, 1, -1)
+  expect_equal(gcn1(s1), 0.5, tolerance = 1e-6)
+  expect_equal(gcn1(s2), 0.5, tolerance = 1e-6)
+  # identity edits keep the cache; real edits move it by the local change
+  expect_identical(edge_subset(s1, seq_len(num_edges(s1)))$node_degree, s1$node_degree)
+  expect_equal(remove_self_loops(add_self_loops(s1))$node_degree, s1$node_degree)
+  expect_equal(edge_subset(s1, integer())$node_degree, s1$node_degree - c(1, 0))
+})
+
+test_that("an identity edge intervention reproduces the prediction", {
+  skip_if_no_torch()
+  ch <- graph_data(x = matrix(c(1, 2, 3), 3, 1), edge_index = rbind(c(3, 2), c(2, 1)))
+  sg <- sample_neighbors(ch, 1, -1)
+  torch_manual_seed(1)
+  m <- gnn_model("gcn", 1, 4, 1, num_layers = 1, dropout = 0)
+  fit <- structure(list(model = m, data = sg, device = torch_device("cpu"), task = "node_regression"),
+                   class = "graph_fit")
+  ex <- explain_edges(fit, sg, target = 1, output = 1)
+  expect_equal(unname(explanation_fidelity(fit, sg, ex, k = 0)[["fidelity_plus"]]), 0, tolerance = 1e-6)
+  expect_equal(unname(explanation_fidelity(fit, sg, ex, k = 99)[["fidelity_minus"]]), 0, tolerance = 1e-6)
 })

@@ -22,9 +22,10 @@
 #'   prediction while staying sparse (Ying et al. 2019).
 #'
 #' The model is called as [predict()] calls it. On an all neighbor sample
-#' from [sample_neighbors()], feature explanations keep the full graph
-#' degrees that the prediction uses; edge interventions (masks and removed
-#' edges) normalize over the intervened graph.
+#' from [sample_neighbors()], explanations use the full graph degrees that
+#' the prediction uses; edge interventions (masks and removed edges) change
+#' those degrees by the weight they add or remove, so keeping every edge
+#' reproduces the prediction.
 #'
 #' @param model A trained model (or a `graph_fit`).
 #' @param g A `graph_data` object.
@@ -68,17 +69,29 @@ select_output <- function(out, target, output) {
   list(value = row[idx], index = idx)
 }
 
-# Calls the model as predict() does, with feature interventions in `x`.
-# A sampled graph's full graph degrees are kept for feature interventions;
-# an edge intervention (`edge_weight`, or edges removed with edge_subset(),
-# which drops the cache) normalizes over the intervened graph instead.
+# Calls the model as predict() does, with feature interventions in `x` and
+# edge interventions in `edge_weight`. A sampled graph's full graph degrees
+# are kept and moved by the change in edge weight (edge_subset() does the
+# same for removed edges), so an identity intervention reproduces the
+# prediction.
 forward_with <- function(model, tt, x = tt$x, edge_weight, ...) {
   if (missing(edge_weight)) {
     tt$x <- x
     return(model_forward(model, tt, ...))
   }
-  model(x, tt$edge_index, edge_weight = edge_weight, edge_attr = tt$edge_attr,
-        batch = tt$batch, num_graphs = tt$num_graphs, edge_type = tt$edge_type, ...)
+  tt$x <- x
+  if (!is.null(tt$node_degree)) {
+    # Contextual degrees move by the change in edge weight, so an all one
+    # mask reproduces the prediction.
+    w0 <- tt$edge_weight %||% torch_ones(tt$edge_index$size(2L), dtype = edge_weight$dtype,
+                                         device = edge_weight$device)
+    d <- tt$node_degree
+    d$degree <- d$degree + scatter_sum((edge_weight - w0)$to(dtype = d$degree$dtype),
+                                       tt$edge_index[2L, ], d$degree$size(1L))
+    tt$node_degree <- d
+  }
+  tt$edge_weight <- edge_weight
+  model_forward(model, tt, ...)
 }
 
 #' @rdname explain

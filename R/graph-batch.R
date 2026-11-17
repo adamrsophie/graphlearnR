@@ -186,6 +186,7 @@ unbatch <- function(batch) {
       g[[f]] <- take_rows(batch[[f]], edges)
     }
     if (!is.null(batch$node_degree) && isTRUE(batch$degree_cached[k])) {
+      if (k == 1L) check_degree_cache(batch)
       g <- set_degree_cache(g, batch$node_degree[nodes], batch$node_self_loop[nodes])
     }
     g

@@ -42,6 +42,7 @@ NULL
 #' @export
 add_self_loops <- function(g, fill_weight = 1, loop_type = NA) {
   reject_batch(g, "add_self_loops")
+  old <- g
   ei <- g$edge_index
   has <- logical(g$num_nodes)
   has[ei[1L, ei[1L, ] == ei[2L, ]]] <- TRUE
@@ -63,7 +64,7 @@ add_self_loops <- function(g, fill_weight = 1, loop_type = NA) {
     if (!is.null(g[[f]])) g[[f]] <- c(g[[f]], rep(FALSE, k))
   }
   if (!is.null(g$e_id)) g$e_id <- c(g$e_id, rep(NA_integer_, k))
-  drop_degree_cache(g)
+  edit_degree_cache(old, g)
 }
 
 #' @rdname graph-transforms
@@ -90,7 +91,7 @@ coalesce_edges <- function(g) {
     out$edge_attr <- rowsum(g$edge_attr, grp, reorder = FALSE) / cnt
     dimnames(out$edge_attr) <- list(NULL, colnames(g$edge_attr))
   }
-  out
+  edit_degree_cache(g, out)
 }
 
 #' @rdname graph-transforms
@@ -119,6 +120,7 @@ induced_subgraph <- function(g, nodes) {
   # Kept nodes keep their degrees in the graph the sample came from, so a
   # reordering gives the same outputs, reordered.
   if (!is.null(g$node_degree)) {
+    check_degree_cache(g)
     out <- set_degree_cache(out, g$node_degree[nodes], g$node_self_loop[nodes])
   }
   out
@@ -155,6 +157,7 @@ as_undirected <- function(g) {
   # Masks were taken per kept input pair; spread them over the stored
   # directions of each pair.
   for (f in names(masks)) out[[f]] <- masks[[f]][out$edge_pair]
+  out <- edit_degree_cache(g, out)
   validate_graph(out)
   out
 }

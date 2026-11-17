@@ -92,9 +92,10 @@ prediction while staying sparse (Ying et al. 2019).
 }
 
 The model is called as \code{\link[=predict]{predict()}} calls it. On an all neighbor sample
-from \code{\link[=sample_neighbors]{sample_neighbors()}}, feature explanations keep the full graph
-degrees that the prediction uses; edge interventions (masks and removed
-edges) normalize over the intervened graph.
+from \code{\link[=sample_neighbors]{sample_neighbors()}}, explanations use the full graph degrees that
+the prediction uses; edge interventions (masks and removed edges) change
+those degrees by the weight they add or remove, so keeping every edge
+reproduces the prediction.
 }
 \examples{
 if (torch::torch_is_installed()) {
