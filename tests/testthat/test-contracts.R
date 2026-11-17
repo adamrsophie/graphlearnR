@@ -809,3 +809,11 @@ test_that("temporal data check lengths and TGN keeps node identities", {
                                node_ids = rev(tg$node_ids))
   expect_error(predict(fit, later, pairs = rbind(1, 2), time = fit$last_time + 2), "lists its nodes")
 })
+
+test_that("zero sized temporal periods stay empty", {
+  tg <- temporal_graph_data(c(1, 2, 3, 1), c(2, 3, 1, 3), 1:4)
+  sp <- split_temporal(tg, val = 0, test = 0)
+  expect_equal(c(length(sp$train$t), length(sp$val$t), length(sp$test$t)), c(4L, 0L, 0L))
+  sp <- split_temporal(tg, val = 0.25, test = 0)
+  expect_equal(length(sp$test$t), 0L)
+})

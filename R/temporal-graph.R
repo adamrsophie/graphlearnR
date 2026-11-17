@@ -144,6 +144,9 @@ temporal_window <- function(tg, start = NULL, end = NULL) {
 split_temporal <- function(tg, val_time = NULL, test_time = NULL, val = 0.15, test = 0.15) {
   if (is.null(val_time) || is.null(test_time)) {
     q <- stats::quantile(tg$t, c(1 - val - test, 1 - test), names = FALSE, type = 1)
+    # A zero sized period starts after every event, so it stays empty.
+    if (test == 0) q[2L] <- Inf
+    if (val + test == 0) q[1L] <- Inf
     val_time <- val_time %||% q[1L]
     test_time <- test_time %||% q[2L]
   }
