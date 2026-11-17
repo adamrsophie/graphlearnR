@@ -129,8 +129,8 @@ evaluate_graph_model(fit, mols[sp$test])
 #> 3   precision_macro 0.50000000
 #> 4      recall_macro 0.47222222
 #> 5          f1_macro 0.48571429
-#> 6               ece 0.12852038
-#> 7             brier 0.07595294
+#> 6               ece 0.12851698
+#> 7             brier 0.07594893
 #> 8           roc_auc         NA
 #> 9 average_precision 1.00000000
 ```
@@ -147,16 +147,16 @@ fit_r <- train_graph_model(model_r, mols[sp_r$train], "graph_classification",
                            val_data = mols[sp_r$val], epochs = 40, batch_size = 32,
                            seed = 1)
 evaluate_graph_model(fit_r, mols[sp_r$test])
-#>              metric      value
-#> 1          accuracy 1.00000000
-#> 2 balanced_accuracy 1.00000000
-#> 3   precision_macro 1.00000000
-#> 4      recall_macro 1.00000000
-#> 5          f1_macro 1.00000000
-#> 6               ece 0.15059679
-#> 7             brier 0.07816711
-#> 8           roc_auc 1.00000000
-#> 9 average_precision 1.00000000
+#>              metric     value
+#> 1          accuracy 0.7500000
+#> 2 balanced_accuracy 0.7222222
+#> 3   precision_macro 0.8437500
+#> 4      recall_macro 0.7222222
+#> 5          f1_macro 0.7150997
+#> 6               ece 0.2657013
+#> 7             brier 0.4401036
+#> 8           roc_auc 1.0000000
+#> 9 average_precision 1.0000000
 ```
 
 ## Real data: MUTAG

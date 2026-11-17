@@ -231,7 +231,7 @@ aug <- generics::augment(fit_k)
 head(aug)
 #>   .row node_id .pred_class .prob_Mr. Hi .prob_Officer .truth .split
 #> 1    1       1      Mr. Hi    0.7682219     0.2317781 Mr. Hi  train
-#> 2    2       2      Mr. Hi    0.7086080     0.2913919 Mr. Hi  train
+#> 2    2       2      Mr. Hi    0.7086080     0.2913920 Mr. Hi  train
 #> 3    3       3      Mr. Hi    0.5500913     0.4499087 Mr. Hi  train
 #> 4    4       4      Mr. Hi    0.6728596     0.3271404 Mr. Hi  train
 #> 5    5       5      Mr. Hi    0.6685206     0.3314795 Mr. Hi    val

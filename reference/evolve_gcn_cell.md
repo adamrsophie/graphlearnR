@@ -1,7 +1,8 @@
 # Evolving GCN cell (EvolveGCN-O)
 
-The EvolveGCN-O cell of Pareja et al. (2020): the GCN weight matrix, not
-a node state, is the recurrent state. At each snapshot \$\$W_t =
+A GRU variant of the EvolveGCN-O cell of Pareja et al. (2020), whose
+paper version evolves the weights with an LSTM: the GCN weight matrix,
+not a node state, is the recurrent state. At each snapshot \$\$W_t =
 \mathrm{GRU}(W\_{t-1}, W\_{t-1}),\quad H_t = \mathrm{ReLU}(\hat A_t X_t
 W_t),\$\$ with the rows of \\W\\ as the GRU batch and \\\hat A_t\\ the
 GCN propagation matrix of snapshot \\t\\ (self loops, symmetric

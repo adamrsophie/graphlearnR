@@ -105,7 +105,8 @@ explainability.
   [`train_tgn()`](https://adamrsophie.github.io/graphlearnR/reference/tgn_model.md))
   with node memory and time, graph sum, or multi layer graph attention
   embeddings.
-- Dynamic link prediction with a graph GRU or EvolveGCN-O
+- Dynamic link prediction with a graph GRU or a GRU variant of
+  EvolveGCN-O
   ([`evolve_gcn_cell()`](https://adamrsophie.github.io/graphlearnR/reference/evolve_gcn_cell.md)),
   and spatiotemporal forecasting.
 - [`predict()`](https://rdrr.io/r/stats/predict.html) for temporal fits
@@ -127,7 +128,7 @@ explainability.
   GPS layers combining local message passing with global attention,
   exact or linear
   ([`linear_attention()`](https://adamrsophie.github.io/graphlearnR/reference/linear_attention.md),
-  with Performer FAVOR+ and elu kernels).
+  with positive random feature (Performer style) and elu kernels).
 
 ### Explainability
 

@@ -80,7 +80,9 @@ A `graph_data` object.
 - `remove_self_loops()`: drop all loops.
 
 - `coalesce_edges()`: merge duplicate stored edges, summing weights and
-  averaging edge features; keeps the first label.
+  averaging edge features; keeps the first label. Without weights,
+  merged edges get their multiplicity as weight, so weighted sums are
+  unchanged.
 
 - `induced_subgraph()`: keep `nodes` (in the given order) and the edges
   among them.

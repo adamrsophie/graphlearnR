@@ -2,8 +2,10 @@
 
 Graph U-Net style pooling (Gao and Ji 2019): nodes are scored by \\y = X
 p / \lVert p \rVert\\, the top `ceiling(ratio * n_g)` nodes of each
-graph are kept, their features are scaled by \\\tanh(y)\\ and the edges
-between kept nodes are retained.
+graph are kept (a product within rounding error of a whole number counts
+as that number, so `ratio = 0.28` keeps 7 of 25 nodes), their features
+are scaled by \\\tanh(y)\\ and the edges between kept nodes are
+retained.
 
 ## Usage
 

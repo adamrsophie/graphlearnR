@@ -214,8 +214,8 @@ per molecule.</p>
 <span><span class="co">#&gt; 3   precision_macro 0.50000000</span></span>
 <span><span class="co">#&gt; 4      recall_macro 0.47222222</span></span>
 <span><span class="co">#&gt; 5          f1_macro 0.48571429</span></span>
-<span><span class="co">#&gt; 6               ece 0.12852038</span></span>
-<span><span class="co">#&gt; 7             brier 0.07595294</span></span>
+<span><span class="co">#&gt; 6               ece 0.12851698</span></span>
+<span><span class="co">#&gt; 7             brier 0.07594893</span></span>
 <span><span class="co">#&gt; 8           roc_auc         NA</span></span>
 <span><span class="co">#&gt; 9 average_precision 1.00000000</span></span></code></pre></div>
 <p>For comparison, a random stratified split:</p>
@@ -228,16 +228,16 @@ per molecule.</p>
 <span>                           val_data <span class="op">=</span> <span class="va">mols</span><span class="op">[</span><span class="va">sp_r</span><span class="op">$</span><span class="va">val</span><span class="op">]</span>, epochs <span class="op">=</span> <span class="fl">40</span>, batch_size <span class="op">=</span> <span class="fl">32</span>,</span>
 <span>                           seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/evaluate_graph_model.html">evaluate_graph_model</a></span><span class="op">(</span><span class="va">fit_r</span>, <span class="va">mols</span><span class="op">[</span><span class="va">sp_r</span><span class="op">$</span><span class="va">test</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="co">#&gt;              metric      value</span></span>
-<span><span class="co">#&gt; 1          accuracy 1.00000000</span></span>
-<span><span class="co">#&gt; 2 balanced_accuracy 1.00000000</span></span>
-<span><span class="co">#&gt; 3   precision_macro 1.00000000</span></span>
-<span><span class="co">#&gt; 4      recall_macro 1.00000000</span></span>
-<span><span class="co">#&gt; 5          f1_macro 1.00000000</span></span>
-<span><span class="co">#&gt; 6               ece 0.15059679</span></span>
-<span><span class="co">#&gt; 7             brier 0.07816711</span></span>
-<span><span class="co">#&gt; 8           roc_auc 1.00000000</span></span>
-<span><span class="co">#&gt; 9 average_precision 1.00000000</span></span></code></pre></div>
+<span><span class="co">#&gt;              metric     value</span></span>
+<span><span class="co">#&gt; 1          accuracy 0.7500000</span></span>
+<span><span class="co">#&gt; 2 balanced_accuracy 0.7222222</span></span>
+<span><span class="co">#&gt; 3   precision_macro 0.8437500</span></span>
+<span><span class="co">#&gt; 4      recall_macro 0.7222222</span></span>
+<span><span class="co">#&gt; 5          f1_macro 0.7150997</span></span>
+<span><span class="co">#&gt; 6               ece 0.2657013</span></span>
+<span><span class="co">#&gt; 7             brier 0.4401036</span></span>
+<span><span class="co">#&gt; 8           roc_auc 1.0000000</span></span>
+<span><span class="co">#&gt; 9 average_precision 1.0000000</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="real-data-mutag">Real data: MUTAG<a class="anchor" aria-label="anchor" href="#real-data-mutag"></a>

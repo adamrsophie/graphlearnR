@@ -143,7 +143,8 @@ are added to the input features by the caller, as in the paper.</p>
 
 <dt id="arg-attn-type">attn_type<a class="anchor" aria-label="anchor" href="#arg-attn-type"></a></dt>
 <dd><p><code>"multihead"</code> (exact softmax attention) or
-<code>"performer"</code> (FAVOR+ linear attention).</p></dd>
+<code>"performer"</code> (linear attention with positive IID Gaussian random
+features, the FAVOR+ estimator without orthogonal blocks).</p></dd>
 
 
 <dt id="arg-num-features">num_features<a class="anchor" aria-label="anchor" href="#arg-num-features"></a></dt>

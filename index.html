@@ -244,7 +244,7 @@
 <code><a href="reference/graph_diffusion.html">graph_diffusion()</a></code> solves on R numerics through modelcompR, so it is a simulation tool, not a trainable neural ODE layer.</li>
 <li>
 <code><a href="reference/graph_ode_block.html">graph_ode_block()</a></code> integrates with a fixed number of steps; it is not an adaptive solver.</li>
-<li>TGN has one embedding layer (one hop) and last message aggregation.</li>
+<li>TGN uses last message aggregation; its graph attention embedding stacks <code>num_layers</code> hops, at a cost of <code>num_neighbors^num_layers</code> per query.</li>
 <li>OGB link property datasets (ogbl) ship splits as PyTorch files and are not readable; node (ogbn) and graph (ogbg) datasets are.</li>
 <li>The sibling bridges are tested in continuous integration on Linux only; the z3r bridge is tested locally, because the Z3 on the runners is older than z3r needs.</li>
 <li>There is no parsnip engine, because graph models need the whole graph at prediction time.</li>

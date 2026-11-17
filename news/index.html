@@ -113,7 +113,7 @@
 <h3 id="temporal-graphs-0-1-0">Temporal graphs<a class="anchor" aria-label="anchor" href="#temporal-graphs-0-1-0"></a></h3>
 <ul><li>Event based temporal graphs, snapshots, and strictly causal temporal neighbors.</li>
 <li>Temporal graph networks (<code><a href="../reference/tgn_model.html">tgn_model()</a></code>, <code><a href="../reference/tgn_model.html">train_tgn()</a></code>) with node memory and time, graph sum, or multi layer graph attention embeddings.</li>
-<li>Dynamic link prediction with a graph GRU or EvolveGCN-O (<code><a href="../reference/evolve_gcn_cell.html">evolve_gcn_cell()</a></code>), and spatiotemporal forecasting.</li>
+<li>Dynamic link prediction with a graph GRU or a GRU variant of EvolveGCN-O (<code><a href="../reference/evolve_gcn_cell.html">evolve_gcn_cell()</a></code>), and spatiotemporal forecasting.</li>
 <li>
 <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> for temporal fits uses only information available before the prediction time; temporal fits can be saved and loaded.</li>
 <li>HGT relative temporal encoding and continuous depth graph neural ODE blocks (<code><a href="../reference/graph_ode_block.html">graph_ode_block()</a></code>, <code><a href="../reference/graph_ode_block.html">graph_ode_model()</a></code>).</li>
@@ -124,7 +124,7 @@
 <li>
 <code><a href="../reference/graph_transformer_model.html">graph_transformer_model()</a></code>: a Graphormer style transformer with shortest path and edge feature attention biases.</li>
 <li>
-<code><a href="../reference/gps_layer.html">gps_layer()</a></code>: GPS layers combining local message passing with global attention, exact or linear (<code><a href="../reference/linear_attention.html">linear_attention()</a></code>, with Performer FAVOR+ and elu kernels).</li>
+<code><a href="../reference/gps_layer.html">gps_layer()</a></code>: GPS layers combining local message passing with global attention, exact or linear (<code><a href="../reference/linear_attention.html">linear_attention()</a></code>, with positive random feature (Performer style) and elu kernels).</li>
 </ul></div>
 <div class="section level3">
 <h3 id="explainability-0-1-0">Explainability<a class="anchor" aria-label="anchor" href="#explainability-0-1-0"></a></h3>

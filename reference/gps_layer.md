@@ -57,8 +57,9 @@ gps_layer(
 
 - attn_type:
 
-  `"multihead"` (exact softmax attention) or `"performer"` (FAVOR+
-  linear attention).
+  `"multihead"` (exact softmax attention) or `"performer"` (linear
+  attention with positive IID Gaussian random features, the FAVOR+
+  estimator without orthogonal blocks).
 
 - num_features:
 
