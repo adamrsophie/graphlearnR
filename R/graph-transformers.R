@@ -506,20 +506,21 @@ linear_attention <- nn_module(
     if (self$kernel == "elu") return(nnf_elu(x) + 1)
     x <- x / self$C^0.25
     proj <- torch_matmul(x, self$features)
-    sq <- (x * x)$sum(dim = -1L, keepdim = TRUE) / 2
-    # Subtract a constant stabilizer that cancels in the ratio: per row for
-    # queries; per graph and head for keys, so one graph never changes
-    # another graph's result.
+    # The log feature w^T x - |x|^2 / 2 is shifted by a constant that cancels
+    # exactly in the attention ratio: per row for queries; per graph and
+    # head for keys, so one graph never changes another graph's result.
+    # Because it cancels exactly, its gradient is zero and it is detached.
+    logf <- proj - (x * x)$sum(dim = -1L, keepdim = TRUE) / 2
     stab <- if (is_query) {
-      proj$amax(dim = -1L, keepdim = TRUE)$detach()
+      logf$detach()$amax(dim = -1L, keepdim = TRUE)
     } else {
-      if (is.null(batch)) batch <- torch_ones(proj$size(1L), dtype = torch_long(), device = proj$device)
-      row <- proj$detach()$amax(dim = -1L)
+      if (is.null(batch)) batch <- torch_ones(logf$size(1L), dtype = torch_long(), device = logf$device)
+      row <- logf$detach()$amax(dim = -1L)
       if (row$dim() == 1L) row <- row$unsqueeze(2L)
-      scatter_max(row, batch, G)$index_select(1L, batch)$view(c(proj$size(1L), -1L, 1L))
+      scatter_max(row, batch, G)$index_select(1L, batch)$view(c(logf$size(1L), -1L, 1L))
     }
-    if (proj$dim() == 2L && !is_query) stab <- stab$squeeze(-1L)
-    torch_exp(proj - sq - stab) / sqrt(self$m) + 1e-6
+    if (logf$dim() == 2L && !is_query) stab <- stab$squeeze(-1L)
+    torch_exp(logf - stab) / sqrt(self$m)
   },
   forward = function(x, batch = NULL) {
     n <- x$size(1L)
@@ -542,7 +543,10 @@ linear_attention <- nn_module(
     KV <- scatter_sum(kv, batch, G)$view(c(G, H, m, C))$index_select(1L, batch)
     Z <- scatter_sum(pk$reshape(c(n, -1L)), batch, G)$view(c(G, H, m))$index_select(1L, batch)
     num <- (pq$unsqueeze(-1L) * KV)$sum(dim = 3L)
-    den <- (pq * Z)$sum(dim = -1L, keepdim = TRUE)
+    # The shifts keep the largest query and key feature at 1 / sqrt(m), so the
+    # denominator only reaches zero when every feature underflows; the floor
+    # guards that case without changing any other result.
+    den <- (pq * Z)$sum(dim = -1L, keepdim = TRUE)$clamp(min = 1e-30)
     self$proj((num / den)$reshape(c(n, H * C)))
   }
 )

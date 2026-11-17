@@ -448,3 +448,38 @@ test_that("an empty validation list means no validation", {
   })
   expect_identical(fits[[1]]$history$val_loss, fits[[2]]$history$val_loss)
 })
+
+test_that("FAVOR+ attention has exact gradients and stays independent across graphs", {
+  skip_if_no_torch()
+  torch_manual_seed(3)
+  attn <- linear_attention(4, heads = 2, num_features = 6)
+  attn$to(dtype = torch_double())
+  f <- function(x, batch = NULL) attn(x, batch)$sum()
+  for (scale in c(1, 6)) {
+    x0 <- matrix(rnorm(20) * scale, 5, 4)
+    x <- torch_tensor(x0, dtype = torch_double(), requires_grad = TRUE)
+    f(x)$backward()
+    g <- as_r_array(x$grad)
+    fd <- x0
+    for (i in seq_along(x0)) {
+      e <- x0; e[i] <- e[i] + 1e-6
+      d <- x0; d[i] <- d[i] - 1e-6
+      fd[i] <- (as.numeric(f(torch_tensor(e, dtype = torch_double()))) -
+                  as.numeric(f(torch_tensor(d, dtype = torch_double())))) / 2e-6
+    }
+    expect_equal(g, fd, tolerance = 1e-5)
+  }
+  # two graphs in one batch give the same outputs and gradients as separately
+  x0 <- matrix(rnorm(28) * 4, 7, 4)
+  b <- c(1, 1, 1, 2, 2, 2, 2)
+  xb <- torch_tensor(x0, dtype = torch_double(), requires_grad = TRUE)
+  ob <- attn(xb, b)
+  ob$sum()$backward()
+  for (k in 1:2) {
+    xs <- torch_tensor(x0[b == k, ], dtype = torch_double(), requires_grad = TRUE)
+    os <- attn(xs)
+    os$sum()$backward()
+    expect_equal(as_r_array(ob)[b == k, ], as_r_array(os), tolerance = 1e-10)
+    expect_equal(as_r_array(xb$grad)[b == k, ], as_r_array(xs$grad), tolerance = 1e-10)
+  }
+})
