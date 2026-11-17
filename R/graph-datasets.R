@@ -87,17 +87,26 @@ graph_dataset_disk <- function(dir, transform = NULL) {
 write_graph_dataset <- function(graphs, dir, metadata = list(), overwrite = FALSE) {
   check_graph_schema(graphs)
   old <- list.files(dir, pattern = "^graph_[0-9]+\\.rds$|^metadata\\.rds$", full.names = TRUE)
-  if (length(old)) {
-    # Stale graph files from an earlier, larger dataset would be read back.
-    if (!overwrite) stopf("`%s` already holds a graph dataset; use `overwrite = TRUE` to replace it.", dir)
-    unlink(old)
+  if (length(old) && !overwrite) {
+    stopf("`%s` already holds a graph dataset; use `overwrite = TRUE` to replace it.", dir)
   }
   dir.create(dir, recursive = TRUE, showWarnings = FALSE)
+  # Write the new dataset to a staging directory first: the input may be
+  # read from `dir` itself, and a failure must leave the old dataset intact.
+  stage <- tempfile("staging_", tmpdir = dir)
+  dir.create(stage)
+  on.exit(unlink(stage, recursive = TRUE), add = TRUE)
   n <- length(graphs)
   for (i in seq_len(n)) {
-    saveRDS(graphs[[i]], file.path(dir, sprintf("graph_%06d.rds", i)))
+    saveRDS(graphs[[i]], file.path(stage, sprintf("graph_%06d.rds", i)))
   }
-  saveRDS(metadata, file.path(dir, "metadata.rds"))
+  saveRDS(metadata, file.path(stage, "metadata.rds"))
+  # Stale graph files from an earlier, larger dataset would be read back.
+  unlink(old)
+  new <- list.files(stage, full.names = TRUE)
+  if (!all(file.rename(new, file.path(dir, basename(new))))) {
+    stopf("Could not move the new dataset into `%s`.", dir)
+  }
   invisible(dir)
 }
 

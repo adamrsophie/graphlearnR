@@ -853,3 +853,15 @@ test_that("snapshot sequences and dynamic link models share one causal, consiste
                                   epochs = 1, seed = 1)
   expect_true(all(is.na(fit$baseline_metrics)))
 })
+
+test_that("rewriting a disk dataset into its own directory keeps the data", {
+  dir <- tempfile("ds")
+  gs <- lapply(1:2, function(i) graph_data(x = matrix(i, 2, 1), edge_index = rbind(1L, 2L)))
+  write_graph_dataset(gs, dir)
+  ds <- graph_dataset_disk(dir)
+  write_graph_dataset(ds, dir, overwrite = TRUE)
+  ds2 <- graph_dataset_disk(dir)
+  expect_equal(length(ds2), 2L)
+  expect_equal(ds2[[2]]$x, gs[[2]]$x)
+  expect_false(any(grepl("staging", list.files(dir, all.files = TRUE))))
+})
