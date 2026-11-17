@@ -1166,3 +1166,15 @@ test_that("igraph round trips keep multi target labels of one node", {
   back <- from_igraph(to_igraph(g))
   expect_equal(unname(back$y), matrix(c(17, 18), 1, 2))
 })
+
+test_that("batching keeps sampling records and edge splits reject batches", {
+  g <- graph_data(x = matrix(1, 3, 1), edge_index = rbind(c(1, 2, 3), c(2, 3, 2)))
+  s <- sample_neighbors(g, 2, -1)
+  back <- unbatch(graph_batch(list(s, g)))
+  expect_s3_class(back[[1]], "sampled_graph")
+  expect_equal(back[[1]]$n_id, s$n_id)
+  expect_equal(back[[1]]$num_seeds, s$num_seeds)
+  expect_false(inherits(back[[2]], "sampled_graph"))
+  p <- graph_data(num_nodes = 3, edge_index = rbind(1:2, 2:3))
+  expect_error(split_edges(graph_batch(list(p, p)), val = 1, test = 1, seed = 1), "graph_batch")
+})

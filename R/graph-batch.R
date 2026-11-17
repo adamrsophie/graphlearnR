@@ -130,6 +130,13 @@ graph_batch <- function(graphs) {
                           unlist(lapply(deg, `[[`, "self_loop"), use.names = FALSE))
     b$degree_cached <- vapply(graphs, function(g) !is.null(g$node_degree), logical(1))
   }
+  # Sampling records of sampled members, restored by unbatch().
+  samp <- c("n_id", "e_id", "hop", "num_seeds", "seed_index")
+  if (any(vapply(graphs, inherits, logical(1), "sampled_graph"))) {
+    b$member_sampling <- lapply(graphs, function(g) {
+      if (inherits(g, "sampled_graph")) c(g[intersect(samp, names(g))], list(class = class(g)))
+    })
+  }
   b
 }
 
@@ -188,6 +195,11 @@ unbatch <- function(batch) {
     if (!is.null(batch$node_degree) && isTRUE(batch$degree_cached[k])) {
       if (k == 1L) check_degree_cache(batch)
       g <- set_degree_cache(g, batch$node_degree[nodes], batch$node_self_loop[nodes])
+    }
+    ms <- batch$member_sampling[[k]]
+    if (!is.null(ms)) {
+      for (f in setdiff(names(ms), "class")) g[[f]] <- ms[[f]]
+      class(g) <- ms$class
     }
     g
   })

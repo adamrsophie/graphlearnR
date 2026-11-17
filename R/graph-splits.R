@@ -131,6 +131,9 @@ pair_keys <- function(pairs, symmetric) {
 #' sp
 #' @export
 split_edges <- function(g, val = 0.1, test = 0.1, neg_ratio = 1, seed = NULL) {
+  # One graph only: negatives would join member graphs, and batch offsets
+  # would no longer match the edges.
+  reject_batch(g, "split_edges")
   cols <- input_edge_columns(g)
   pairs <- g$edge_index[, cols, drop = FALSE]
   un <- pair_units(pairs, symmetric = !g$directed)
