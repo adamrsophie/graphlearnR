@@ -127,7 +127,10 @@ the subgraph induced by the nodes that short random walks visit. Nodes and
 edges are not sampled uniformly, so the loader estimates how often each one
 appears and corrects for it: the loss of each node is weighted by
 `node_norm` and edge weights are rescaled, as in PyTorch Geometric's
-`GraphSAINTSampler`.
+`GraphSAINTSampler`. The corrected edge weights estimate a full graph
+weighted sum over incoming edges, so the model should sum weighted messages:
+`gnn_model("graph_conv")`. A mean aggregator such as SAGE's would divide by
+the sampled degree again, and `train_graph_model()` warns about it.
 
 ```{r, eval = has_torch}
 sl <- saint_loader(big, batch_size = 100, walk_length = 2, num_steps = 8, seed = 1)
@@ -136,7 +139,7 @@ b <- loader_batches(sl)[[1]]
 c(nodes = num_nodes(b), edges = num_edges(b))
 summary(b$node_norm)
 torch_manual_seed(2)
-fit_sl <- train_graph_model(gnn_model("sage", 8, 32, 3), big, "node_classification",
+fit_sl <- train_graph_model(gnn_model("graph_conv", 8, 32, 3), big, "node_classification",
                             epochs = 15, loader = sl, seed = 2)
 evaluate_graph_model(fit_sl, big)
 ```
@@ -149,7 +152,9 @@ reweights the kept edges by the inverse probability (normalized per target
 node). The number of nodes per batch is bounded by the seeds plus the layer
 sizes, whatever the degrees, unlike neighbor sampling whose size grows with
 the fanout product. Only the seeds carry `train_mask`, so the loss uses
-them alone. Use a model that reads `edge_weight`, such as SAGE.
+them alone. The weights of each node's incoming edges sum to one, so they
+already form a weighted mean: use a model that sums weighted messages, such
+as `gnn_model("graph_conv")`.
 
 ```{r, eval = has_torch}
 ld <- ladies_loader(big, batch_size = 64, layer_sizes = c(128, 128), seed = 1)
@@ -157,7 +162,7 @@ ld
 b <- loader_batches(ld)[[1]]
 c(nodes = num_nodes(b), edges = num_edges(b), seeds = sum(b$train_mask))
 torch_manual_seed(2)
-fit_ld <- train_graph_model(gnn_model("sage", 8, 32, 3), big, "node_classification",
+fit_ld <- train_graph_model(gnn_model("graph_conv", 8, 32, 3), big, "node_classification",
                             epochs = 15, loader = ld, seed = 2)
 evaluate_graph_model(fit_ld, big)
 ```

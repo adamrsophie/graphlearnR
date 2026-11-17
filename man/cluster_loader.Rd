@@ -80,9 +80,13 @@ with a \code{reduction} argument; in expectation this is the mean loss over
 all nodes of the graph. The edge correction makes the sampled
 aggregation an unbiased estimate of a full graph weighted \strong{sum} over
 incoming edges, so use a layer that sums weighted messages
-(\code{gnn_model("graph_conv")}, or \code{"gcn"}, which renormalizes the weights
-it receives); a mean aggregator (the default of \code{"sage"}) divides again
-by the random sampled degree and loses that property.
+(\code{gnn_model("graph_conv")} with its default \code{aggr = "sum"}). A mean
+aggregator (the default of \code{"sage"}) divides again by the random
+sampled degree, and \code{"gcn"} renormalizes the corrected weights with
+sampled degrees; neither estimates its own full graph operator, and
+\code{\link[=train_graph_model]{train_graph_model()}} warns for such built in models. The correction
+is for the linear aggregation; predictions and losses of a nonlinear
+model are not unbiased.
 }
 
 Batches are drawn in R on the CPU.

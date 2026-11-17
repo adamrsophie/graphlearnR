@@ -401,6 +401,7 @@ node_task_runner <- function(model, data, task, dev, fanouts, batch_size, seed, 
     # node and edge inputs (features, edge features and types, labels,
     # masks) come from `data`, so updated inputs are used.
     subgraph_loader$graph <- data
+    check_sampler_operator(model, subgraph_loader)
   }
   list(
     default_loss = if (classif) "cross_entropy" else "mse",
@@ -824,4 +825,19 @@ exact_receptive_depth <- function(model) {
   if (inherits(model, "graph_model")) return(model$config$num_layers)
   if (inherits(model, "appnp_model")) return(model$prop$K)
   NULL
+}
+
+# GraphSAINT's edge correction estimates a full graph weighted sum, and the
+# LADIES weights a full graph weighted mean, both through a layer that sums
+# weighted messages. Warn for built in models that aggregate otherwise.
+check_sampler_operator <- function(model, loader) {
+  if (!inherits(model, "graph_model") || inherits(loader, "cluster_loader")) return(invisible())
+  cfg <- model$config
+  if (identical(cfg$architecture, "graph_conv") && (cfg$aggr %||% "sum") == "sum") return(invisible())
+  warning(sprintf(paste0(
+    "%s() edge weights are meant for a layer that sums weighted messages; ",
+    "gnn_model(\"%s\") aggregates differently, so training estimates a different ",
+    "operator than the full graph model. Use gnn_model(\"graph_conv\") (aggr = \"sum\")."),
+    if (inherits(loader, "saint_loader")) "saint_loader" else "ladies_loader", cfg$architecture),
+    call. = FALSE)
 }

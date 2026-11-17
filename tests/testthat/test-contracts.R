@@ -631,3 +631,18 @@ test_that("loaders follow replaced graphs and current edge inputs", {
   expect_equal(losses[[1]], losses[[2]])
   expect_equal(losses[[1]], c(100, 100))
 })
+
+test_that("SAINT and LADIES warn for models whose aggregation they do not correct", {
+  skip_if_no_torch()
+  g <- split_nodes(dataset_sbm(c(10, 10), seed = 1), seed = 1)
+  sl <- saint_loader(g, 5, 2, 2, seed = 1)
+  ld <- ladies_loader(g, batch_size = 5, layer_sizes = c(5, 5), seed = 1)
+  for (L in list(sl, ld)) {
+    expect_warning(train_graph_model(gnn_model("sage", ncol(g$x), 4, 2), g, "node_classification",
+                                     epochs = 1, loader = L, seed = 1), "sums weighted messages")
+    expect_no_warning(train_graph_model(gnn_model("graph_conv", ncol(g$x), 4, 2), g,
+                                        "node_classification", epochs = 1, loader = L, seed = 1))
+  }
+  expect_no_warning(train_graph_model(gnn_model("sage", ncol(g$x), 4, 2), g, "node_classification",
+                                      epochs = 1, loader = cluster_loader(g, 2, seed = 1), seed = 1))
+})

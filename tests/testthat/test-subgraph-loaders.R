@@ -47,7 +47,8 @@ test_that("training with subgraph loaders works and checks its input", {
   g <- split_nodes(dataset_sbm(c(60, 60, 60), seed = 4), seed = 4)
   for (L in list(cluster_loader(g, 6, 2, seed = 1), saint_loader(g, 20, 2, 5, seed = 1))) {
     torch::torch_manual_seed(1)
-    fit <- train_graph_model(gnn_model("sage", ncol(g$x), 16, 3), g, "node_classification",
+    arch <- if (inherits(L, "saint_loader")) "graph_conv" else "sage"
+    fit <- train_graph_model(gnn_model(arch, ncol(g$x), 16, 3), g, "node_classification",
                              epochs = 30, loader = L, seed = 1)
     ev <- evaluate_graph_model(fit, g)
     expect_gt(ev$value[ev$metric == "accuracy"], 0.8)
@@ -100,7 +101,7 @@ test_that("training with ladies_loader learns a separable graph", {
   testthat::skip_on_cran()  # trains for many epochs
   g <- split_nodes(dataset_sbm(c(60, 60), p_in = 0.2, p_out = 0.01, seed = 1), seed = 1)
   torch::torch_manual_seed(1)
-  m <- gnn_model("sage", ncol(g$x), 16, 2)
+  m <- gnn_model("graph_conv", ncol(g$x), 16, 2)
   fit <- train_graph_model(m, g, "node_classification", epochs = 30, lr = 0.02,
                            loader = ladies_loader(g, batch_size = 20, layer_sizes = c(30, 30), seed = 1),
                            seed = 1)
