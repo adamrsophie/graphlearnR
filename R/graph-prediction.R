@@ -107,7 +107,14 @@ predict.graph_fit <- function(object, new_data = NULL,
       pairs <- normalize_edge_index(pairs)
       if (!is.null(tt$edge_attr)) {
         # Each requested pair takes the features of its own stored edge.
-        idx <- match(paste(pairs[1L, ], pairs[2L, ]), paste(g$edge_index[1L, ], g$edge_index[2L, ]))
+        stored <- paste(g$edge_index[1L, ], g$edge_index[2L, ])
+        asked <- paste(pairs[1L, ], pairs[2L, ])
+        idx <- match(asked, stored)
+        multi <- asked %in% stored[duplicated(stored)]
+        if (any(multi)) {
+          stopf(paste0("%d requested pairs match several parallel edges with their own edge features; ",
+                       "omit `pairs` to score every stored edge."), sum(multi))
+        }
         if (anyNA(idx)) {
           stopf("%d requested pairs are not edges of `new_data`, so they have no edge features.",
                 sum(is.na(idx)))

@@ -964,3 +964,14 @@ test_that("regression losses reject outputs that would broadcast against targets
   m <- gnn_model("graph_conv", 2, 2, 2, num_layers = 1)
   expect_error(train_graph_model(m, g, epochs = 1, task = "node_regression"), "shape")
 })
+
+test_that("predict rejects pairs that match several parallel edges", {
+  skip_if_no_torch()
+  g <- graph_data(x = diag(2), edge_index = rbind(c(1, 1), c(2, 2)), edge_attr = matrix(c(3, 7), 2, 1),
+                  edge_y = c(0, 1))
+  g <- split_edge_labels(g, train = 1, val = 0, test = 0, seed = 1)
+  fit <- train_graph_model(gnn_model("mpnn", 2, 2, 2, num_layers = 1, edge_dim = 1), g,
+                           task = "edge_classification", epochs = 1, seed = 1)
+  expect_equal(nrow(predict(fit, g)), 2L)
+  expect_error(predict(fit, g, pairs = g$edge_index), "several parallel edges")
+})
