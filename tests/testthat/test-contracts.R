@@ -817,3 +817,11 @@ test_that("zero sized temporal periods stay empty", {
   sp <- split_temporal(tg, val = 0.25, test = 0)
   expect_equal(length(sp$test$t), 0L)
 })
+
+test_that("one node forecasts keep one row per origin", {
+  skip_if_no_torch()
+  sig <- dataset_synthetic_signal(num_nodes = 1, num_steps = 12, seed = 1)
+  fit <- train_spatiotemporal_model(sig, lags = 1, hidden_dim = 2, epochs = 1, seed = 1)
+  p <- predict(fit, sig, ends = 9:10)
+  expect_equal(dim(p), c(2L, 1L))
+})

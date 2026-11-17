@@ -126,10 +126,10 @@ predict.temporal_fit <- function(object, new_data = NULL, pairs = NULL, time = N
   tt <- graph_tensors(sig$graph, dev)
   n <- sig$graph$num_nodes
   feat <- function(s) torch_tensor(matrix(sig$features[s, , ], nrow = n), dtype = torch_float(), device = dev)
-  out <- with_no_grad(t(vapply(ends, function(e) {
+  out <- with_no_grad(matrix(vapply(ends, function(e) {
     xs <- lapply(seq.int(e - object$lags + 1L, e), feat)
     as.vector(as_r_array(model(xs, tt$edge_index, tt$edge_weight)$outputs[[object$lags]]$squeeze(2L)))
-  }, numeric(n))))
+  }, numeric(n)), nrow = length(ends), ncol = n, byrow = TRUE))
   dimnames(out) <- list(paste0("origin_", ends), NULL)
   out
 }
