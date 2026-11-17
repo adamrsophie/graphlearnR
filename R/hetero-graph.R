@@ -206,27 +206,31 @@ print.hetero_graph_data <- function(x, ...) {
 #' edge_types(add_reverse_relations(hg))
 #' @export
 add_reverse_relations <- function(hg, prefix = "rev_") {
+  rev_key <- function(e) paste(e$dst, paste0(prefix, e$rel), e$src, sep = "__")
+  unpaired <- function(e) is.null(e$reverse) && is.null(e$reverse_of)
+  pair_key <- function(ei) sort(paste(ei[1L, ], ei[2L, ]))
+  # First pair existing reverses, so the result does not depend on the order
+  # of the relations. An existing reverse is paired only when it holds
+  # exactly the flipped edges, so link splits remove held out pairs from
+  # both relations.
   for (key in names(hg$edges)) {
     e <- hg$edges[[key]]
-    if (!is.null(e$reverse) || !is.null(e$reverse_of)) next
-    rkey <- paste(e$dst, paste0(prefix, e$rel), e$src, sep = "__")
-    if (rkey %in% names(hg$edges)) {
-      # An existing reverse is paired only when it holds exactly the flipped
-      # edges, so link splits remove held out pairs from both relations.
-      r <- hg$edges[[rkey]]
-      if (!is.null(r$reverse) || !is.null(r$reverse_of)) {
-        stopf("Relation `%s` is already paired with another relation.", rkey)
-      }
-      pair_key <- function(ei) sort(paste(ei[1L, ], ei[2L, ]))
-      if (!identical(r$src, e$dst) || !identical(r$dst, e$src) ||
-          !identical(pair_key(r$edge_index), pair_key(e$edge_index[2:1, , drop = FALSE]))) {
-        stopf("Relation `%s` exists but is not the exact reverse of `%s`; rename or remove it, or use another `prefix`.",
-              rkey, key)
-      }
-      hg$edges[[rkey]]$reverse_of <- key
-      hg$edges[[key]]$reverse <- rkey
-      next
+    rkey <- rev_key(e)
+    if (!unpaired(e) || !rkey %in% names(hg$edges)) next
+    r <- hg$edges[[rkey]]
+    if (!unpaired(r)) stopf("Relation `%s` is already paired with another relation.", rkey)
+    if (!identical(r$src, e$dst) || !identical(r$dst, e$src) ||
+        !identical(pair_key(r$edge_index), pair_key(e$edge_index[2:1, , drop = FALSE]))) {
+      stopf("Relation `%s` exists but is not the exact reverse of `%s`; rename or remove it, or use another `prefix`.",
+            rkey, key)
     }
+    hg$edges[[rkey]]$reverse_of <- key
+    hg$edges[[key]]$reverse <- rkey
+  }
+  for (key in names(hg$edges)) {
+    e <- hg$edges[[key]]
+    if (!unpaired(e)) next
+    rkey <- rev_key(e)
     hg$edges[[rkey]] <- list(src = e$dst, rel = paste0(prefix, e$rel), dst = e$src,
                              edge_index = e$edge_index[2:1, , drop = FALSE],
                              edge_attr = e$edge_attr, edge_weight = e$edge_weight,
@@ -605,7 +609,9 @@ split_edges_hetero <- function(hg, relation, val = 0.1, test = 0.1, neg_ratio = 
   with_optional_seed(seed, {
     code <- integer(m)
     code[sample.int(m)] <- rep(1:3, sizes)
-    nneg <- ceiling(neg_ratio * (sizes[2L] + sizes[3L]))
+    # Round per split, as split_edges() does.
+    nv <- ceiling(neg_ratio * sizes[2L])
+    nneg <- nv + ceiling(neg_ratio * sizes[3L])
     nseed <- if (is.null(seed)) NULL else seed + 1L
     neg <- if (same) {
       negative_sampling(pairs, num_nodes = ns, num_samples = nneg, directed = FALSE, seed = nseed)
@@ -613,7 +619,6 @@ split_edges_hetero <- function(hg, relation, val = 0.1, test = 0.1, neg_ratio = 
       negative_sampling(pairs, num_src = ns, num_dst = nd, num_samples = nneg, seed = nseed)
     }
   })
-  nv <- ceiling(neg_ratio * sizes[2L])
   held_keys <- un$key[code > 1L]
   train_graph <- hg
   train_graph$edges[[relation]] <- subset_relation(

@@ -509,3 +509,23 @@ test_that("edgeless RGCN without root or bias gives zero gradients", {
     for (p in conv$parameters) expect_equal(sum(abs(as_r_array(p$grad))), 0)
   }
 })
+
+test_that("reverse pairing ignores relation order and negative rounding matches", {
+  ei <- rbind(c(1, 2, 3), c(2, 3, 4))
+  f <- add_reverse_relations(hetero_graph_data(nodes = list(a = 4, b = 5),
+    edges = list(a__r__b = ei, b__rev_r__a = ei[2:1, 3:1, drop = FALSE])))
+  r <- add_reverse_relations(hetero_graph_data(nodes = list(a = 4, b = 5),
+    edges = list(b__rev_r__a = ei[2:1, , drop = FALSE], a__r__b = ei)))
+  expect_setequal(names(r$edges), c("a__r__b", "b__rev_r__a"))
+  expect_equal(r$edges$a__r__b$reverse, "b__rev_r__a")
+  expect_equal(r$edges$b__rev_r__a$reverse_of, "a__r__b")
+  expect_identical(add_reverse_relations(r), r)
+  expect_error(add_reverse_relations(hetero_graph_data(nodes = list(a = 4, b = 5),
+    edges = list(b__rev_r__a = ei[2:1, 1:2, drop = FALSE], a__r__b = ei))), "not the exact reverse")
+  g <- graph_data(num_nodes = 5, edge_index = ei)
+  hg <- hetero_graph_data(nodes = list(a = 4, b = 5), edges = list(a__r__b = ei))
+  a <- split_edges(g, val = 1, test = 1, neg_ratio = .5, seed = 1)
+  b <- split_edges_hetero(hg, "a__r__b", val = 1, test = 1, neg_ratio = .5, seed = 1)
+  expect_equal(c(ncol(b$val_neg), ncol(b$test_neg)), c(ncol(a$val_neg), ncol(a$test_neg)))
+  expect_equal(c(ncol(b$val_neg), ncol(b$test_neg)), c(1L, 1L))
+})
