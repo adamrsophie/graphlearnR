@@ -103,9 +103,9 @@ appnp <- nn_module(
     self$alpha <- alpha
     self$dropout <- dropout
   },
-  forward = function(x, edge_index, edge_weight = NULL, ...) {
+  forward = function(x, edge_index, edge_weight = NULL, node_degree = NULL, ...) {
     n <- x$size(1L)
-    nrm <- gcn_norm(edge_index, n, edge_weight, dtype = x$dtype)
+    nrm <- gcn_norm(edge_index, n, edge_weight, dtype = x$dtype, node_degree = node_degree)
     # R scalars become float32 tensors; keep the constants in the input's precision.
     keep <- torch_tensor(1 - self$alpha, dtype = x$dtype, device = x$device)
     tele <- torch_tensor(self$alpha, dtype = x$dtype, device = x$device)
@@ -134,12 +134,13 @@ appnp_model <- nn_module(
     self$config <- list(architecture = "appnp", input_dim = input_dim, hidden_dim = hidden_dim,
                         output_dim = output_dim)
   },
-  forward = function(x, edge_index, edge_weight = NULL, return_embedding = FALSE, ...) {
+  forward = function(x, edge_index, edge_weight = NULL, return_embedding = FALSE,
+                     node_degree = NULL, ...) {
     h <- nnf_dropout(x, p = self$dropout, training = self$training)
     h <- nnf_relu(self$lin1(h))
     if (return_embedding) return(h)
     h <- self$lin2(nnf_dropout(h, p = self$dropout, training = self$training))
-    self$prop(h, edge_index, edge_weight)
+    self$prop(h, edge_index, edge_weight, node_degree = node_degree)
   }
 )
 

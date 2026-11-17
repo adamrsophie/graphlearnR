@@ -61,11 +61,13 @@ a numeric label matrix.}
 tasks with \code{fanouts}).}
 
 \item{fanouts}{Neighbor sampling fanouts for node mini-batches. For a
-homogeneous graph the full graph is never moved to the device: batches
-are built one at a time, and validation runs in batches on all neighbor
-subgraphs of the validation nodes with as many hops as \code{fanouts}, which
-equals full graph validation for layers that aggregate incoming edges
-(all \code{\link[=gnn_model]{gnn_model()}} architectures). For a heterogeneous node task they go to \code{\link[=sample_hetero_neighbors]{sample_hetero_neighbors()}} (a
+homogeneous graph batches are built one at a time. Validation runs in
+batches on all neighbor subgraphs of the validation nodes, as deep as
+the model's receptive field (\code{\link[=gnn_model]{gnn_model()}}: \code{num_layers};
+\code{\link[=appnp_model]{appnp_model()}}: \code{K}; a custom module may set a \code{receptive_depth}
+field), with full graph degrees, so it equals full graph validation
+and the full graph never moves to the device. For other models
+validation runs on the full graph. For a heterogeneous node task they go to \code{\link[=sample_hetero_neighbors]{sample_hetero_neighbors()}} (a
 vector applied to every relation, or a named list per relation), with
 training nodes of \code{target_type} as seeds; the loss uses the seeds only
 and validation runs on the full graph.}
@@ -126,7 +128,8 @@ accessible in the returned fit.
 
 \strong{Node mini-batches.} With \code{fanouts}, node tasks are trained on sampled
 neighborhoods (\code{\link[=node_loader]{node_loader()}}); the loss uses only the seed nodes of each
-batch, never the sampled context nodes. Validation uses the full graph.
+batch, never the sampled context nodes. Validation equals full graph
+validation (see \code{fanouts}).
 
 \strong{Subgraph batches.} With \code{loader} from \code{\link[=cluster_loader]{cluster_loader()}} or
 \code{\link[=saint_loader]{saint_loader()}}, node tasks are trained on induced subgraphs; the loss

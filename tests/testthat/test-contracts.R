@@ -40,8 +40,32 @@ test_that("transforms honor fill weights, keep edge masks and reject batches", {
   g <- graph_data(x = matrix(1, 4, 1), edge_index = rbind(c(1, 2, 3), c(2, 3, 4)), edge_y = 1:3)
   g <- split_edge_labels(g, train = 0.34, val = 0.33, test = 0.33, seed = 1)
   u <- as_undirected(g)
-  expect_equal(u$edge_train_mask, g$edge_train_mask)
-  expect_equal(u$edge_test_mask, g$edge_test_mask)
+  # Each stored direction carries the split of its input pair, so the
+  # labels in each split are those of the original split, and no pair is in
+  # two splits.
+  expect_equal(length(u$edge_train_mask), num_edges(u))
+  for (f in c("edge_train_mask", "edge_val_mask", "edge_test_mask")) {
+    expect_equal(u[[f]], g[[f]][u$edge_pair])
+    expect_setequal(u$edge_y[u[[f]]], g$edge_y[g[[f]]])
+  }
+  pair_split <- tapply(u$edge_train_mask + 2 * u$edge_val_mask + 3 * u$edge_test_mask,
+                       u$edge_pair, function(z) length(unique(z)))
+  expect_true(all(pair_split == 1))
+  # loops, reciprocal input and duplicates
+  h <- graph_data(x = matrix(1, 3, 1), edge_index = rbind(c(1, 2, 3, 1), c(2, 1, 3, 2)),
+                  edge_y = 1:4)
+  h$edge_train_mask <- c(TRUE, TRUE, FALSE, TRUE)
+  h$edge_test_mask <- !h$edge_train_mask
+  hu <- as_undirected(h)
+  expect_equal(num_edges(hu), 3L)
+  expect_equal(hu$edge_train_mask, c(TRUE, TRUE, FALSE))
+  expect_equal(hu$edge_test_mask, c(FALSE, FALSE, TRUE))
+  e0 <- graph_data(x = matrix(1, 2, 1), edge_index = matrix(integer(), 2, 0))
+  e0$edge_train_mask <- logical()
+  expect_equal(as_undirected(e0)$edge_train_mask, logical())
+  bad <- g
+  bad$edge_train_mask <- c(TRUE, FALSE)
+  expect_error(validate_graph(bad), "stored edges")
   b <- graph_batch(list(graph_data(x = matrix(1, 2, 1), edge_index = rbind(1, 2)),
                         graph_data(x = matrix(1, 3, 1), edge_index = rbind(c(1, 2), c(2, 3)))))
   expect_error(induced_subgraph(b, c(1, 3)), "graph_batch")
@@ -370,4 +394,57 @@ test_that("temporal predictions validate their inputs", {
   expect_error(predict(sfit, list()), "spatiotemporal_signal")
   expect_equal(nrow(predict(sfit, sig)), 1L)
   expect_error(predict(sfit, sig, ends = 1), "Forecast origins")
+})
+
+test_that("sampled validation follows the model's receptive depth and full degrees", {
+  skip_if_no_torch()
+  g <- graph_data(x = matrix(c(0, 0, 7), 3, 1), edge_index = rbind(c(3L, 2L), c(2L, 1L)),
+                  y = rep(0, 3), train_mask = c(FALSE, FALSE, TRUE),
+                  val_mask = c(TRUE, FALSE, FALSE), test_mask = c(FALSE, TRUE, FALSE))
+  m <- gnn_model("graph_conv", 1, 1, num_layers = 2, dropout = 0)
+  with_no_grad(for (i in 1:2) {
+    m$convs[[i]]$lin_rel$weight$fill_(1); m$convs[[i]]$lin_rel$bias$zero_()
+    m$convs[[i]]$lin_root$weight$zero_()
+  })
+  # Node 1 sees 7 after two hops: full graph validation MSE is 49.
+  for (fan in list(1L, c(1L, 1L))) {
+    fit <- train_graph_model(m, g, "node_regression", epochs = 1, lr = 0,
+                             fanouts = fan, batch_size = 1, seed = 7)
+    expect_equal(fit$history$val_loss, 49, tolerance = 1e-6)
+  }
+  g4 <- graph_data(x = matrix(c(0, 0, 7, 0), 4, 1), edge_index = rbind(c(4L, 3L, 2L), c(3L, 2L, 1L)),
+                   y = rep(0, 4), train_mask = c(FALSE, FALSE, FALSE, TRUE),
+                   val_mask = c(TRUE, FALSE, FALSE, FALSE))
+  a <- appnp_model(1, 1, 1, K = 2, alpha = 0.1, dropout = 0)
+  with_no_grad({
+    a$lin1$weight$fill_(1); a$lin1$bias$zero_(); a$lin2$weight$fill_(1); a$lin2$bias$zero_()
+  })
+  a$eval()
+  full <- as.numeric(as_r_array(with_no_grad(model_forward(a, graph_tensors(g4))))[1])
+  sg <- sample_neighbors(g4, 1L, c(-1L, -1L))
+  expect_equal(as.numeric(as_r_array(with_no_grad(model_forward(a, graph_tensors(sg))))[1]), full,
+               tolerance = 1e-6)
+  fit <- train_graph_model(a, g4, "node_regression", epochs = 1, lr = 0, fanouts = 1L,
+                           batch_size = 1, seed = 7)
+  expect_equal(fit$history$val_loss, full^2, tolerance = 1e-5)
+  # A custom model without a declared depth validates on the full graph.
+  probe <- nn_module(initialize = function() self$w <- nn_parameter(torch_ones(1)),
+                     forward = function(x, edge_index, ...) {
+                       h <- scatter_sum(x$index_select(1L, edge_index[1L, ]), edge_index[2L, ], x$size(1L))
+                       scatter_sum(h$index_select(1L, edge_index[1L, ]), edge_index[2L, ], x$size(1L)) * self$w
+                     })
+  fit <- train_graph_model(probe(), g, "node_regression", epochs = 1, lr = 0, fanouts = 1L,
+                           batch_size = 1, seed = 7)
+  expect_equal(fit$history$val_loss, 49, tolerance = 1e-6)
+})
+
+test_that("an empty validation list means no validation", {
+  skip_if_no_torch()
+  g <- graph_data(x = matrix(c(1, 2), 2, 1), edge_index = rbind(1L, 2L), graph_y = 0)
+  fits <- lapply(list(NULL, list()), function(vl) {
+    m <- gnn_model("sage", 1, 2, 1, num_layers = 1, dropout = 0, pool = "mean")
+    train_graph_model(m, list(g, g), "graph_regression", val_data = vl, epochs = 1,
+                      batch_size = 1, lr = 0, seed = 1)
+  })
+  expect_identical(fits[[1]]$history$val_loss, fits[[2]]$history$val_loss)
 })

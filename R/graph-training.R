@@ -13,7 +13,8 @@
 #'
 #' **Node mini-batches.** With `fanouts`, node tasks are trained on sampled
 #' neighborhoods ([node_loader()]); the loss uses only the seed nodes of each
-#' batch, never the sampled context nodes. Validation uses the full graph.
+#' batch, never the sampled context nodes. Validation equals full graph
+#' validation (see `fanouts`).
 #'
 #' **Subgraph batches.** With `loader` from [cluster_loader()] or
 #' [saint_loader()], node tasks are trained on induced subgraphs; the loss
@@ -58,11 +59,13 @@
 #' @param batch_size Graphs per batch (graph tasks) or seeds per batch (node
 #'   tasks with `fanouts`).
 #' @param fanouts Neighbor sampling fanouts for node mini-batches. For a
-#'   homogeneous graph the full graph is never moved to the device: batches
-#'   are built one at a time, and validation runs in batches on all neighbor
-#'   subgraphs of the validation nodes with as many hops as `fanouts`, which
-#'   equals full graph validation for layers that aggregate incoming edges
-#'   (all [gnn_model()] architectures). For a heterogeneous node task they go to [sample_hetero_neighbors()] (a
+#'   homogeneous graph batches are built one at a time. Validation runs in
+#'   batches on all neighbor subgraphs of the validation nodes, as deep as
+#'   the model's receptive field ([gnn_model()]: `num_layers`;
+#'   [appnp_model()]: `K`; a custom module may set a `receptive_depth`
+#'   field), with full graph degrees, so it equals full graph validation
+#'   and the full graph never moves to the device. For other models
+#'   validation runs on the full graph. For a heterogeneous node task they go to [sample_hetero_neighbors()] (a
 #'   vector applied to every relation, or a named list per relation), with
 #'   training nodes of `target_type` as seeds; the loss uses the seeds only
 #'   and validation runs on the full graph.
@@ -370,14 +373,16 @@ node_task_runner <- function(model, data, task, dev, fanouts, batch_size, seed, 
   loader <- if (!is.null(fanouts)) {
     node_loader(data, which(data$train_mask), batch_size %||% 64L, fanouts, TRUE, seed)
   }
-  # With neighbor sampling the full graph never moves to the device:
-  # validation runs on exact all neighbor subgraphs of the validation nodes,
-  # as deep as the sampled training subgraphs, in batches.
-  val_loader <- if (!is.null(fanouts) && has_val) {
-    node_loader(data, which(data$val_mask), batch_size %||% 64L, rep(-1L, length(fanouts)),
-                FALSE, NULL)
+  # With neighbor sampling the full graph never moves to the device when
+  # the model's receptive depth is known: validation runs in batches on
+  # all neighbor subgraphs of the validation nodes that deep, which carry
+  # full graph degrees, so it equals full graph validation. Otherwise
+  # validation uses the full graph.
+  depth <- if (!is.null(fanouts) && has_val) exact_receptive_depth(model)
+  val_loader <- if (!is.null(depth)) {
+    node_loader(data, which(data$val_mask), batch_size %||% 64L, rep(-1L, depth), FALSE, NULL)
   }
-  tt <- if (is.null(fanouts)) graph_tensors(data, dev)
+  tt <- if (is.null(fanouts) || has_val && is.null(depth)) graph_tensors(data, dev)
   train_idx <- if (!is.null(tt)) tensor_which(tt$train_mask)
   val_idx <- if (!is.null(tt) && has_val) tensor_which(tt$val_mask)
   if (!is.null(subgraph_loader)) {
@@ -431,8 +436,9 @@ node_task_runner <- function(model, data, task, dev, fanouts, batch_size, seed, 
           outs[[length(outs) + 1L]] <<- model_forward(model, bt)$index_select(1L, seeds)$to(device = "cpu")
           targets[[length(targets) + 1L]] <<- bt$y$index_select(1L, seeds)$to(device = "cpu")
         })
-        out <- torch_cat(outs, dim = 1L)
-        target <- torch_cat(targets, dim = 1L)
+        # The loss runs on the training device (class weights live there).
+        out <- torch_cat(outs, dim = 1L)$to(device = dev)
+        target <- torch_cat(targets, dim = 1L)$to(device = dev)
         return(list(loss = as.numeric(loss_fn(out, target)$item()), metric = metric_fn(out, target)))
       }
       if (is.null(val_idx)) return(list())
@@ -524,7 +530,7 @@ graph_task_runner <- function(model, data, val_data, task, dev, batch_size, seed
   loader <- graph_loader(data, batch_size, TRUE, seed)
   # Validation graphs stay on the host; each batch moves to the device only
   # while it is evaluated.
-  val_loader <- if (!is.null(val_data)) {
+  val_loader <- if (length(val_data)) {
     graph_loader(as_graph_list(val_data, "val_data"), batch_size, FALSE)
   }
   metric_fn <- node_metric(classif)
@@ -556,8 +562,8 @@ graph_task_runner <- function(model, data, val_data, task, dev, batch_size, seed
         outs[[length(outs) + 1L]] <<- model_forward(model, bt)$to(device = "cpu")
         targets[[length(targets) + 1L]] <<- bt$graph_y$to(device = "cpu")
       })
-      out <- torch_cat(outs, dim = 1L)
-      target <- torch_cat(targets, dim = 1L)
+      out <- torch_cat(outs, dim = 1L)$to(device = dev)
+      target <- torch_cat(targets, dim = 1L)$to(device = dev)
       list(loss = as.numeric(loss_fn(out, target)$item()), metric = metric_fn(out, target))
     }
   )
@@ -809,4 +815,14 @@ link_schema <- function(data) {
   if (inherits(data, "hetero_link_split")) {
     data[c("relation", "src_type", "dst_type", "num_src", "num_dst")]
   }
+}
+
+# Message passing depth at which all neighbor subgraphs (with full graph
+# degrees) reproduce full graph outputs at their seeds; NULL when unknown.
+exact_receptive_depth <- function(model) {
+  d <- tryCatch(model$receptive_depth, error = function(e) NULL)
+  if (!is.null(d)) return(check_count(d, "receptive_depth", 1L))
+  if (inherits(model, "graph_model")) return(model$config$num_layers)
+  if (inherits(model, "appnp_model")) return(model$prop$K)
+  NULL
 }

@@ -141,7 +141,10 @@ as_undirected <- function(g) {
              node_ids = g$node_ids, node_type = g$node_type,
              edge_type = take_rows(g$edge_type, first), train_mask = g$train_mask,
              val_mask = g$val_mask, test_mask = g$test_mask, metadata = g$metadata)
-  for (f in names(masks)) out[[f]] <- masks[[f]]
+  # Masks were taken per kept input pair; spread them over the stored
+  # directions of each pair.
+  for (f in names(masks)) out[[f]] <- masks[[f]][out$edge_pair]
+  validate_graph(out)
   out
 }
 

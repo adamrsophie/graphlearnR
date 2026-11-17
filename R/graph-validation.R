@@ -71,6 +71,18 @@ validate_graph <- function(g) {
       add("`%s` must be a logical vector of length %d without NA.", m, n)
     }
   }
+  ne <- ncol(g$edge_index)
+  for (m in c("edge_train_mask", "edge_val_mask", "edge_test_mask")) {
+    v <- g[[m]]
+    if (is.null(v)) next
+    if (!is.logical(v) || length(v) != ne || anyNA(v)) {
+      add("`%s` must be a logical vector of length %d (stored edges) without NA.", m, ne)
+    } else if (!g$directed && length(g$edge_pair) == ne &&
+               any(tapply(v, g$edge_pair, function(z) length(unique(z)) > 1L))) {
+      # Both stored directions of an undirected pair belong to one split.
+      add("`%s` differs between the stored directions of an undirected pair.", m)
+    }
+  }
   for (msg in mask_overlaps(g, c("train_mask", "val_mask", "test_mask"))) add("%s", msg)
   for (msg in mask_overlaps(g, c("edge_train_mask", "edge_val_mask", "edge_test_mask"))) {
     add("%s", msg)
