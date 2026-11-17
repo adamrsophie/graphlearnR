@@ -112,9 +112,13 @@ one unit, so a held out link never stays in training as a duplicate.</p></li>
 use it for message passing during training <strong>and</strong> evaluation.</p></li>
 <li><p>Validation and test negatives are drawn once with
 <code><a href="negative_sampling.html">negative_sampling()</a></code>, excluding every positive edge of the full graph.
-Training negatives should be redrawn each epoch, excluding training
-positives only, which <code><a href="train_graph_model.html">train_graph_model()</a></code> does.</p></li>
-</ol><p>Positive pairs are returned once each, in one direction (as first given in
+Training negatives are redrawn each epoch by <code><a href="train_graph_model.html">train_graph_model()</a></code>,
+excluding training positives and every validation and test pair, so
+an evaluation pair is never trained as a negative.</p></li>
+</ol><p>Structural node features (degrees, positional encodings, metapaths)
+computed on <code>g</code> before splitting see the held out edges. Compute them on
+<code>train_graph</code> instead when held out links must stay hidden.</p>
+<p>Positive pairs are returned once each, in one direction (as first given in
 the input).</p>
     </div>
 

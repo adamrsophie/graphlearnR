@@ -46,10 +46,14 @@ An object of class `link_split` with `train_graph`, `train_pos`,
 3.  Validation and test negatives are drawn once with
     [`negative_sampling()`](https://adamrsophie.github.io/graphlearnR/reference/negative_sampling.md),
     excluding every positive edge of the full graph. Training negatives
-    should be redrawn each epoch, excluding training positives only,
-    which
-    [`train_graph_model()`](https://adamrsophie.github.io/graphlearnR/reference/train_graph_model.md)
-    does.
+    are redrawn each epoch by
+    [`train_graph_model()`](https://adamrsophie.github.io/graphlearnR/reference/train_graph_model.md),
+    excluding training positives and every validation and test pair, so
+    an evaluation pair is never trained as a negative.
+
+Structural node features (degrees, positional encodings, metapaths)
+computed on `g` before splitting see the held out edges. Compute them on
+`train_graph` instead when held out links must stay hidden.
 
 Positive pairs are returned once each, in one direction (as first given
 in the input).
