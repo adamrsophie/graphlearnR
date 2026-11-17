@@ -209,9 +209,11 @@ edge_subset <- function(g, cols) {
 split_edge_labels <- function(g, train = 0.6, val = 0.2, test = 0.2, seed = NULL) {
   if (is.null(g$edge_y)) stopf("The graph has no `edge_y` labels.")
   cols <- input_edge_columns(g)
-  ok <- !is.na(take_rows(g$edge_y, cols))
+  # A pair is eligible only when every stored direction is labeled.
+  ok <- !is.na(g$edge_y)
   if (is.matrix(ok)) ok <- rowSums(!ok) == 0L
-  pool <- cols[ok]
+  pair_ok <- tapply(ok, g$edge_pair, all)
+  pool <- cols[pair_ok[as.character(g$edge_pair[cols])]]
   sizes <- split_sizes(length(pool), train, val, test)
   with_optional_seed(seed, {
     perm <- pool[sample.int(length(pool))]

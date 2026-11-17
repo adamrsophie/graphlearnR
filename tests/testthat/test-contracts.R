@@ -1076,3 +1076,10 @@ test_that("group splits honor a zero test share and reject missing groups", {
   expect_equal(lengths(sp), c(train = 5L, val = 0L, test = 0L))
   expect_error(split_graphs(3, method = "group", groups = c(1, NA, 2)), "missing")
 })
+
+test_that("edge label splits skip pairs with any missing label", {
+  g <- graph_data(num_nodes = 2, edge_index = rbind(1, 2), directed = FALSE)
+  g$edge_y <- c(2, NA)
+  g <- split_edge_labels(g, train = 1, val = 0, test = 0)
+  expect_false(any(g$edge_train_mask))
+})
