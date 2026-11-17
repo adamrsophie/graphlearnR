@@ -49,9 +49,12 @@ over clusters, padding rows set to zero,
 the auxiliary link loss \eqn{\lVert A - S S^\top \rVert_F / (B L^2)} and
 entropy loss \eqn{\mathrm{mean}_i(-\sum_c S_{ic} \log S_{ic})}.
 
-\code{dense_graph_conv()} is \eqn{W_1 \tilde A X + W_2 X} on dense batches,
-\eqn{\tilde A} row normalized when \code{normalize = TRUE}; it is the GNN used on
-coarsened graphs.
+\code{dense_graph_conv()} is \eqn{W_1 \tilde A X + W_2 X} on dense batches. With
+\code{normalize = TRUE}, as PyG's \code{DenseGraphConv(aggr = "mean")}, each row of
+\eqn{A X} is divided by \eqn{\max(d_i, 1)}, \eqn{d_i} the row sum of
+\eqn{A}. For 0/1 adjacency this is the mean over neighbors; rows whose
+weighted degree is below 1 (common on coarsened graphs) are not scaled up,
+so they keep the weighted sum. It is the GNN used on coarsened graphs.
 
 Memory is \eqn{O(B L^2)}, so these suit batches of small graphs.
 }

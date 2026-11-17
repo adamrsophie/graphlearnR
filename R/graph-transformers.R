@@ -502,14 +502,23 @@ linear_attention <- nn_module(
     self$proj <- nn_linear(dim, dim)
     if (self$kernel == "favor") self$features <- nn_buffer(torch_randn(self$C, self$m))
   },
-  feature_map = function(x, is_query) {
+  feature_map = function(x, is_query, batch = NULL, G = 1L) {
     if (self$kernel == "elu") return(nnf_elu(x) + 1)
     x <- x / self$C^0.25
     proj <- torch_matmul(x, self$features)
     sq <- (x * x)$sum(dim = -1L, keepdim = TRUE) / 2
-    # Subtract a stabilizer that cancels in the ratio: per row for queries,
-    # one global constant for keys.
-    stab <- if (is_query) proj$amax(dim = -1L, keepdim = TRUE) else proj$max()
+    # Subtract a constant stabilizer that cancels in the ratio: per row for
+    # queries; per graph and head for keys, so one graph never changes
+    # another graph's result.
+    stab <- if (is_query) {
+      proj$amax(dim = -1L, keepdim = TRUE)$detach()
+    } else {
+      if (is.null(batch)) batch <- torch_ones(proj$size(1L), dtype = torch_long(), device = proj$device)
+      row <- proj$detach()$amax(dim = -1L)
+      if (row$dim() == 1L) row <- row$unsqueeze(2L)
+      scatter_max(row, batch, G)$index_select(1L, batch)$view(c(proj$size(1L), -1L, 1L))
+    }
+    if (proj$dim() == 2L && !is_query) stab <- stab$squeeze(-1L)
     torch_exp(proj - sq - stab) / sqrt(self$m) + 1e-6
   },
   forward = function(x, batch = NULL) {
@@ -521,7 +530,7 @@ linear_attention <- nn_module(
     G <- as.integer(batch$max()$item())
     qkv <- self$qkv(x)$view(c(n, 3L, H, C))
     pq <- self$feature_map(qkv[, 1L, , ], TRUE)
-    pk <- self$feature_map(qkv[, 2L, , ], FALSE)
+    pk <- self$feature_map(qkv[, 2L, , ], FALSE, batch, G)
     v <- qkv[, 3L, , ]
     if (H == 1L) {
       pq <- pq$view(c(n, 1L, -1L))

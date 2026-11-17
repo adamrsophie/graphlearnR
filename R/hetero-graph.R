@@ -210,7 +210,23 @@ add_reverse_relations <- function(hg, prefix = "rev_") {
     e <- hg$edges[[key]]
     if (!is.null(e$reverse) || !is.null(e$reverse_of)) next
     rkey <- paste(e$dst, paste0(prefix, e$rel), e$src, sep = "__")
-    if (rkey %in% names(hg$edges)) next
+    if (rkey %in% names(hg$edges)) {
+      # An existing reverse is paired only when it holds exactly the flipped
+      # edges, so link splits remove held out pairs from both relations.
+      r <- hg$edges[[rkey]]
+      if (!is.null(r$reverse) || !is.null(r$reverse_of)) {
+        stopf("Relation `%s` is already paired with another relation.", rkey)
+      }
+      pair_key <- function(ei) sort(paste(ei[1L, ], ei[2L, ]))
+      if (!identical(r$src, e$dst) || !identical(r$dst, e$src) ||
+          !identical(pair_key(r$edge_index), pair_key(e$edge_index[2:1, , drop = FALSE]))) {
+        stopf("Relation `%s` exists but is not the exact reverse of `%s`; rename or remove it, or use another `prefix`.",
+              rkey, key)
+      }
+      hg$edges[[rkey]]$reverse_of <- key
+      hg$edges[[key]]$reverse <- rkey
+      next
+    }
     hg$edges[[rkey]] <- list(src = e$dst, rel = paste0(prefix, e$rel), dst = e$src,
                              edge_index = e$edge_index[2:1, , drop = FALSE],
                              edge_attr = e$edge_attr, edge_weight = e$edge_weight,
@@ -312,15 +328,27 @@ to_homogeneous <- function(hg, target_type = NULL) {
     if (is.null(target_type)) return(NULL)
     v <- hg$nodes[[target_type]][[f]]
     if (is.null(v)) return(NULL)
+    rows <- ptr[[target_type]] + seq_len(n[[target_type]])
+    if (is.matrix(v)) {
+      out <- matrix(fill, sum(n), ncol(v), dimnames = list(NULL, colnames(v)))
+      storage.mode(out) <- storage.mode(v)
+      out[rows, ] <- v
+      return(out)
+    }
     out <- rep(fill, sum(n))
     if (is.factor(v)) out <- factor(out, levels = levels(v))
-    out[ptr[[target_type]] + seq_len(n[[target_type]])] <- v
+    out[rows] <- v
     out
   }
-  has_w <- all(vapply(hg$edges, function(e) !is.null(e$edge_weight), logical(1)))
+  # Relations without weights get unit weights when any relation is weighted.
+  has_w <- any(vapply(hg$edges, function(e) !is.null(e$edge_weight), logical(1)))
+  ew <- if (has_w) {
+    unlist(lapply(hg$edges, function(e) e$edge_weight %||% rep(1, ncol(e$edge_index))),
+           use.names = FALSE)
+  }
   new_graph_data(
     x = x, edge_index = ei, y = pick_target("y", NA),
-    edge_weight = if (has_w && length(keys)) unlist(lapply(hg$edges, `[[`, "edge_weight"), use.names = FALSE),
+    edge_weight = ew,
     num_nodes = sum(n), directed = TRUE,
     node_ids = seq_len(sum(n)),
     node_type = factor(rep(types, n), levels = types), edge_type = etype,

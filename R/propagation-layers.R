@@ -161,11 +161,11 @@ appnp_model <- nn_module(
 #'    \eqn{d} over the training degree histogram `deg`;
 #' 3. \eqn{x_i' = W_2 \, M [x_i \Vert \text{scaled aggregates}]}.
 #'
-#' The std aggregator is \eqn{\sqrt{\max(\mathrm{var}, 0) + 10^{-5}}}, so
-#' nodes without incoming edges, or with
-#' identical incoming messages, get \eqn{\sqrt{10^{-5}}} from it and zeros
-#' from every other aggregator. Other implementations may treat zero
-#' variance differently.
+#' The std aggregator is \eqn{\sqrt{\max(\mathrm{var}, 10^{-5})}}, set to 0
+#' where the variance is at most \eqn{10^{-5}}, as PyG's `StdAggregation`.
+#' Nodes without incoming edges, or with identical incoming messages, get 0
+#' from it, and zeros from every other aggregator when they have no
+#' incoming edges.
 #'
 #' `pna_degree()` computes the in degree histogram `deg` from training
 #' graphs: element \eqn{d + 1} counts nodes with in degree \eqn{d}.

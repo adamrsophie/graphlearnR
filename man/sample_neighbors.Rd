@@ -27,8 +27,13 @@ Samples the computation graph of a set of seed nodes, as in GraphSAGE
 \code{fanouts[k]} \strong{incoming} edges of every node reached in hop \code{k - 1}
 (hop 0 is the seed set); sources of the sampled edges join the subgraph.
 Messages in a GNN flow along these edges towards the seeds, so an
-\code{L} layer model with \code{L} fanouts sees exactly the information it would see
-on the full graph when every fanout is \code{-1} (all neighbors).
+\code{L} layer model with \code{L} fanouts sees the same edges into the seeds as on
+the full graph when every fanout is \code{-1} (all neighbors). Seed outputs then
+equal full graph outputs for layers that aggregate over incoming edges
+with target side normalization only (sum, mean or max aggregation, as in
+\code{"sage"}, \code{"gin"} and \code{"graph_conv"}). They differ for \code{"gcn"}, whose
+symmetric normalization uses the degree of source nodes, which is
+incomplete at the boundary of the sampled subgraph.
 }
 \details{
 The result is a \code{graph_data} object with local indices and these extra

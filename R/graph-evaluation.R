@@ -40,7 +40,30 @@
 #' @name metrics
 NULL
 
+# Rows of a score or probability matrix (or a vector) must match `truth`;
+# named columns are put in the order of the levels of a factor `truth`.
+check_scores <- function(truth, score) {
+  if (anyNA(truth)) stopf("`truth` has missing values.")
+  if (NROW(score) != length(truth)) {
+    stopf("`truth` has %d values but the scores have %d rows.", length(truth), NROW(score))
+  }
+  if (is.matrix(score)) {
+    if (!is.null(colnames(score)) && is.factor(truth)) {
+      if (!all(levels(truth) %in% colnames(score))) {
+        stopf("Score columns are named but do not cover the levels of `truth`.")
+      }
+      score <- score[, levels(truth), drop = FALSE]
+    } else if (ncol(score) < nlevels(as.factor(truth))) {
+      stopf("The scores have %d columns but `truth` has %d classes.", ncol(score),
+            nlevels(as.factor(truth)))
+    }
+  }
+  score
+}
+
 align_classes <- function(truth, estimate) {
+  check_same_length(truth, estimate)
+  if (anyNA(truth) || anyNA(estimate)) stopf("`truth` and `estimate` must not have missing values.")
   lv <- union(levels(as.factor(truth)), levels(as.factor(estimate)))
   list(t = factor(as.character(truth), levels = lv),
        e = factor(as.character(estimate), levels = lv))
@@ -49,6 +72,8 @@ align_classes <- function(truth, estimate) {
 #' @rdname metrics
 #' @export
 metric_accuracy <- function(truth, estimate) {
+  check_same_length(truth, estimate)
+  if (anyNA(truth) || anyNA(estimate)) stopf("`truth` and `estimate` must not have missing values.")
   mean(as.character(truth) == as.character(estimate))
 }
 
@@ -116,6 +141,7 @@ as_binary <- function(truth) {
 #' @rdname metrics
 #' @export
 metric_roc_auc <- function(truth, score) {
+  score <- check_scores(truth, score)
   if (is.matrix(score)) {
     truth <- as.factor(truth)
     if (ncol(score) == 2L && nlevels(truth) == 2L) {
@@ -138,6 +164,7 @@ metric_roc_auc <- function(truth, score) {
 #' @rdname metrics
 #' @export
 metric_average_precision <- function(truth, score) {
+  score <- check_scores(truth, score)
   if (is.matrix(score)) {
     # Binary: the second column scores the positive class. More classes:
     # macro average of one versus rest average precision over the classes
@@ -171,6 +198,7 @@ metric_average_precision <- function(truth, score) {
 #' @param bins Number of equal width bins.
 #' @export
 metric_ece <- function(truth, prob, bins = 10L) {
+  prob <- check_scores(truth, prob)
   if (!is.matrix(prob)) prob <- cbind(1 - prob, prob)
   truth <- as.integer(as.factor(truth))
   conf <- apply(prob, 1L, max)
@@ -185,6 +213,7 @@ metric_ece <- function(truth, prob, bins = 10L) {
 #' @rdname metrics
 #' @export
 metric_brier <- function(truth, prob) {
+  prob <- check_scores(truth, prob)
   if (!is.matrix(prob)) {
     return(mean((prob - as_binary(truth))^2))
   }

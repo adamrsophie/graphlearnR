@@ -19,6 +19,10 @@
 #'   one-hot degree columns to `x`.
 #' * `compose_transforms()`: chain transforms for [graph_dataset()].
 #'
+#' The edge level transforms (loops, coalescing, subgraphs, undirected
+#' conversion) reject a `graph_batch`, whose membership and offsets they
+#' would leave stale; transform the graphs before batching them.
+#'
 #' @param g A `graph_data` object.
 #' @return A `graph_data` object.
 #' @examples
@@ -37,12 +41,15 @@ NULL
 #'   `NA` marks them as untyped, which typed layers reject.
 #' @export
 add_self_loops <- function(g, fill_weight = 1, loop_type = NA) {
+  reject_batch(g, "add_self_loops")
   ei <- g$edge_index
   has <- logical(g$num_nodes)
   has[ei[1L, ei[1L, ] == ei[2L, ]]] <- TRUE
   new <- which(!has)
   if (!length(new)) return(g)
   k <- length(new)
+  # A non unit loop weight needs explicit unit weights on the existing edges.
+  if (is.null(g$edge_weight) && !isTRUE(all.equal(fill_weight, 1))) g$edge_weight <- rep(1, ncol(ei))
   g$edge_index <- cbind(ei, rbind(new, new, deparse.level = 0L))
   if (!is.null(g$edge_weight)) g$edge_weight <- c(g$edge_weight, rep(fill_weight, k))
   if (!is.null(g$edge_attr)) g$edge_attr <- rbind(g$edge_attr, matrix(0, k, ncol(g$edge_attr)))
@@ -61,6 +68,7 @@ add_self_loops <- function(g, fill_weight = 1, loop_type = NA) {
 #' @rdname graph-transforms
 #' @export
 remove_self_loops <- function(g) {
+  reject_batch(g, "remove_self_loops")
   keep <- which(g$edge_index[1L, ] != g$edge_index[2L, ])
   edge_subset(g, keep)
 }
@@ -68,6 +76,7 @@ remove_self_loops <- function(g) {
 #' @rdname graph-transforms
 #' @export
 coalesce_edges <- function(g) {
+  reject_batch(g, "coalesce_edges")
   ei <- g$edge_index
   if (!ncol(ei)) return(g)
   key <- paste(ei[1L, ], ei[2L, ])
@@ -87,6 +96,7 @@ coalesce_edges <- function(g) {
 #' @param nodes Integer node indices to keep.
 #' @export
 induced_subgraph <- function(g, nodes) {
+  reject_batch(g, "induced_subgraph")
   nodes <- as.integer(nodes)
   if (anyDuplicated(nodes) || any(nodes < 1L | nodes > g$num_nodes)) {
     stopf("`nodes` must be unique indices in 1:%d.", g$num_nodes)
@@ -106,12 +116,24 @@ induced_subgraph <- function(g, nodes) {
 #' @rdname graph-transforms
 #' @export
 as_undirected <- function(g) {
+  reject_batch(g, "as_undirected")
   if (!g$directed) return(g)
   ei <- g$edge_index
   lo <- pmin(ei[1L, ], ei[2L, ])
   hi <- pmax(ei[1L, ], ei[2L, ])
-  first <- which(!duplicated(paste(lo, hi)))
-  graph_data(x = g$x, edge_index = rbind(ei[1L, first], ei[2L, first]), y = g$y,
+  key <- paste(lo, hi)
+  first <- which(!duplicated(key))
+  # Edge split masks carry over when every direction of a pair agrees.
+  masks <- list()
+  for (f in c("edge_train_mask", "edge_val_mask", "edge_test_mask")) {
+    m <- g[[f]]
+    if (is.null(m)) next
+    if (any(tapply(m, key, function(v) length(unique(v)) > 1L))) {
+      stopf("`%s` differs between the two directions of a pair; split after `as_undirected()`.", f)
+    }
+    masks[[f]] <- m[first]
+  }
+  out <- graph_data(x = g$x, edge_index = rbind(ei[1L, first], ei[2L, first]), y = g$y,
              edge_attr = take_rows(g$edge_attr, first),
              edge_weight = take_rows(g$edge_weight, first),
              edge_y = take_rows(g$edge_y, first), graph_y = g$graph_y,
@@ -119,6 +141,15 @@ as_undirected <- function(g) {
              node_ids = g$node_ids, node_type = g$node_type,
              edge_type = take_rows(g$edge_type, first), train_mask = g$train_mask,
              val_mask = g$val_mask, test_mask = g$test_mask, metadata = g$metadata)
+  for (f in names(masks)) out[[f]] <- masks[[f]]
+  out
+}
+
+# Edge level transforms do not update batch membership and offsets.
+reject_batch <- function(g, fn) {
+  if (inherits(g, "graph_batch")) {
+    stopf("`%s()` does not support a graph_batch; transform the graphs before `graph_batch()`.", fn)
+  }
 }
 
 #' @rdname graph-transforms

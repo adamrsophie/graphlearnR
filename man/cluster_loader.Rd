@@ -77,7 +77,12 @@ normalization), where \eqn{p} are empirical inclusion frequencies.
 The trainer sums the per node loss of the training nodes in a batch,
 weighted by \code{node_norm}, for the built in losses and for loss functions
 with a \code{reduction} argument; in expectation this is the mean loss over
-all nodes of the graph.
+all nodes of the graph. The edge correction makes the sampled
+aggregation an unbiased estimate of a full graph weighted \strong{sum} over
+incoming edges, so use a layer that sums weighted messages
+(\code{gnn_model("graph_conv")}, or \code{"gcn"}, which renormalizes the weights
+it receives); a mean aggregator (the default of \code{"sage"}) divides again
+by the random sampled degree and loses that property.
 }
 
 Batches are drawn in R on the CPU.

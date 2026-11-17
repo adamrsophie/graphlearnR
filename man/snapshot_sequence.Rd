@@ -14,7 +14,8 @@ snapshot_sequence(
 temporal_snapshots(tg, breaks = 10L, cumulative = FALSE)
 }
 \arguments{
-\item{graphs}{List of \code{graph_data} objects with equal \code{num_nodes}.}
+\item{graphs}{List of \code{graph_data} objects on the same nodes: equal
+\code{num_nodes} and identical \code{node_ids} in the same order.}
 
 \item{start, end}{Interval bounds per snapshot.}
 

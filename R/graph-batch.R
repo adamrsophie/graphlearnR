@@ -73,7 +73,14 @@ graph_batch <- function(graphs) {
   }))
   pick <- function(f) lapply(graphs, `[[`, f)
   graph_attr <- pick("graph_attr")
-  graph_attr <- if (!all(vapply(graph_attr, is.null, logical(1)))) do.call(rbind, graph_attr)
+  if (!all(vapply(graph_attr, is.null, logical(1)))) {
+    if (length(unique(vapply(graph_attr, length, integer(1)))) > 1L) {
+      stopf("`graph_attr` has different lengths across graphs.")
+    }
+    graph_attr <- do.call(rbind, graph_attr)
+  } else {
+    graph_attr <- NULL
+  }
   graph_y <- stack_graph_labels(pick("graph_y"))
 
   b <- new_graph_data(

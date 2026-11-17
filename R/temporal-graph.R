@@ -204,7 +204,8 @@ temporal_neighbors <- function(tg, nodes, times, k = 10L, strict = TRUE,
 #' on the right), or with `cumulative = TRUE` all events with
 #' `t < breaks[k + 1]`. Repeated interactions become edge weights (counts).
 #'
-#' @param graphs List of `graph_data` objects with equal `num_nodes`.
+#' @param graphs List of `graph_data` objects on the same nodes: equal
+#'   `num_nodes` and identical `node_ids` in the same order.
 #' @param start,end Interval bounds per snapshot.
 #' @return An object of class `snapshot_sequence`.
 #' @examples
@@ -215,6 +216,12 @@ temporal_neighbors <- function(tg, nodes, times, k = 10L, strict = TRUE,
 snapshot_sequence <- function(graphs, start = seq_along(graphs) - 1, end = seq_along(graphs)) {
   n <- vapply(graphs, num_nodes, integer(1))
   if (length(unique(n)) > 1L) stopf("All snapshots must have the same number of nodes.")
+  # Recurrent state is carried by row, so every snapshot must list the same
+  # nodes in the same order.
+  ids <- lapply(graphs, function(g) g$node_ids %||% seq_len(num_nodes(g)))
+  if (length(ids) > 1L && !all(vapply(ids[-1L], identical, logical(1), ids[[1L]]))) {
+    stopf("All snapshots must have the same `node_ids` in the same order.")
+  }
   if (is.unsorted(start)) stopf("Snapshots must be in time order.")
   structure(list(graphs = graphs, start = as.numeric(start), end = as.numeric(end),
                  num_nodes = n[1L]), class = "snapshot_sequence")
@@ -284,10 +291,16 @@ spatiotemporal_signal <- function(graph, features, targets = NULL, times = NULL)
   if (length(dim(features)) != 3L || dim(features)[2L] != graph$num_nodes) {
     stopf("`features` must be a T by N by F array with N = %d.", graph$num_nodes)
   }
-  targets <- targets %||% features[, , 1L]
-  if (!is.matrix(targets)) targets <- matrix(targets, nrow = dim(features)[1L])
-  structure(list(graph = graph, features = features, targets = targets,
-                 times = times %||% seq_len(dim(features)[1L])),
+  steps <- dim(features)[1L]
+  targets <- targets %||% matrix(features[, , 1L], nrow = steps)
+  if (!is.matrix(targets) || !identical(dim(targets), c(steps, graph$num_nodes))) {
+    stopf("`targets` must be a %d by %d matrix (steps by nodes).", steps, graph$num_nodes)
+  }
+  times <- times %||% seq_len(steps)
+  if (length(times) != steps || anyNA(times) || is.unsorted(times, strictly = TRUE)) {
+    stopf("`times` must hold %d strictly increasing time stamps.", steps)
+  }
+  structure(list(graph = graph, features = features, targets = targets, times = times),
             class = "spatiotemporal_signal")
 }
 
@@ -473,7 +486,13 @@ train_spatiotemporal_model <- function(signal, lags = 4L, horizon = 1L, hidden_d
                                        seed = NULL, device = NULL) {
   dev <- resolve_device(device)
   if (!is.null(seed)) torch_manual_seed(seed)
+  lags <- check_count(lags, "lags", 1L)
+  horizon <- check_count(horizon, "horizon", 1L)
+  if (!is.numeric(train) || !is.numeric(val) || train <= 0 || val < 0 || train + val >= 1) {
+    stopf("`train` must be positive, `val` non-negative, and `train + val` below 1.")
+  }
   steps <- dim(signal$features)[1L]
+  if (steps - horizon < lags) stopf("Too few time steps for lags = %d and horizon = %d.", lags, horizon)
   ends <- seq.int(lags, steps - horizon)
   if (length(ends) < 3L) stopf("Too few time steps for lags = %d and horizon = %d.", lags, horizon)
   n_tr <- floor(train * length(ends))
@@ -485,6 +504,7 @@ train_spatiotemporal_model <- function(signal, lags = 4L, horizon = 1L, hidden_d
   purge <- function(a, b) if (length(b)) a[a + horizon <= min(b)] else a
   sets$val <- purge(sets$val, sets$test)
   sets$train <- purge(sets$train, if (length(sets$val)) sets$val else sets$test)
+  if (!length(sets$train)) stopf("No training windows remain after purging; use more time steps.")
   tt <- graph_tensors(signal$graph, dev)
   model <- temporal_gnn_model(dim(signal$features)[3L], hidden_dim, 1L)
   model$to(device = dev)
@@ -507,7 +527,8 @@ train_spatiotemporal_model <- function(signal, lags = 4L, horizon = 1L, hidden_d
   history <- data.frame(epoch = integer(), train_loss = numeric(), val_loss = numeric())
   for (ep in seq_len(epochs)) {
     model$train()
-    order_tr <- with_optional_seed(if (is.null(seed)) NULL else seed + ep, sample(sets$train))
+    order_tr <- with_optional_seed(if (is.null(seed)) NULL else seed + ep,
+                                   sets$train[sample.int(length(sets$train))])
     losses <- vapply(order_tr, function(e) {
       opt$zero_grad()
       loss <- nnf_mse_loss(run(e), target(e))

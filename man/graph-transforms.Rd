@@ -77,6 +77,10 @@ enters preprocessing.
 one-hot degree columns to \code{x}.
 \item \code{compose_transforms()}: chain transforms for \code{\link[=graph_dataset]{graph_dataset()}}.
 }
+
+The edge level transforms (loops, coalescing, subgraphs, undirected
+conversion) reject a \code{graph_batch}, whose membership and offsets they
+would leave stale; transform the graphs before batching them.
 }
 \examples{
 g <- graph_data(x = diag(3), edge_index = rbind(c(1, 1, 2), c(2, 2, 3)))

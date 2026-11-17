@@ -94,7 +94,9 @@ pg_explainer <- function(model, data, targets = NULL, hidden = 64L, epochs = 30L
   epochs <- check_count(epochs, "epochs", 1L)
   ent <- function(p) (-p * torch_log(p + 1e-15) - (1 - p) * torch_log(1 - p + 1e-15))$mean()
   history <- numeric(epochs)
-  for (ep in seq_len(epochs)) {
+  # `seed` fixes both the torch draws and the R order of instances, without
+  # changing the caller's R random number stream.
+  with_optional_seed(seed, for (ep in seq_len(epochs)) {
     tau <- temperature[1L] * (temperature[2L] / temperature[1L])^((ep - 1) / max(1, epochs - 1))
     tot <- 0
     for (ins in inst[sample.int(length(inst))]) {
@@ -118,7 +120,7 @@ pg_explainer <- function(model, data, targets = NULL, hidden = 64L, epochs = 30L
       tot <- tot + as.numeric(loss$item())
     }
     history[ep] <- tot / length(inst)
-  }
+  })
   mlp$eval()
   structure(list(mlp = mlp, model = m, graph_level = graph_level, history = history,
                  device = dev),
@@ -156,18 +158,20 @@ predict.pg_explainer <- function(object, g, target = NULL, ...) {
             class = "graph_explanation")
 }
 
-# Edge masks act through edge_weight; refuse models that ignore it. Every
-# other edge is halved, since a uniform scale is invisible to layers that
-# normalize edge weights.
+# Edge masks act through edge_weight; refuse models that ignore it. Two
+# probes halve alternating edges (one edge: halve it), since a uniform scale
+# is invisible to layers that normalize edge weights. Unchanged outputs
+# under both probes are taken as no dependence; a model could still depend
+# on weights in ways these probes miss.
 check_edge_weight_use <- function(model, tt, w0, full) {
   ne <- tt$edge_index$size(2L)
   if (ne == 0L) return(invisible())
-  scale <- torch_tensor(rep_len(c(1, 0.5), ne), dtype = w0$dtype, device = w0$device)
-  half <- with_no_grad(forward_with(model, tt, edge_weight = w0 * scale))
-  if (as.logical(torch_allclose(full, half))) {
-    stopf("The model's output does not depend on `edge_weight`, so an edge mask can not explain it.")
+  for (pat in list(c(0.5, 1), c(1, 0.5))) {
+    scale <- torch_tensor(rep_len(pat, ne), dtype = w0$dtype, device = w0$device)
+    half <- with_no_grad(forward_with(model, tt, edge_weight = w0 * scale))
+    if (!as.logical(torch_allclose(full, half))) return(invisible())
   }
-  invisible()
+  stopf("The model's output does not change when `edge_weight` is scaled, so an edge mask can not explain it.")
 }
 
 #' Subgraph explanations by Monte Carlo tree search (SubgraphX)

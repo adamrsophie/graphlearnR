@@ -225,8 +225,11 @@ dataset_synthetic_graphs <- function(n = 100L, min_nodes = 5L, max_nodes = 12L,
                                      task = c("classification", "regression"),
                                      seed = NULL) {
   task <- match.arg(task)
+  min_nodes <- check_count(min_nodes, "min_nodes", 3L)
+  max_nodes <- check_count(max_nodes, "max_nodes", min_nodes)
   with_optional_seed(seed, {
-    sizes <- sample(min_nodes:max_nodes, n, replace = TRUE)
+    cand <- min_nodes:max_nodes
+    sizes <- cand[sample.int(length(cand), n, replace = TRUE)]
     kind <- sample(c("cycle", "wheel"), n, replace = TRUE)
   })
   lapply(seq_len(n), function(i) {

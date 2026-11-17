@@ -5,8 +5,13 @@
 #' `fanouts[k]` **incoming** edges of every node reached in hop `k - 1`
 #' (hop 0 is the seed set); sources of the sampled edges join the subgraph.
 #' Messages in a GNN flow along these edges towards the seeds, so an
-#' `L` layer model with `L` fanouts sees exactly the information it would see
-#' on the full graph when every fanout is `-1` (all neighbors).
+#' `L` layer model with `L` fanouts sees the same edges into the seeds as on
+#' the full graph when every fanout is `-1` (all neighbors). Seed outputs then
+#' equal full graph outputs for layers that aggregate over incoming edges
+#' with target side normalization only (sum, mean or max aggregation, as in
+#' `"sage"`, `"gin"` and `"graph_conv"`). They differ for `"gcn"`, whose
+#' symmetric normalization uses the degree of source nodes, which is
+#' incomplete at the boundary of the sampled subgraph.
 #'
 #' The result is a `graph_data` object with local indices and these extra
 #' fields:
@@ -310,9 +315,17 @@ negative_sampling <- function(exclude, num_nodes = NULL, num_samples,
         v <- pmax(u, v)
         u <- lo
       }
-      ok <- if (allow_self_loops) rep(TRUE, m) else u != v
+      # Folding (u, v) and (v, u) onto one pair doubles the chance of every
+      # pair except loops; keeping half of the other pairs restores
+      # uniformity.
+      ok <- if (!allow_self_loops) u != v
+            else if (!directed) u == v | stats::runif(m) < 0.5
+            else rep(TRUE, m)
       k <- key(u, v)
-      ok <- ok & !(k %in% seen) & !duplicated(k)
+      ok <- ok & !(k %in% seen)
+      # Repeats count only among accepted draws; a rejected draw must not
+      # block a later accepted copy of the same pair.
+      ok[ok] <- !duplicated(k[ok])
       u <- u[ok][seq_len(min(sum(ok), need))]
       v <- v[ok][seq_len(min(sum(ok), need))]
       seen <- c(seen, key(u, v))

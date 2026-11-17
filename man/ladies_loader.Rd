@@ -48,9 +48,14 @@ The batch is one \code{graph_data} subgraph that holds the edges of all
 layers together (with the weight of the first layer that kept an edge),
 so it works with any model in \code{\link[=train_graph_model]{train_graph_model()}}; this is a common
 simplification of the layer by layer bipartite blocks of the paper.
-Models should read \code{edge_weight} (for example \code{gnn_model("sage")} or
-\code{gnn_model("graph")}; \code{gcn_conv} normalizes the weights again). Only the
-seeds carry \code{train_mask}, so the loss uses the seeds only.
+The weights of the incoming edges of each target sum to one, so they
+already define a weighted mean: use a model that \strong{sums} weighted
+messages, such as \code{gnn_model("graph_conv")}. A mean aggregator (the
+default of \code{"sage"}) divides by the sampled count a second time, and
+\code{gcn_conv} renormalizes the weights again. Validation and prediction run
+on the full graph with its own edge weights, so the operator seen in
+training approximates, but is not identical to, the one used there. Only
+the seeds carry \code{train_mask}, so the loss uses the seeds only.
 }
 \examples{
 g <- split_nodes(dataset_karate(), seed = 1)

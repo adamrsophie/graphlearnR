@@ -46,11 +46,13 @@ information available at the prediction time.
 \item \strong{TGN} (\code{\link[=train_tgn]{train_tgn()}}): scores candidate pairs \code{pairs} at times
 \code{time}. The fit keeps the memory, last update times and neighbor store
 after all training, validation and test events. Events observed since
-then can be given as \code{new_data} (a \code{temporal_graph_data} with times at
-or after the last event of the fit); they update the state first, in
-the same batches as during training, and no score uses an event at or
-after its own time. Prediction times must not precede the last
-observed event.
+then can be given as \code{new_data} (a \code{temporal_graph_data} with times
+strictly after the last event of the fit, so a group of events with one
+time stamp is never split); they update the state first, in the same
+batches as during training. Prediction times must be strictly after
+the last observed event, because the memory and neighbor store already
+contain every observed event: no score uses an event at or after its
+own time.
 \item \strong{Dynamic link prediction} (\code{\link[=train_dynamic_link_model]{train_dynamic_link_model()}}): scores
 \code{pairs} as links of snapshot \code{step} of \code{new_data} (a
 \code{snapshot_sequence}), from the recurrent state built on snapshots

@@ -146,10 +146,11 @@ split_edges <- function(g, val = 0.1, test = 0.1, neg_ratio = 1, seed = NULL) {
     val_pos <- pick(2L)
     test_pos <- pick(3L)
     neg_seed <- if (is.null(seed)) NULL else seed + 1L
-    neg <- negative_sampling(pairs, num_nodes = g$num_nodes,
-                             num_samples = ceiling(neg_ratio * (ncol(val_pos) + ncol(test_pos))),
-                             directed = g$directed, seed = neg_seed)
+    # Round per split, so neither evaluation split is left without negatives.
     nv <- ceiling(neg_ratio * ncol(val_pos))
+    nt <- ceiling(neg_ratio * ncol(test_pos))
+    neg <- negative_sampling(pairs, num_nodes = g$num_nodes, num_samples = nv + nt,
+                             directed = g$directed, seed = neg_seed)
   })
   keep_pairs <- which(which_set == 1L)
   stored_key <- pair_keys(g$edge_index, symmetric = !g$directed)
@@ -259,6 +260,10 @@ split_graphs <- function(n, train = 0.8, val = 0.1, test = 0.1,
   if (method != "random") {
     if (is.null(groups) || length(groups) != n) {
       stopf("`groups` must give one group per graph for method \"%s\".", method)
+    }
+    p <- c(train, val, test)
+    if (any(!is.finite(p)) || any(p < 0) || any(p > 1) || sum(p) > 1 + 1e-8) {
+      stopf("Group and scaffold splits need proportions in [0, 1] that sum to at most 1.")
     }
     grp <- split(seq_len(n), groups)
     if (method == "scaffold") {

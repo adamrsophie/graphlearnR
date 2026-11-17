@@ -55,7 +55,8 @@ scatter_sum <- function(src, index, dim_size) {
   index <- as_index_tensor(index, src$device)
   with_2d(src, function(s) {
     out <- torch_zeros(dim_size, s$size(2L), dtype = s$dtype, device = s$device)
-    if (index$numel() == 0L) out else out$index_add(1L, index, s)
+    # With no entries, keep a (zero) dependency on `src` so autograd works.
+    if (index$numel() == 0L) out + s$sum() * 0 else out$index_add(1L, index, s)
   })
 }
 
@@ -82,7 +83,7 @@ scatter_extreme <- function(src, index, dim_size, reduce) {
   with_2d(src, function(s) {
     out <- torch_zeros(dim_size, s$size(2L), dtype = s$dtype, device = s$device)
     if (index$numel() == 0L) {
-      return(out)
+      return(out + s$sum() * 0)
     }
     idx <- index$unsqueeze(2L)$expand(c(-1L, s$size(2L)))
     out$scatter_reduce(1L, idx, s, reduce = reduce, include_self = FALSE)
@@ -102,10 +103,13 @@ scatter_min <- function(src, index, dim_size) scatter_extreme(src, index, dim_si
 scatter_std <- function(src, index, dim_size, eps = 1e-5) {
   index <- as_index_tensor(index, src$device)
   mean <- scatter_mean(src, index, dim_size)
-  sq <- scatter_mean(src * src, index, dim_size)
+  # Two pass (centered) variance: E[x^2] - E[x]^2 cancels catastrophically
+  # for values far from zero in single precision.
+  centered <- src - mean$index_select(1L, index)
+  var <- scatter_mean(centered * centered, index, dim_size)
   # As PyTorch Geometric's StdAggregation: clamp the variance at eps, then
   # report 0 where the clamp was active (empty groups, constant groups).
-  out <- (sq - mean * mean)$clamp(min = eps)$sqrt()
+  out <- var$clamp(min = eps)$sqrt()
   out$masked_fill(out <= sqrt(eps), 0)
 }
 
@@ -129,6 +133,9 @@ scatter_softmax <- function(src, index, dim_size) {
 #' @export
 scatter_aggregate <- function(src, index, dim_size, aggr = "sum") {
   if (length(aggr) > 1L) {
+    # A vector input is one feature: keep it as a column so the reductions
+    # stack side by side.
+    if (src$dim() == 1L) src <- src$unsqueeze(2L)
     return(torch_cat(lapply(aggr, function(a) {
       scatter_aggregate(src, index, dim_size, a)
     }), dim = -1L))

@@ -25,7 +25,12 @@
 #'   The trainer sums the per node loss of the training nodes in a batch,
 #'   weighted by `node_norm`, for the built in losses and for loss functions
 #'   with a `reduction` argument; in expectation this is the mean loss over
-#'   all nodes of the graph.
+#'   all nodes of the graph. The edge correction makes the sampled
+#'   aggregation an unbiased estimate of a full graph weighted **sum** over
+#'   incoming edges, so use a layer that sums weighted messages
+#'   (`gnn_model("graph_conv")`, or `"gcn"`, which renormalizes the weights
+#'   it receives); a mean aggregator (the default of `"sage"`) divides again
+#'   by the random sampled degree and loses that property.
 #'
 #' Batches are drawn in R on the CPU.
 #'
@@ -209,9 +214,14 @@ print.subgraph_loader <- function(x, ...) {
 #' layers together (with the weight of the first layer that kept an edge),
 #' so it works with any model in [train_graph_model()]; this is a common
 #' simplification of the layer by layer bipartite blocks of the paper.
-#' Models should read `edge_weight` (for example `gnn_model("sage")` or
-#' `gnn_model("graph")`; `gcn_conv` normalizes the weights again). Only the
-#' seeds carry `train_mask`, so the loss uses the seeds only.
+#' The weights of the incoming edges of each target sum to one, so they
+#' already define a weighted mean: use a model that **sums** weighted
+#' messages, such as `gnn_model("graph_conv")`. A mean aggregator (the
+#' default of `"sage"`) divides by the sampled count a second time, and
+#' `gcn_conv` renormalizes the weights again. Validation and prediction run
+#' on the full graph with its own edge weights, so the operator seen in
+#' training approximates, but is not identical to, the one used there. Only
+#' the seeds carry `train_mask`, so the loss uses the seeds only.
 #'
 #' @param g A `graph_data` object with `train_mask` (training passes its
 #'   own masks to the loader).
@@ -303,4 +313,15 @@ loader_batches.ladies_loader <- function(loader, epoch = 1L) {
   lapply(seq_along(parts), function(i) {
     with_optional_seed(seeds[i], ladies_batch(loader, ids[parts[[i]]]))
   })
+}
+
+#' @export
+length.cluster_loader <- function(x) as.integer(ceiling(length(x$parts) / x$clusters_per_batch))
+
+#' @export
+length.saint_loader <- function(x) as.integer(x$num_steps)
+
+#' @export
+length.ladies_loader <- function(x) {
+  as.integer(ceiling(sum(x$graph$train_mask %||% logical()) / x$batch_size))
 }

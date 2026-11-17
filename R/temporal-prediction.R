@@ -6,11 +6,13 @@
 #' * **TGN** ([train_tgn()]): scores candidate pairs `pairs` at times
 #'   `time`. The fit keeps the memory, last update times and neighbor store
 #'   after all training, validation and test events. Events observed since
-#'   then can be given as `new_data` (a `temporal_graph_data` with times at
-#'   or after the last event of the fit); they update the state first, in
-#'   the same batches as during training, and no score uses an event at or
-#'   after its own time. Prediction times must not precede the last
-#'   observed event.
+#'   then can be given as `new_data` (a `temporal_graph_data` with times
+#'   strictly after the last event of the fit, so a group of events with one
+#'   time stamp is never split); they update the state first, in the same
+#'   batches as during training. Prediction times must be strictly after
+#'   the last observed event, because the memory and neighbor store already
+#'   contain every observed event: no score uses an event at or after its
+#'   own time.
 #' * **Dynamic link prediction** ([train_dynamic_link_model()]): scores
 #'   `pairs` as links of snapshot `step` of `new_data` (a
 #'   `snapshot_sequence`), from the recurrent state built on snapshots
@@ -57,8 +59,8 @@ predict.temporal_fit <- function(object, new_data = NULL, pairs = NULL, time = N
     last <- object$last_time
     if (!is.null(new_data)) {
       if (!inherits(new_data, "temporal_graph_data")) stopf("`new_data` must be a temporal_graph_data.")
-      if (length(new_data$t) && min(new_data$t) < last) {
-        stopf("`new_data` events must not precede the last event of the fit (time %s).", format(last))
+      if (length(new_data$t) && min(new_data$t) <= last) {
+        stopf("`new_data` events must come strictly after the last event of the fit (time %s); earlier or equal times would precede the stored state.", format(last))
       }
       if (model$edge_dim > 0L && length(new_data$t) && is.null(new_data$edge_attr)) {
         stopf("The model expects event features.")
@@ -66,14 +68,16 @@ predict.temporal_fit <- function(object, new_data = NULL, pairs = NULL, time = N
       state <- tgn_absorb(model, state, new_data, object$batch_size %||% 200L)
       if (length(new_data$t)) last <- max(new_data$t)
     }
-    if (any(time < last)) stopf("Prediction times must not precede the last observed event (time %s).", format(last))
+    if (any(time <= last)) {
+      stopf("Prediction times must come strictly after the last observed event (time %s); an equal time would see that event, and earlier times would precede it.", format(last))
+    }
     s <- with_no_grad({
       cur <- if (is.null(state$pending)) list(mem = state$mem, last_t = state$last_t)
              else model$update_memory(state$mem, state$last_t, state$pending)
       q <- c(pairs[1L, ], pairs[2L, ])
       nb <- if (model$embedding != "time") tgn_store_query(state$store, q)
       z <- model$embed(cur$mem, cur$last_t, q, c(time, time), nb, state$store)
-      model$score(z[seq_len(k), ], z[k + seq_len(k), ])
+      model$score(z$narrow(1L, 1L, k), z$narrow(1L, k + 1L, k))
     })
     return(link_out(as.vector(as_r_array(s))))
   }

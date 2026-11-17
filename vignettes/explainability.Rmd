@@ -112,7 +112,27 @@ the training nodes and then applied to node 1.
 pg <- pg_explainer(fit, g, epochs = 20, edge_size = 0.05, seed = 1)
 px <- predict(pg, g, target = 1)
 head(px$edges[order(-px$edges$attribution), ])
+range(px$edges$attribution)
 ```
+
+The mask values are all close to zero. That is the answer to the question
+PGExplainer asks (the smallest set of edges that keeps the prediction), not a
+failure: with one-hot node features this model has memorized the nodes, and
+it predicts the same class for every node even with all edges removed.
+
+```{r}
+tt <- graph_tensors(g)
+m <- fit$model
+m$eval()
+full <- with_no_grad(m(tt$x, tt$edge_index))
+no_edges <- with_no_grad(m(tt$x, tt$edge_index, edge_weight = torch_zeros(num_edges(g))))
+mean(as.integer(full$argmax(dim = 2)) == as.integer(no_edges$argmax(dim = 2)))
+```
+
+Only the order of the mask values carries information here, which is what
+`explanation_fidelity()` below uses. On a model whose predictions need the
+graph, the mask separates the edges that matter; the tests of the package
+check that it recovers the one path that carries the signal in a toy graph.
 
 ### SubgraphX
 

@@ -156,6 +156,38 @@ First release.
   `batch_size`, `loader`), and `write_graph_dataset()` will not mix files
   with an existing dataset unless `overwrite = TRUE`.
 - Downloads without a recorded checksum warn; OGB archives use https.
+- `add_reverse_relations()` pairs an existing relation that is the exact
+  reverse (so link splits remove held out pairs from both) and refuses one
+  that is not.
+- `to_homogeneous()` keeps matrix targets and fills unit weights for
+  unweighted relations when another relation is weighted.
+- `add_self_loops()` honors a non unit `fill_weight` on unweighted graphs;
+  `as_undirected()` keeps edge split masks; edge level transforms reject a
+  `graph_batch`; `graph_batch()` rejects `graph_attr` of unequal length.
+- Undirected negative sampling with self loops is uniform over pairs.
+- Group and scaffold splits validate proportions; `split_edges()` rounds the
+  negatives of each evaluation split separately.
+- `dataset_synthetic_graphs()` honors equal `min_nodes` and `max_nodes`;
+  cluster, GraphSAINT and LADIES loaders report their number of batches.
+- Classification metrics reject inputs of different lengths or with missing
+  values, and match named probability columns to the class levels.
+- `spatiotemporal_signal()` checks target and time stamp shapes, and
+  `snapshot_sequence()` requires one node order across snapshots.
+  Spatiotemporal training works with a single training origin.
+- TGN predictions score a single pair, and prediction times and new events
+  must come strictly after the last observed event.
+- A subgraph loader must be built on the same graph (edges and weights) as
+  the training data, whose features it uses.
+- `scatter_std()` uses a centered two pass variance; reductions over no
+  entries keep gradients; vector input to several aggregations gives one
+  column per aggregation.
+- Performer attention stabilizes keys per graph and head, so graphs in a
+  batch do not affect each other.
+- Explainers probe edge weight use with two perturbations, so one edge
+  graphs work; `pg_explainer(seed = )` also fixes the R order of instances
+  without changing the caller's random number stream.
+- Documentation of all neighbor sampling exactness, sampler weights,
+  `dense_graph_conv()` normalization and PNA's std aggregator was corrected.
 
 ## Sibling packages (optional)
 
