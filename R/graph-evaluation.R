@@ -41,7 +41,9 @@
 NULL
 
 # Rows of a score or probability matrix (or a vector) must match `truth`;
-# named columns are put in the order of the levels of a factor `truth`.
+# named columns are put in the order of the levels of a factor `truth`,
+# followed by any predicted classes that are not levels of `truth`, so no
+# probability mass is dropped.
 check_scores <- function(truth, score) {
   if (anyNA(truth)) stopf("`truth` has missing values.")
   if (NROW(score) != length(truth)) {
@@ -52,7 +54,7 @@ check_scores <- function(truth, score) {
       if (!all(levels(truth) %in% colnames(score))) {
         stopf("Score columns are named but do not cover the levels of `truth`.")
       }
-      score <- score[, levels(truth), drop = FALSE]
+      score <- score[, c(levels(truth), setdiff(colnames(score), levels(truth))), drop = FALSE]
     } else if (ncol(score) < nlevels(as.factor(truth))) {
       stopf("The scores have %d columns but `truth` has %d classes.", ncol(score),
             nlevels(as.factor(truth)))

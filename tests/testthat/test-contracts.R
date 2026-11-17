@@ -483,3 +483,16 @@ test_that("FAVOR+ attention has exact gradients and stays independent across gra
     expect_equal(as_r_array(xb$grad)[b == k, ], as_r_array(xs$grad), tolerance = 1e-10)
   }
 })
+
+test_that("probability metrics keep predicted classes absent from the truth levels", {
+  truth <- factor(c("a", "b"))
+  p <- rbind(c(.2, .1, .7), c(.1, .2, .7))
+  colnames(p) <- c("a", "b", "c")
+  expect_equal(metric_brier(truth, p), 1.14)
+  expect_equal(metric_ece(truth, p), 0.7)
+  q <- p[, c("c", "b", "a")]
+  expect_equal(metric_brier(truth, q), 1.14)
+  expect_equal(metric_ece(truth, q), 0.7)
+  expect_equal(metric_brier(factor(c("a", "b"), levels = c("a", "b", "c")), p), 1.14)
+  expect_equal(metric_brier(c(1L, 2L), unname(p)), 1.14)
+})
