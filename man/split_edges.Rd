@@ -34,9 +34,14 @@ one unit, so a held out link never stays in training as a duplicate.
 use it for message passing during training \strong{and} evaluation.
 \item Validation and test negatives are drawn once with
 \code{\link[=negative_sampling]{negative_sampling()}}, excluding every positive edge of the full graph.
-Training negatives should be redrawn each epoch, excluding training
-positives only, which \code{\link[=train_graph_model]{train_graph_model()}} does.
+Training negatives are redrawn each epoch by \code{\link[=train_graph_model]{train_graph_model()}},
+excluding training positives and every validation and test pair, so
+an evaluation pair is never trained as a negative.
 }
+
+Structural node features (degrees, positional encodings, metapaths)
+computed on \code{g} before splitting see the held out edges. Compute them on
+\code{train_graph} instead when held out links must stay hidden.
 
 Positive pairs are returned once each, in one direction (as first given in
 the input).

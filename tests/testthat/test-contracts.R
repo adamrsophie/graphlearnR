@@ -709,7 +709,6 @@ test_that("metrics handle large sizes, named columns for any truth type and bad 
   expect_equal(metric_brier(c(0, 1), q), .02)
   expect_error(metric_hits_at_k(NA_real_, numeric(), 1), "missing")
   expect_error(metric_hits_at_k(0, c(NA_real_, 1), 2), "missing")
-  expect_error(metric_ari(1, 1), "at least two")
 })
 
 test_that("scatter extremes, weighted vector messages and GCN normalization edge cases", {
@@ -1251,4 +1250,10 @@ test_that("graph regression reports exact losses on disjoint graph lists", {
   expect_equal(fit$history$val_loss[1], 4, tolerance = 1e-6)
   ev <- evaluate_graph_model(fit, mk(3, 2))
   expect_equal(ev$value[ev$metric == "rmse"], 3, tolerance = 1e-6)
+})
+
+test_that("ARI handles one observation and stratified splits reject missing strata", {
+  expect_equal(metric_ari(1, 1), 1)
+  expect_error(metric_ari(integer(), integer()), "at least one")
+  expect_error(split_graphs(3, labels = c("a", NA, "b")), "non missing")
 })

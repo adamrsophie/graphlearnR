@@ -353,7 +353,9 @@ metric_nmi <- function(truth, cluster) {
 metric_ari <- function(truth, cluster) {
   check_same_length(truth, cluster)
   if (anyNA(truth) || anyNA(cluster)) stopf("`truth` and `cluster` must not have missing values.")
-  if (length(truth) < 2L) stopf("The adjusted Rand index needs at least two observations.")
+  if (!length(truth)) stopf("The adjusted Rand index needs at least one observation.")
+  # One observation: both partitions are the same single cluster.
+  if (length(truth) == 1L) return(1)
   tab <- table(truth, cluster)
   c2 <- function(x) x * (x - 1) / 2
   s <- sum(c2(tab))

@@ -112,8 +112,13 @@ pair_keys <- function(pairs, symmetric) {
 #'    use it for message passing during training **and** evaluation.
 #' 3. Validation and test negatives are drawn once with
 #'    [negative_sampling()], excluding every positive edge of the full graph.
-#'    Training negatives should be redrawn each epoch, excluding training
-#'    positives only, which [train_graph_model()] does.
+#'    Training negatives are redrawn each epoch by [train_graph_model()],
+#'    excluding training positives and every validation and test pair, so
+#'    an evaluation pair is never trained as a negative.
+#'
+#' Structural node features (degrees, positional encodings, metapaths)
+#' computed on `g` before splitting see the held out edges. Compute them on
+#' `train_graph` instead when held out links must stay hidden.
 #'
 #' Positive pairs are returned once each, in one direction (as first given in
 #' the input).
@@ -293,6 +298,9 @@ split_graphs <- function(n, train = 0.8, val = 0.1, test = 0.1,
       used <- used + length(gi)
     }
     return(out)
+  }
+  if (!is.null(labels) && (length(labels) != n || anyNA(labels))) {
+    stopf("`labels` must give one non missing stratum per graph.")
   }
   pools <- if (is.null(labels)) list(seq_len(n)) else split(seq_len(n), labels)
   with_optional_seed(seed, {
