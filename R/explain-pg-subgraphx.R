@@ -272,6 +272,7 @@ subgraphx <- function(model, g, target = NULL, output = NULL, hops = 2L, max_nod
     pick <- if (!is.null(target)) comp[target] else as.integer(names(which.max(table(comp[nodes]))))
     sort(nodes[comp[nodes] == pick])
   }
+  connected <- function(S) length(component(S)) == length(S)
   value_cache <- new.env(parent = emptyenv())
   value <- function(nodes) {
     nodes <- sort(unique(c(nodes, target)))
@@ -332,7 +333,8 @@ subgraphx <- function(model, g, target = NULL, output = NULL, hops = 2L, max_nod
     for (r in seq_len(rollouts)) {
       path <- rk
       k <- rk
-      while (length(tree[[k]]$S) > max_nodes) {
+      # Search until the subgraph is within budget and connected.
+      while (length(tree[[k]]$S) > max_nodes || !connected(tree[[k]]$S)) {
         if (is.null(tree[[k]]$children)) expand(k)
         kids <- tree[[k]]$children
         if (!length(kids)) break
@@ -353,7 +355,8 @@ subgraphx <- function(model, g, target = NULL, output = NULL, hops = 2L, max_nod
     }
   })
   nodes_all <- lapply(ls(tree), function(k) tree[[k]])
-  small <- Filter(function(e) length(e$S) <= max_nodes, nodes_all)
+  small <- Filter(function(e) length(e$S) <= max_nodes && connected(e$S), nodes_all)
+  if (!length(small)) small <- Filter(function(e) connected(e$S), nodes_all)
   if (!length(small)) small <- nodes_all
   scores <- vapply(small, function(e) if (is.na(e$P)) shapley(e$S) else e$P, numeric(1))
   best <- small[[which.max(scores)]]$S

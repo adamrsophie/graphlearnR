@@ -1149,3 +1149,13 @@ test_that("edge gradients warn for models that ignore edge weights", {
   expect_warning(ex <- explain_edges(m, g, target = 2, output = 1), "ignores")
   expect_true(all(is.na(ex$edges$attribution)))
 })
+
+test_that("SubgraphX returns a connected explanation on a disconnected graph", {
+  skip_if_no_torch()
+  g <- graph_data(x = matrix(1, 4, 1), edge_index = rbind(c(1, 3), c(2, 4)))
+  m <- gnn_model("graph_conv", 1, 2, 1, num_layers = 1, pool = "sum")
+  ex <- subgraphx(m, g, max_nodes = 4, rollouts = 1, seed = 1)
+  S <- ex$subgraph_nodes
+  expect_true(length(S) <= 2L)
+  expect_true(all(S %in% 1:2) || all(S %in% 3:4))
+})
