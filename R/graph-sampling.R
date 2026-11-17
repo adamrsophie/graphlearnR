@@ -90,11 +90,38 @@ sample_neighbors_impl <- function(g, seeds, fanouts, replace = FALSE, seed = NUL
     # so symmetric (GCN) normalization matches the full graph at the seeds.
     if (all(fanouts < 0L)) {
       full_deg <- full_deg %||% full_degrees(g)
-      sg$node_degree <- full_deg$degree[n_id]
-      sg$node_self_loop <- full_deg$self_loop[n_id]
+      sg <- set_degree_cache(sg, full_deg$degree[n_id], full_deg$self_loop[n_id])
     }
     sg
   })
+}
+
+# The full graph degree cache of a sampled graph: in degree and self loop
+# flag of each node in the graph it was sampled from, with a fingerprint of
+# the sampled edges it was attached to. Edge changes drop it (or, when the
+# fingerprint no longer matches, graph_tensors() refuses it), so it never
+# describes a graph it was not made for.
+set_degree_cache <- function(g, degree, self_loop) {
+  g$node_degree <- degree
+  g$node_self_loop <- self_loop
+  g$degree_key <- if (!is.null(degree)) degree_fingerprint(g)
+  g
+}
+
+drop_degree_cache <- function(g) set_degree_cache(g, NULL, NULL)
+
+degree_fingerprint <- function(g) {
+  w <- g$edge_weight %||% rep(1, ncol(g$edge_index))
+  c(g$num_nodes, ncol(g$edge_index), sum(g$edge_index[1L, ] * w), sum(g$edge_index[2L, ] * w))
+}
+
+check_degree_cache <- function(g) {
+  if (is.null(g$node_degree)) return(invisible(TRUE))
+  if (length(g$node_degree) != g$num_nodes || length(g$node_self_loop) != g$num_nodes ||
+      !isTRUE(all.equal(g$degree_key, degree_fingerprint(g)))) {
+    stopf("`node_degree` no longer matches the graph's nodes or edges; clear it with `g$node_degree <- NULL` or resample.")
+  }
+  invisible(TRUE)
 }
 
 full_degrees <- function(g) {

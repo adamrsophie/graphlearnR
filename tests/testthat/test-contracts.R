@@ -539,3 +539,41 @@ test_that("TGN rejects periods that share a timestamp", {
   bad$val$t[1] <- max(sp$train$t)
   expect_error(train_tgn(tgn_model(tg$num_nodes, 4, 2, 4), bad, epochs = 1), "strictly after")
 })
+
+test_that("the full graph degree cache follows transforms and batching", {
+  skip_if_no_torch()
+  gcn_out <- function(g) {
+    torch_manual_seed(1)
+    m <- gnn_model("gcn", 1, 4, 1, num_layers = 2, dropout = 0)
+    as.numeric(as_r_array(with_no_grad(model_forward(m, graph_tensors(g)))))
+  }
+  g <- graph_data(x = matrix(1:5, 5, 1), edge_index = rbind(c(1, 1, 2, 3, 4, 5), c(2, 3, 1, 1, 2, 4)),
+                  edge_weight = c(2, 3, 4, 1, 2, 5))
+  sg <- sample_neighbors(g, seeds = 1, fanouts = c(-1L, -1L))
+  p <- rev(seq_len(sg$num_nodes))
+  ps <- induced_subgraph(sg, p)
+  expect_equal(ps$node_degree, sg$node_degree[p])
+  expect_equal(ps$n_id, sg$n_id[p])
+  expect_equal(ps$seed_index, which(p == 1L))
+  expect_equal(gcn_out(ps), gcn_out(sg)[p], tolerance = 1e-6)
+  small <- induced_subgraph(sg, 1:2)
+  expect_length(small$node_degree, 2L)
+  expect_silent(validate_graph(small))
+  expect_null(remove_self_loops(sg)$node_degree)
+  expect_null(add_self_loops(sg)$node_degree)
+  expect_null(coalesce_edges(sg)$node_degree)
+  # one sampled graph in a batch keeps its seed output; unbatch restores it
+  b <- graph_batch(list(sg))
+  expect_equal(gcn_out(b), gcn_out(sg), tolerance = 1e-6)
+  b2 <- graph_batch(list(sg, g))
+  expect_equal(gcn_out(b2)[seq_len(sg$num_nodes)], gcn_out(sg), tolerance = 1e-6)
+  expect_equal(gcn_out(b2)[-seq_len(sg$num_nodes)], gcn_out(g), tolerance = 1e-6)
+  u <- unbatch(b2)
+  expect_equal(u[[1]]$node_degree, sg$node_degree)
+  expect_null(u[[2]]$node_degree)
+  # editing edges by hand makes the cache refuse to be used
+  bad <- sg
+  bad$edge_weight <- bad$edge_weight * 2
+  expect_error(graph_tensors(bad), "no longer matches")
+  expect_error(validate_graph(bad), "no longer matches")
+})

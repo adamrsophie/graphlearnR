@@ -83,6 +83,10 @@ validate_graph <- function(g) {
       add("`%s` differs between the stored directions of an undirected pair.", m)
     }
   }
+  if (!is.null(g$node_degree)) {
+    msg <- tryCatch({check_degree_cache(g); NULL}, error = conditionMessage)
+    if (!is.null(msg)) add("%s", msg)
+  }
   for (msg in mask_overlaps(g, c("train_mask", "val_mask", "test_mask"))) add("%s", msg)
   for (msg in mask_overlaps(g, c("edge_train_mask", "edge_val_mask", "edge_test_mask"))) {
     add("%s", msg)

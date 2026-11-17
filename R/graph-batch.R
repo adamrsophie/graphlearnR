@@ -115,6 +115,21 @@ graph_batch <- function(graphs) {
   b$edge_ptr <- edge_ptr
   b$pair_ptr <- pair_ptr
   b$original_node_ids <- pick("node_ids")
+  # A sampled graph's full graph degrees carry over; a graph without them
+  # contributes its own degrees, which is what it would use alone.
+  if (any(vapply(graphs, function(g) !is.null(g$node_degree), logical(1)))) {
+    deg <- lapply(graphs, function(g) {
+      if (!is.null(g$node_degree)) {
+        check_degree_cache(g)
+        list(degree = g$node_degree, self_loop = g$node_self_loop)
+      } else {
+        full_degrees(g)
+      }
+    })
+    b <- set_degree_cache(b, unlist(lapply(deg, `[[`, "degree"), use.names = FALSE),
+                          unlist(lapply(deg, `[[`, "self_loop"), use.names = FALSE))
+    b$degree_cached <- vapply(graphs, function(g) !is.null(g$node_degree), logical(1))
+  }
   b
 }
 
@@ -169,6 +184,9 @@ unbatch <- function(batch) {
     )
     for (f in c("edge_train_mask", "edge_val_mask", "edge_test_mask")) {
       g[[f]] <- take_rows(batch[[f]], edges)
+    }
+    if (!is.null(batch$node_degree) && isTRUE(batch$degree_cached[k])) {
+      g <- set_degree_cache(g, batch$node_degree[nodes], batch$node_self_loop[nodes])
     }
     g
   })

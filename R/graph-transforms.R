@@ -62,7 +62,8 @@ add_self_loops <- function(g, fill_weight = 1, loop_type = NA) {
   for (f in c("edge_train_mask", "edge_val_mask", "edge_test_mask")) {
     if (!is.null(g[[f]])) g[[f]] <- c(g[[f]], rep(FALSE, k))
   }
-  g
+  if (!is.null(g$e_id)) g$e_id <- c(g$e_id, rep(NA_integer_, k))
+  drop_degree_cache(g)
 }
 
 #' @rdname graph-transforms
@@ -107,8 +108,18 @@ induced_subgraph <- function(g, nodes) {
   out <- edge_subset(g, keep)
   out$edge_index <- rbind(local[g$edge_index[1L, keep]], local[g$edge_index[2L, keep]])
   out$num_nodes <- length(nodes)
-  for (f in c("x", "y", "node_ids", "node_type", "train_mask", "val_mask", "test_mask")) {
+  for (f in c("x", "y", "node_ids", "node_type", "train_mask", "val_mask", "test_mask",
+              "n_id", "hop")) {
     out[[f]] <- take_rows(g[[f]], nodes)
+  }
+  if (!is.null(g$seed_index)) {
+    out$seed_index <- local[g$seed_index][local[g$seed_index] > 0L]
+    out$num_seeds <- length(out$seed_index)
+  }
+  # Kept nodes keep their degrees in the graph the sample came from, so a
+  # reordering gives the same outputs, reordered.
+  if (!is.null(g$node_degree)) {
+    out <- set_degree_cache(out, g$node_degree[nodes], g$node_self_loop[nodes])
   }
   out
 }
