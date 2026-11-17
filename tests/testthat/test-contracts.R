@@ -975,3 +975,21 @@ test_that("predict rejects pairs that match several parallel edges", {
   expect_equal(nrow(predict(fit, g)), 2L)
   expect_error(predict(fit, g, pairs = g$edge_index), "several parallel edges")
 })
+
+test_that("graph embeddings are the learned readout, one row per graph", {
+  skip_if_no_torch()
+  torch::torch_manual_seed(1)
+  g1 <- graph_data(x = matrix(c(1, 2), 2, 1), edge_index = rbind(1, 2), graph_y = 1)
+  g0 <- graph_data(x = matrix(0, 0, 1), num_nodes = 0, graph_y = 2)
+  for (pool in c("sum", "attention")) {
+    m <- gnn_model("graph_conv", 1, 3, 1, num_layers = 1, pool = pool)
+    fit <- train_graph_model(m, list(g1, g1), task = "graph_regression", epochs = 1, seed = 1)
+    emb <- predict(fit, list(g1, g0), type = "embedding")
+    expect_equal(dim(emb), c(2L, 3L))
+    expect_equal(as.numeric(emb[2, ]), rep(0, 3))
+    tt <- graph_tensors(graph_batch(list(g1)))
+    ref <- as_r_array(fit$model(tt$x, tt$edge_index, batch = tt$batch, num_graphs = 1L,
+                                return_embedding = "graph"))
+    expect_equal(as.numeric(emb[1, ]), as.numeric(ref), tolerance = 1e-6)
+  }
+})

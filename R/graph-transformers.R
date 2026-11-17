@@ -355,13 +355,14 @@ graph_transformer_model <- nn_module(
     if (is.null(self$config$edge_dim)) edge_attr <- NULL
     for (layer in seq_along(self$layers)) h <- self$layers[[layer]](h, batch, dist, edge_index, edge_attr)
     h <- self$ln(h)
-    if (return_embedding) return(h)
+    if (isTRUE(return_embedding)) return(h)
     if (!is.null(self$config$pool)) {
       h <- switch(self$config$pool,
         mean = global_mean_pool(h, batch, num_graphs),
         sum = global_add_pool(h, batch, num_graphs),
         max = global_max_pool(h, batch, num_graphs))
     }
+    if (identical(return_embedding, "graph")) return(h)
     self$head(h)
   },
   distances = function(edge_index, batch, device) {

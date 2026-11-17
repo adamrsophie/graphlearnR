@@ -68,9 +68,13 @@ predict.graph_fit <- function(object, new_data = NULL,
       batches <- loader_batches(graph_loader(new_data, batch_size, FALSE))
       out <- torch_cat(lapply(batches, function(b) {
         bt <- graph_tensors(b, dev)
-        out <- model_forward(model, bt, return_embedding = type == "embedding")
-        if (type == "embedding") out <- pool_graph_embedding(model, out, bt)
-        out
+        if (type != "embedding") return(model_forward(model, bt))
+        # Package models return the pooled representation the head sees,
+        # with their own (possibly learned) readout.
+        if (inherits(model, c("graph_model", "graph_transformer"))) {
+          return(model_forward(model, bt, return_embedding = "graph"))
+        }
+        pool_graph_embedding(model, model_forward(model, bt, return_embedding = TRUE), bt)
       }), dim = 1L)
       return(format_predictions(out, type, object, seq_len(out$size(1L)), "graph"))
     }
@@ -131,7 +135,6 @@ predict.graph_fit <- function(object, new_data = NULL,
 # with the model's own readout (`config$pool`, mean when it has none).
 pool_graph_embedding <- function(model, h, bt) {
   ng <- bt$num_graphs %||% 1L
-  if (h$size(1L) == ng) return(h)
   pool <- tryCatch(model$config$pool, error = function(e) NULL) %||% "mean"
   switch(pool,
     sum = global_add_pool(h, bt$batch, ng),

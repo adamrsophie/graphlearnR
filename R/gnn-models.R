@@ -13,7 +13,8 @@
 #' The model's `forward(x, edge_index, edge_weight, edge_attr, batch,
 #' num_graphs, edge_type)` takes tensors from [graph_tensors()]. Setting
 #' `return_embedding = TRUE` returns the last hidden node representation
-#' instead of the head output. The construction arguments are kept in
+#' instead of the head output; `return_embedding = "graph"` returns the
+#' pooled graph representation that the head receives. The construction arguments are kept in
 #' `model$config` so that [save_graph_fit()] can rebuild the model.
 #'
 #' @param architecture One of `"sage"`, `"gcn"`, `"gat"`, `"gatv2"`,
@@ -161,7 +162,10 @@ graph_model_module <- nn_module(
       if (self$config$residual && i > 1L) out <- out + h
       h <- nnf_dropout(out, p = self$config$dropout, training = self$training)
     }
-    if (return_embedding || is.null(self$head) && is.null(self$config$pool)) {
+    # return_embedding = "graph" returns the pooled graph representation the
+    # head sees; TRUE returns node representations.
+    graph_emb <- identical(return_embedding, "graph")
+    if (isTRUE(return_embedding) || (!graph_emb && is.null(self$head) && is.null(self$config$pool))) {
       return(h)
     }
     if (!is.null(self$config$pool)) {
@@ -171,8 +175,9 @@ graph_model_module <- nn_module(
         max = global_max_pool(h, batch, num_graphs),
         attention = self$att_pool(h, batch, num_graphs)
       )
-      if (is.null(self$head)) return(h)
+      if (graph_emb || is.null(self$head)) return(h)
     }
+    if (graph_emb) return(h)
     self$head(h)
   }
 )
