@@ -577,3 +577,27 @@ test_that("the full graph degree cache follows transforms and batching", {
   expect_error(graph_tensors(bad), "no longer matches")
   expect_error(validate_graph(bad), "no longer matches")
 })
+
+test_that("feature explanations of a sampled graph use the prediction's normalization", {
+  skip_if_no_torch()
+  g <- graph_data(x = matrix(1, 3, 1), edge_index = rbind(c(1L, 2L), c(2L, 3L)), directed = FALSE)
+  sg <- sample_neighbors(g, seeds = 1L, fanouts = -1L)
+  m <- gnn_model("gcn", 1L, 1L, 1L, num_layers = 1L, dropout = 0)
+  with_no_grad({
+    m$convs[[1L]]$lin$weight$fill_(1); m$convs[[1L]]$bias$zero_()
+    m$head$weight$fill_(1); m$head$bias$zero_()
+  })
+  m$eval()
+  fit <- structure(list(model = m, data = sg, device = torch_device("cpu"), task = "node_regression"),
+                   class = "graph_fit")
+  pred <- as.numeric(predict(fit, type = "response"))[1]
+  full <- as.numeric(as_r_array(with_no_grad(model_forward(m, graph_tensors(g)))))[1]
+  expect_equal(pred, full, tolerance = 1e-6)
+  tt <- graph_tensors(sg)
+  tt$x <- tt$x$detach()$requires_grad_(TRUE)
+  model_forward(m, tt)[1, 1]$backward()
+  sal <- explain_saliency(fit, sg, target = 1, output = 1)
+  expect_equal(as.vector(sal$node_feature), as.vector(as_r_array(tt$x$grad)), tolerance = 1e-6)
+  ig <- explain_integrated_gradients(fit, sg, target = 1, output = 1, baseline = 0, steps = 10)
+  expect_equal(sum(ig$node_feature), pred, tolerance = 1e-5)
+})

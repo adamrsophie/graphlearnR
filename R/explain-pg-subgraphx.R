@@ -77,9 +77,7 @@ pg_explainer <- function(model, data, targets = NULL, hidden = 64L, epochs = 30L
   pre <- lapply(tts, function(tt) {
     with_no_grad({
       full <- forward_with(m, tt)
-      z <- m(tt$x, tt$edge_index, edge_weight = tt$edge_weight, edge_attr = tt$edge_attr,
-             batch = tt$batch, num_graphs = tt$num_graphs, edge_type = tt$edge_type,
-             return_embedding = TRUE)
+      z <- forward_with(m, tt, return_embedding = TRUE)
     })
     list(full = full, z = z, w0 = tt$edge_weight %||% torch_ones(tt$edge_index$size(2L), device = dev))
   })
@@ -144,9 +142,7 @@ predict.pg_explainer <- function(object, g, target = NULL, ...) {
   m <- explain_model(object$model)
   tt <- graph_tensors(g, object$device)
   p <- with_no_grad({
-    z <- m(tt$x, tt$edge_index, edge_weight = tt$edge_weight, edge_attr = tt$edge_attr,
-           batch = tt$batch, num_graphs = tt$num_graphs, edge_type = tt$edge_type,
-           return_embedding = TRUE)
+    z <- forward_with(m, tt, return_embedding = TRUE)
     full <- forward_with(m, tt)
     list(mask = torch_sigmoid(pg_logits(object$mlp, z, tt$edge_index, target)),
          output = select_output(full, target, NULL)$index)
