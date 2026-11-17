@@ -51,11 +51,15 @@ check_scores <- function(truth, score) {
     stopf("`truth` has %d values but the scores have %d rows.", length(truth), NROW(score))
   }
   if (is.matrix(score)) {
-    if (!is.null(colnames(score)) && is.factor(truth)) {
-      if (!all(levels(truth) %in% colnames(score))) {
-        stopf("Score columns are named but do not cover the levels of `truth`.")
+    if (!is.null(colnames(score))) {
+      # The class order the metrics use: factor levels, or the sorted unique
+      # values of character, numeric or logical truth.
+      lv <- levels(as.factor(truth))
+      if (anyDuplicated(colnames(score))) stopf("Score column names must be unique.")
+      if (!all(lv %in% colnames(score))) {
+        stopf("Score columns are named but do not cover the classes of `truth`.")
       }
-      score <- score[, c(levels(truth), setdiff(colnames(score), levels(truth))), drop = FALSE]
+      score <- score[, c(lv, setdiff(colnames(score), lv)), drop = FALSE]
     } else if (ncol(score) < nlevels(as.factor(truth))) {
       stopf("The scores have %d columns but `truth` has %d classes.", ncol(score),
             nlevels(as.factor(truth)))
@@ -161,6 +165,8 @@ metric_roc_auc <- function(truth, score) {
   n0 <- sum(!y)
   if (n1 == 0 || n0 == 0) stopf("ROC-AUC needs both positive and negative cases.")
   r <- rank(score)
+  n1 <- as.double(n1)
+  n0 <- as.double(n0)
   (sum(r[y]) - n1 * (n1 + 1) / 2) / (n1 * n0)
 }
 
@@ -270,6 +276,8 @@ positive_ranks <- function(pos, neg) {
 #' @param k Cut-off.
 #' @export
 metric_hits_at_k <- function(pos, neg, k = 10L) {
+  if (anyNA(pos) || anyNA(neg)) stopf("`pos` and `neg` must not have missing scores.")
+  k <- check_count(k, "k", 1L)
   if (is.matrix(neg)) {
     return(mean(positive_ranks(pos, neg) <= k))
   }
@@ -310,6 +318,9 @@ metric_nmi <- function(truth, cluster) {
 #' @rdname metrics
 #' @export
 metric_ari <- function(truth, cluster) {
+  check_same_length(truth, cluster)
+  if (anyNA(truth) || anyNA(cluster)) stopf("`truth` and `cluster` must not have missing values.")
+  if (length(truth) < 2L) stopf("The adjusted Rand index needs at least two observations.")
   tab <- table(truth, cluster)
   c2 <- function(x) x * (x - 1) / 2
   s <- sum(c2(tab))

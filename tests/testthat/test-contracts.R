@@ -698,3 +698,16 @@ test_that("an identity edge intervention reproduces the prediction", {
   expect_equal(unname(explanation_fidelity(fit, sg, ex, k = 0)[["fidelity_plus"]]), 0, tolerance = 1e-6)
   expect_equal(unname(explanation_fidelity(fit, sg, ex, k = 99)[["fidelity_minus"]]), 0, tolerance = 1e-6)
 })
+
+test_that("metrics handle large sizes, named columns for any truth type and bad inputs", {
+  expect_equal(metric_roc_auc(rep(c(FALSE, TRUE), each = 50000), rep(c(0, 1), each = 50000)), 1)
+  p <- rbind(c(b = .1, a = .9), c(b = .9, a = .1))
+  expect_equal(metric_roc_auc(c("a", "b"), p), 1)
+  expect_equal(metric_brier(c("a", "b"), p), .02)
+  expect_equal(metric_ece(c("a", "b"), p), .1)
+  q <- rbind(c(`1` = .1, `0` = .9), c(`1` = .9, `0` = .1))
+  expect_equal(metric_brier(c(0, 1), q), .02)
+  expect_error(metric_hits_at_k(NA_real_, numeric(), 1), "missing")
+  expect_error(metric_hits_at_k(0, c(NA_real_, 1), 2), "missing")
+  expect_error(metric_ari(1, 1), "at least two")
+})
