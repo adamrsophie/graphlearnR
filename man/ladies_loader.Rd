@@ -40,14 +40,21 @@ without replacement with probability
 where \eqn{\hat A = D^{-1/2}(A + I)D^{-1/2}} (degrees are weighted in
 degrees plus one). Layer \eqn{l + 1} is the sampled set plus the layer
 \eqn{l} nodes. Each kept edge \eqn{u \to v} gets the weight
-\eqn{\hat A_{vu} / p(u)}, normalized to sum to one over the incoming
-edges of \eqn{v} in that layer (the row normalization of LADIES).
+\eqn{\hat A_{vu} / q(u)}, where \eqn{q(u) = \min(1, s\,p(u))}
+approximates the inclusion probability for \code{s} draws (and is one when
+every candidate is kept), normalized to sum to one over the incoming
+edges of \eqn{v} (the row normalization of LADIES). Self loops are not
+part of the sampled operator; the root weight of the layer plays that
+role.
 }
 \details{
 The batch is one \code{graph_data} subgraph that holds the edges of all
-layers together (with the weight of the first layer that kept an edge),
-so it works with any model in \code{\link[=train_graph_model]{train_graph_model()}}; this is a common
-simplification of the layer by layer bipartite blocks of the paper.
+layers together, so it works with any model in \code{\link[=train_graph_model]{train_graph_model()}};
+this is a common simplification of the layer by layer bipartite blocks
+of the paper. Each node is a target once, in the first layer that
+reaches it: layer \eqn{l + 1} samples sources only for the nodes newly
+added at layer \eqn{l}, so the incoming weights of every target sum to
+exactly one and the same operator is used at every model layer.
 The weights of the incoming edges of each target sum to one, so they
 already define a weighted mean: use a model that \strong{sums} weighted
 messages, such as \code{gnn_model("graph_conv")}. A mean aggregator (the

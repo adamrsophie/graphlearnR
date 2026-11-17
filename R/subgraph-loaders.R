@@ -211,13 +211,20 @@ print.subgraph_loader <- function(x, ...) {
 #' where \eqn{\hat A = D^{-1/2}(A + I)D^{-1/2}} (degrees are weighted in
 #' degrees plus one). Layer \eqn{l + 1} is the sampled set plus the layer
 #' \eqn{l} nodes. Each kept edge \eqn{u \to v} gets the weight
-#' \eqn{\hat A_{vu} / p(u)}, normalized to sum to one over the incoming
-#' edges of \eqn{v} in that layer (the row normalization of LADIES).
+#' \eqn{\hat A_{vu} / q(u)}, where \eqn{q(u) = \min(1, s\,p(u))}
+#' approximates the inclusion probability for `s` draws (and is one when
+#' every candidate is kept), normalized to sum to one over the incoming
+#' edges of \eqn{v} (the row normalization of LADIES). Self loops are not
+#' part of the sampled operator; the root weight of the layer plays that
+#' role.
 #'
 #' The batch is one `graph_data` subgraph that holds the edges of all
-#' layers together (with the weight of the first layer that kept an edge),
-#' so it works with any model in [train_graph_model()]; this is a common
-#' simplification of the layer by layer bipartite blocks of the paper.
+#' layers together, so it works with any model in [train_graph_model()];
+#' this is a common simplification of the layer by layer bipartite blocks
+#' of the paper. Each node is a target once, in the first layer that
+#' reaches it: layer \eqn{l + 1} samples sources only for the nodes newly
+#' added at layer \eqn{l}, so the incoming weights of every target sum to
+#' exactly one and the same operator is used at every model layer.
 #' The weights of the incoming edges of each target sum to one, so they
 #' already define a weighted mean: use a model that **sums** weighted
 #' messages, such as `gnn_model("graph_conv")`. A mean aggregator (the
@@ -276,26 +283,35 @@ ladies_batch <- function(loader, seeds) {
   ei <- g$edge_index
   csc <- loader$csc
   cur <- seeds
+  targets <- seeds
+  done <- integer()
   edges <- integer()
   ew <- numeric()
   for (s in loader$layer_sizes) {
-    inc <- unlist(lapply(cur, function(v) {
+    # Each node is a target once, in the first layer that reaches it, so
+    # its incoming weights form one row that sums to one.
+    inc <- unlist(lapply(targets, function(v) {
       if (csc$ptr[v + 1L] > csc$ptr[v]) csc$eid[(csc$ptr[v] + 1L):csc$ptr[v + 1L]]
     }), use.names = FALSE)
+    done <- c(done, targets)
     if (!length(inc)) break
     src <- ei[1L, inc]
     score <- tapply_sum(loader$ahat[inc]^2, src, g$num_nodes)
     cand <- which(score > 0)
     p <- score[cand] / sum(score[cand])
-    take <- if (length(cand) <= s) cand else cand[sample.int(length(cand), s, prob = p)]
+    census <- length(cand) <= s
+    take <- if (census) cand else cand[sample.int(length(cand), s, prob = p)]
     keep <- inc[src %in% take]
-    # importance weight, then normalize over the incoming edges of each target
-    wk <- loader$ahat[keep] / (score[ei[1L, keep]] / sum(score[cand]))
+    # Inverse inclusion probability weights (none when every candidate is
+    # kept), then normalized over the incoming edges of each target.
+    incl <- numeric(g$num_nodes)
+    incl[cand] <- if (census) 1 else pmin(1, s * p)
+    wk <- loader$ahat[keep] / incl[ei[1L, keep]]
     wk <- wk / tapply_sum(wk, ei[2L, keep], g$num_nodes)[ei[2L, keep]]
-    new <- !keep %in% edges
-    edges <- c(edges, keep[new])
-    ew <- c(ew, wk[new])
+    edges <- c(edges, keep)
+    ew <- c(ew, wk)
     cur <- sort(unique(c(cur, take)))
+    targets <- setdiff(take, done)
   }
   nodes <- sort(unique(c(seeds, ei[, edges])))
   o <- order(edges)

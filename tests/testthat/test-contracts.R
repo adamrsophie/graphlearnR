@@ -881,3 +881,18 @@ test_that("saved fits carry no cached training topology", {
   expect_true(all(vapply(back$model$modules, function(z) is.null(z$last_attention), logical(1))))
   expect_equal(predict(back, g, type = "prob"), predict(fit, g, type = "prob"), tolerance = 1e-6)
 })
+
+test_that("LADIES keeps census weights and one normalized row per target", {
+  g <- graph_data(num_nodes = 3, edge_index = rbind(c(2, 3), c(1, 1)), edge_weight = c(1, 2),
+                  train_mask = c(TRUE, FALSE, FALSE))
+  b <- loader_batches(ladies_loader(g, batch_size = 1, layer_sizes = 2, seed = 1))[[1]]
+  expect_equal(b$edge_weight[order(b$edge_index[1, ])], c(1, 2) / 3)
+  # partial first layer then a second layer: rows still sum to one
+  g2 <- graph_data(num_nodes = 5, edge_index = rbind(c(2, 3, 4, 5, 4), c(1, 1, 2, 3, 3)),
+                   edge_weight = c(1, 2, 1, 1, 3), train_mask = c(TRUE, rep(FALSE, 4)))
+  for (s in 1:8) {
+    b <- loader_batches(ladies_loader(g2, batch_size = 1, layer_sizes = c(1, 2), seed = s))[[1]]
+    rs <- tapply(b$edge_weight, b$edge_index[2, ], sum)
+    expect_equal(unname(as.vector(rs)), rep(1, length(rs)))
+  }
+})
