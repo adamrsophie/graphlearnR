@@ -177,8 +177,16 @@ test_that("linear_attention matches its explicit formula and keeps graphs apart"
     for (h in 1:2) {
       cols <- (h - 1) * 2 + 1:2
       Q <- qkv[, cols]; K <- qkv[, 4 + cols]; V <- qkv[, 8 + cols]
-      phi <- function(M, query) as_mat(attn$feature_map(torch::torch_tensor(M), query))
-      pq <- phi(Q, TRUE); pk <- phi(K, FALSE)
+      phi <- if (kern == "elu") {
+        function(M) ifelse(M > 0, M + 1, exp(M))
+      } else {
+        W <- as_mat(attn$features)
+        function(M) {
+          M <- M / 2^0.25
+          exp(M %*% W - rowSums(M^2) / 2)
+        }
+      }
+      pq <- phi(Q); pk <- phi(K)
       for (i in 1:7) {
         js <- which(batch == batch[i])
         w <- as.numeric(pk[js, , drop = FALSE] %*% pq[i, ])

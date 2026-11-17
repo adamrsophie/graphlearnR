@@ -470,7 +470,10 @@ gps_layer <- nn_module(
 #' With `kernel = "favor"` (Performer, Choromanski et al. 2021),
 #' \eqn{\phi(x) = m^{-1/2} \exp(W^\top x' - \lVert x' \rVert^2 / 2)} with
 #' \eqn{x' = x / C^{1/4}} and `num_features` fixed Gaussian random features
-#' \eqn{W}, an unbiased estimate of the softmax kernel; with
+#' \eqn{W} drawn independently (the IID variant, without the orthogonal
+#' blocks of the paper), an unbiased estimate of the softmax kernel. The
+#' ratio is computed in log space, so it stays exact when queries and keys
+#' peak on different features at any scale; with
 #' `kernel = "elu"` (Katharopoulos et al. 2020), \eqn{\phi(x) = \mathrm{elu}(x) + 1}.
 #' The per graph sums use scatter operations, so graphs are never padded and
 #' never attend to each other. Memory is \eqn{O(N H m C)}.
@@ -502,51 +505,50 @@ linear_attention <- nn_module(
     self$proj <- nn_linear(dim, dim)
     if (self$kernel == "favor") self$features <- nn_buffer(torch_randn(self$C, self$m))
   },
-  feature_map = function(x, is_query, batch = NULL, G = 1L) {
+  # Log features for "favor" (w^T x' - |x'|^2 / 2; the 1 / sqrt(m) factor
+  # cancels in the attention ratio), features for "elu".
+  feature_map = function(x) {
     if (self$kernel == "elu") return(nnf_elu(x) + 1)
     x <- x / self$C^0.25
-    proj <- torch_matmul(x, self$features)
-    # The log feature w^T x - |x|^2 / 2 is shifted by a constant that cancels
-    # exactly in the attention ratio: per row for queries; per graph and
-    # head for keys, so one graph never changes another graph's result.
-    # Because it cancels exactly, its gradient is zero and it is detached.
-    logf <- proj - (x * x)$sum(dim = -1L, keepdim = TRUE) / 2
-    stab <- if (is_query) {
-      logf$detach()$amax(dim = -1L, keepdim = TRUE)
-    } else {
-      if (is.null(batch)) batch <- torch_ones(logf$size(1L), dtype = torch_long(), device = logf$device)
-      row <- logf$detach()$amax(dim = -1L)
-      if (row$dim() == 1L) row <- row$unsqueeze(2L)
-      scatter_max(row, batch, G)$index_select(1L, batch)$view(c(logf$size(1L), -1L, 1L))
-    }
-    if (logf$dim() == 2L && !is_query) stab <- stab$squeeze(-1L)
-    torch_exp(logf - stab) / sqrt(self$m)
+    torch_matmul(x, self$features) - (x * x)$sum(dim = -1L, keepdim = TRUE) / 2
   },
   forward = function(x, batch = NULL) {
     n <- x$size(1L)
+    if (n == 0L) return(self$proj(x))
     H <- self$heads
     C <- self$C
     if (is.null(batch)) batch <- torch_ones(n, dtype = torch_long(), device = x$device)
     batch <- as_index_tensor(batch, x$device)
     G <- as.integer(batch$max()$item())
     qkv <- self$qkv(x)$view(c(n, 3L, H, C))
-    pq <- self$feature_map(qkv[, 1L, , ], TRUE)
-    pk <- self$feature_map(qkv[, 2L, , ], FALSE, batch, G)
-    v <- qkv[, 3L, , ]
-    if (H == 1L) {
-      pq <- pq$view(c(n, 1L, -1L))
-      pk <- pk$view(c(n, 1L, -1L))
-      v <- v$view(c(n, 1L, C))
+    v <- qkv[, 3L, , ]$reshape(c(n, H, C))
+    fq <- self$feature_map(qkv[, 1L, , ])$reshape(c(n, H, -1L))
+    fk <- self$feature_map(qkv[, 2L, , ])$reshape(c(n, H, -1L))
+    m <- fk$size(3L)
+    if (self$kernel == "elu") {
+      kv <- (fk$unsqueeze(-1L) * v$unsqueeze(3L))$reshape(c(n, -1L))
+      KV <- scatter_sum(kv, batch, G)$view(c(G, H, m, C))$index_select(1L, batch)
+      Z <- scatter_sum(fk$reshape(c(n, -1L)), batch, G)$view(c(G, H, m))$index_select(1L, batch)
+      num <- (fq$unsqueeze(-1L) * KV)$sum(dim = 3L)
+      den <- (fq * Z)$sum(dim = -1L, keepdim = TRUE)
+      return(self$proj((num / den)$reshape(c(n, H * C))))
     }
-    m <- pk$size(3L)
-    kv <- (pk$unsqueeze(-1L) * v$unsqueeze(3L))$reshape(c(n, -1L))
-    KV <- scatter_sum(kv, batch, G)$view(c(G, H, m, C))$index_select(1L, batch)
-    Z <- scatter_sum(pk$reshape(c(n, -1L)), batch, G)$view(c(G, H, m))$index_select(1L, batch)
-    num <- (pq$unsqueeze(-1L) * KV)$sum(dim = 3L)
-    # The shifts keep the largest query and key feature at 1 / sqrt(m), so the
-    # denominator only reaches zero when every feature underflows; the floor
-    # guards that case without changing any other result.
-    den <- (pq * Z)$sum(dim = -1L, keepdim = TRUE)$clamp(min = 1e-30)
-    self$proj((num / den)$reshape(c(n, H * C)))
+    # FAVOR+ in log space. Per graph and feature f, log Z_f is the log sum
+    # of the key features, and M_f the mean of the values weighted by the
+    # key features. A query attends with weights proportional to
+    # exp(log q_f + log Z_f), shifted by their row maximum. Every shift
+    # cancels exactly, so no feature can underflow, whatever the scale or
+    # the features where queries and keys peak.
+    lk <- fk$reshape(c(n, -1L))
+    mx <- scatter_max(lk$detach(), batch, G)
+    e <- torch_exp(lk - mx$index_select(1L, batch))
+    logZ <- torch_log(scatter_sum(e, batch, G)) + mx
+    pk <- torch_exp(lk - logZ$index_select(1L, batch))$view(c(n, H, m))
+    M <- scatter_sum((pk$unsqueeze(-1L) * v$unsqueeze(3L))$reshape(c(n, -1L)), batch, G)
+    M <- M$view(c(G, H, m, C))$index_select(1L, batch)
+    a <- fq + logZ$view(c(G, H, m))$index_select(1L, batch)
+    w <- torch_exp(a - a$detach()$amax(dim = -1L, keepdim = TRUE))
+    out <- (w$unsqueeze(-1L) * M)$sum(dim = 3L) / w$sum(dim = -1L, keepdim = TRUE)
+    self$proj(out$reshape(c(n, H * C)))
   }
 )

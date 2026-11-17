@@ -915,3 +915,27 @@ test_that("subgraph loaders are bound to the graph they were built on", {
                                    g, loader = ladies_loader(g, batch_size = 1, layer_sizes = 2),
                                    epochs = 1), "sums weighted")
 })
+
+test_that("FAVOR attention stays exact when queries and keys peak apart", {
+  skip_if_no_torch()
+  a <- linear_attention(1, heads = 1, num_features = 2)
+  torch::with_no_grad({
+    a$features$copy_(torch::torch_tensor(matrix(c(1, -1), 1, 2)))
+    a$qkv$weight$copy_(torch::torch_tensor(matrix(c(100, -100, 1), 3, 1)))
+    a$qkv$bias$zero_()
+    a$proj$weight$fill_(1)
+    a$proj$bias$zero_()
+  })
+  x <- torch::torch_ones(1, 1, requires_grad = TRUE)
+  out <- a(x)
+  expect_equal(as.numeric(out$item()), 1, tolerance = 1e-6)
+  # constant values are recovered for any number of tokens and graphs
+  x3 <- torch::torch_tensor(matrix(c(1, -2, 3), 3, 1), requires_grad = TRUE)
+  torch::with_no_grad(a$qkv$weight$copy_(torch::torch_tensor(matrix(c(100, -100, 0), 3, 1))))
+  torch::with_no_grad(a$qkv$bias$copy_(torch::torch_tensor(c(0, 0, 3))))
+  o3 <- a(x3, c(1, 1, 2))
+  expect_equal(as.numeric(torch::as_array(o3$detach())), rep(3, 3), tolerance = 1e-5)
+  o3$sum()$backward()
+  expect_false(any(is.na(as.numeric(torch::as_array(a$qkv$weight$grad)))))
+  expect_equal(dim(torch::as_array(a(torch::torch_zeros(0, 1))$detach())), c(0L, 1L))
+})
