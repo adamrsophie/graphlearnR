@@ -165,7 +165,7 @@ graphlearnR reports the remaining gap of the Riemann approximation.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">ig</span><span class="op">$</span><span class="va">node_feature</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 9.833233</span></span>
 <span><span class="va">ig</span><span class="op">$</span><span class="va">completeness_gap</span></span>
-<span><span class="co">#&gt; [1] 0.006706327</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0.006706059</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -181,12 +181,12 @@ returns a table.</p>
 <code class="sourceCode R"><span><span class="va">eg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/explain.html">explain_edges</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">g</span>, target <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">eg</span><span class="op">$</span><span class="va">edges</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">eg</span><span class="op">$</span><span class="va">edges</span><span class="op">$</span><span class="va">attribution</span><span class="op">)</span><span class="op">)</span>, <span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    edge from to attribution</span></span>
-<span><span class="co">#&gt; 32   32   32  1  -0.6392071</span></span>
+<span><span class="co">#&gt; 32   32   32  1  -0.6392072</span></span>
 <span><span class="co">#&gt; 22   22   13  1   0.6088946</span></span>
-<span><span class="co">#&gt; 20   20   12  1   0.5910739</span></span>
-<span><span class="co">#&gt; 12   12    7  1   0.4951163</span></span>
+<span><span class="co">#&gt; 20   20   12  1   0.5910738</span></span>
+<span><span class="co">#&gt; 12   12    7  1   0.4951162</span></span>
 <span><span class="co">#&gt; 10   10    6  1   0.4866577</span></span>
-<span><span class="co">#&gt; 8     8    5  1   0.4837199</span></span></code></pre></div>
+<span><span class="co">#&gt; 8     8    5  1   0.4837200</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="occlusion">Occlusion<a class="anchor" aria-label="anchor" href="#occlusion"></a>
@@ -199,11 +199,11 @@ easy to interpret.</p>
 <code class="sourceCode R"><span><span class="va">oc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/explain.html">explain_occlusion</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">g</span>, target <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">oc</span><span class="op">$</span><span class="va">edges</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="op">-</span><span class="va">oc</span><span class="op">$</span><span class="va">edges</span><span class="op">$</span><span class="va">attribution</span><span class="op">)</span>, <span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    edge from to attribution</span></span>
-<span><span class="co">#&gt; 11   22   13  1   0.6273994</span></span>
-<span><span class="co">#&gt; 10   20   12  1   0.6089315</span></span>
-<span><span class="co">#&gt; 6    12    7  1   0.5063629</span></span>
+<span><span class="co">#&gt; 11   22   13  1   0.6274004</span></span>
+<span><span class="co">#&gt; 10   20   12  1   0.6089334</span></span>
+<span><span class="co">#&gt; 6    12    7  1   0.5063639</span></span>
 <span><span class="co">#&gt; 5    10    6  1   0.4981394</span></span>
-<span><span class="co">#&gt; 4     8    5  1   0.4943409</span></span>
+<span><span class="co">#&gt; 4     8    5  1   0.4943419</span></span>
 <span><span class="co">#&gt; 9    18   11  1   0.4860201</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -239,12 +239,32 @@ pass. It is trained here on the training nodes and then applied to node
 <span><span class="va">px</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">pg</span>, <span class="va">g</span>, target <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">px</span><span class="op">$</span><span class="va">edges</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="op">-</span><span class="va">px</span><span class="op">$</span><span class="va">edges</span><span class="op">$</span><span class="va">attribution</span><span class="op">)</span>, <span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    edge from to  attribution</span></span>
-<span><span class="co">#&gt; 83   83    9 31 1.210390e-06</span></span>
-<span><span class="co">#&gt; 84   84   31  9 1.179961e-06</span></span>
-<span><span class="co">#&gt; 59   59    3 10 7.394756e-07</span></span>
-<span><span class="co">#&gt; 60   60   10  3 6.256212e-07</span></span>
-<span><span class="co">#&gt; 55   55    3 29 4.855987e-07</span></span>
-<span><span class="co">#&gt; 61   61    3  9 4.808998e-07</span></span></code></pre></div>
+<span><span class="co">#&gt; 83   83    9 31 4.340112e-07</span></span>
+<span><span class="co">#&gt; 84   84   31  9 4.168328e-07</span></span>
+<span><span class="co">#&gt; 59   59    3 10 3.237930e-07</span></span>
+<span><span class="co">#&gt; 60   60   10  3 2.779630e-07</span></span>
+<span><span class="co">#&gt; 55   55    3 29 2.117927e-07</span></span>
+<span><span class="co">#&gt; 61   61    3  9 2.101549e-07</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">px</span><span class="op">$</span><span class="va">edges</span><span class="op">$</span><span class="va">attribution</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 4.108396e-11 4.340112e-07</span></span></code></pre></div>
+<p>The mask values are all close to zero. That is the answer to the
+question PGExplainer asks (the smallest set of edges that keeps the
+prediction), not a failure: with one-hot node features this model has
+memorized the nodes, and it predicts the same class for every node even
+with all edges removed.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">tt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/graph_tensors.html">graph_tensors</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span>
+<span><span class="va">m</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">model</span></span>
+<span><span class="va">m</span><span class="op">$</span><span class="fu">eval</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">full</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://torch.mlverse.org/docs/reference/with_no_grad.html" class="external-link">with_no_grad</a></span><span class="op">(</span><span class="fu">m</span><span class="op">(</span><span class="va">tt</span><span class="op">$</span><span class="va">x</span>, <span class="va">tt</span><span class="op">$</span><span class="va">edge_index</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">no_edges</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://torch.mlverse.org/docs/reference/with_no_grad.html" class="external-link">with_no_grad</a></span><span class="op">(</span><span class="fu">m</span><span class="op">(</span><span class="va">tt</span><span class="op">$</span><span class="va">x</span>, <span class="va">tt</span><span class="op">$</span><span class="va">edge_index</span>, edge_weight <span class="op">=</span> <span class="fu"><a href="https://torch.mlverse.org/docs/reference/torch_zeros.html" class="external-link">torch_zeros</a></span><span class="op">(</span><span class="fu"><a href="../reference/graph-queries.html">num_edges</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">full</span><span class="op">$</span><span class="fu">argmax</span><span class="op">(</span>dim <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">no_edges</span><span class="op">$</span><span class="fu">argmax</span><span class="op">(</span>dim <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 1</span></span></code></pre></div>
+<p>Only the order of the mask values carries information here, which is
+what <code><a href="../reference/explanation_fidelity.html">explanation_fidelity()</a></code> below uses. On a model whose
+predictions need the graph, the mask separates the edges that matter;
+the tests of the package check that it recovers the one path that
+carries the signal in a toy graph.</p>
 </div>
 <div class="section level3">
 <h3 id="subgraphx">SubgraphX<a class="anchor" aria-label="anchor" href="#subgraphx"></a>
@@ -255,20 +275,20 @@ Shapley value (its average contribution when added to random coalitions
 of nearby nodes) is largest. It removes nodes instead of reweighting
 edges, so it also explains models that ignore <code>edge_weight</code>,
 at the price of many forward passes.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sx</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/subgraphx.html">subgraphx</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">g</span>, target <span class="op">=</span> <span class="fl">1</span>, max_nodes <span class="op">=</span> <span class="fl">5</span>, rollouts <span class="op">=</span> <span class="fl">5</span>, samples <span class="op">=</span> <span class="fl">8</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">sx</span><span class="op">$</span><span class="va">subgraph_nodes</span></span>
 <span><span class="co">#&gt; [1] 1 2 3 4 8</span></span>
 <span><span class="va">sx</span><span class="op">$</span><span class="va">score</span></span>
-<span><span class="co">#&gt; [1] 1.045696</span></span>
+<span><span class="co">#&gt; [1] 1.045697</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sx</span><span class="op">$</span><span class="va">candidates</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    size       nodes     score</span></span>
-<span><span class="co">#&gt; 3     5   1,2,3,4,8 1.0456963</span></span>
-<span><span class="co">#&gt; 5     5  1,2,4,8,14 0.9866302</span></span>
-<span><span class="co">#&gt; 4     5 1,2,4,14,34 0.9631625</span></span>
-<span><span class="co">#&gt; 8     5  1,3,4,8,14 0.8916118</span></span>
-<span><span class="co">#&gt; 10    5 1,3,8,14,33 0.5923036</span></span>
-<span><span class="co">#&gt; 2     5  1,2,3,4,14 0.4377630</span></span></code></pre></div>
+<span><span class="co">#&gt; 3     5   1,2,3,4,8 1.0456966</span></span>
+<span><span class="co">#&gt; 5     5  1,2,4,8,14 0.9866305</span></span>
+<span><span class="co">#&gt; 4     5 1,2,4,14,34 0.9631630</span></span>
+<span><span class="co">#&gt; 8     5  1,3,4,8,14 0.8916120</span></span>
+<span><span class="co">#&gt; 10    5 1,3,8,14,33 0.5923033</span></span>
+<span><span class="co">#&gt; 2     5  1,2,3,4,14 0.4377623</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="explanation-subgraphs">Explanation subgraphs<a class="anchor" aria-label="anchor" href="#explanation-subgraphs"></a>
@@ -278,7 +298,7 @@ small graph: the <code>k</code> most important edges (both directions of
 an undirected pair count as one), the nodes they touch, and the target.
 Its <code>node_ids</code> map back to the original graph, so it can be
 plotted or passed to the model again.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sub</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/explanation_subgraph.html">explanation_subgraph</a></span><span class="op">(</span><span class="va">g</span>, <span class="va">gx</span>, k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="va">sub</span></span>
 <span><span class="co">#&gt; &lt;graph_data&gt; undirected graph: 8 nodes, 10 edges (5 undirected pairs)</span></span>
@@ -296,7 +316,7 @@ plotted or passed to the model again.</p>
 coefficients of the last forward pass of each attention layer. Attention
 is a model component, not an explanation; high attention does not have
 to mean high influence.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://torch.mlverse.org/docs/reference/torch_manual_seed.html" class="external-link">torch_manual_seed</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">fit_gat</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/train_graph_model.html">train_graph_model</a></span><span class="op">(</span><span class="fu"><a href="../reference/gnn_model.html">gnn_model</a></span><span class="op">(</span><span class="st">"gat"</span>, <span class="fl">34</span>, <span class="fl">8</span>, <span class="fl">2</span>, heads <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, <span class="va">g</span>,</span>
 <span>                             <span class="st">"node_classification"</span>, epochs <span class="op">=</span> <span class="fl">50</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
@@ -308,10 +328,10 @@ to mean high influence.</p>
 <span><span class="co">#&gt;   from to      head1      head2</span></span>
 <span><span class="co">#&gt; 1    1  2 0.19154441 0.16146892</span></span>
 <span><span class="co">#&gt; 2    2  1 0.03586031 0.07413401</span></span>
-<span><span class="co">#&gt; 3    1  3 0.16340749 0.13701235</span></span>
-<span><span class="co">#&gt; 4    3  1 0.05869362 0.03081638</span></span>
+<span><span class="co">#&gt; 3    1  3 0.16340747 0.13701235</span></span>
+<span><span class="co">#&gt; 4    3  1 0.05869362 0.03081637</span></span>
 <span><span class="co">#&gt; 5    1  4 0.22324155 0.21166605</span></span>
-<span><span class="co">#&gt; 6    4  1 0.12893747 0.06319855</span></span></code></pre></div>
+<span><span class="co">#&gt; 6    4  1 0.12893744 0.06319855</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="is-the-explanation-any-good">Is the explanation any good?<a class="anchor" aria-label="anchor" href="#is-the-explanation-any-good"></a>
@@ -325,16 +345,16 @@ predicted probability (Yuan et al. 2022). <code>fidelity_plus</code> is
 the drop when the important edges are removed (higher is better);
 <code>fidelity_minus</code> is the drop when only they are kept (lower
 is better).</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>gradient <span class="op">=</span> <span class="fu"><a href="../reference/explanation_fidelity.html">explanation_fidelity</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">g</span>, <span class="va">eg</span>, k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
 <span>      gnn_explainer <span class="op">=</span> <span class="fu"><a href="../reference/explanation_fidelity.html">explanation_fidelity</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">g</span>, <span class="va">gx</span>, k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
 <span>      pg_explainer <span class="op">=</span> <span class="fu"><a href="../reference/explanation_fidelity.html">explanation_fidelity</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">g</span>, <span class="va">px</span>, k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
 <span>      subgraphx <span class="op">=</span> <span class="fu"><a href="../reference/explanation_fidelity.html">explanation_fidelity</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">g</span>, <span class="va">sx</span>, k <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">sx</span><span class="op">$</span><span class="va">edges</span><span class="op">$</span><span class="va">attribution</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;               fidelity_plus fidelity_minus</span></span>
-<span><span class="co">#&gt; gradient         1.72813797      -3.426292</span></span>
-<span><span class="co">#&gt; gnn_explainer   -0.30329800       3.899850</span></span>
-<span><span class="co">#&gt; pg_explainer    -0.02089596       3.899850</span></span>
-<span><span class="co">#&gt; subgraphx        0.44322872       3.091657</span></span></code></pre></div>
+<span><span class="co">#&gt; gradient         1.72813892      -3.426291</span></span>
+<span><span class="co">#&gt; gnn_explainer   -0.30329609       3.899852</span></span>
+<span><span class="co">#&gt; pg_explainer    -0.02089596       3.899852</span></span>
+<span><span class="co">#&gt; subgraphx        0.44322872       3.091658</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="stability">Stability<a class="anchor" aria-label="anchor" href="#stability"></a>
@@ -343,7 +363,7 @@ is better).</p>
 noise, explains again, and reports the rank correlation with the
 original explanation. A low value means the explanation would change for
 inputs that are practically the same.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/explanation_fidelity.html">explanation_stability</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">g</span>, <span class="kw">function</span><span class="op">(</span><span class="va">m</span>, <span class="va">h</span><span class="op">)</span> <span class="fu"><a href="../reference/explain.html">explain_edges</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">h</span>, target <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>,</span>
 <span>                      noise <span class="op">=</span> <span class="fl">0.01</span>, reps <span class="op">=</span> <span class="fl">3</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; mean_spearman  min_spearman </span></span>

@@ -5,8 +5,22 @@ Samples the computation graph of a set of seed nodes, as in GraphSAGE
 `fanouts[k]` **incoming** edges of every node reached in hop `k - 1`
 (hop 0 is the seed set); sources of the sampled edges join the subgraph.
 Messages in a GNN flow along these edges towards the seeds, so an `L`
-layer model with `L` fanouts sees exactly the information it would see
-on the full graph when every fanout is `-1` (all neighbors).
+layer model with `L` fanouts sees the same edges into the seeds as on
+the full graph when every fanout is `-1` (all neighbors). Seed outputs
+then equal full graph outputs for layers that aggregate over incoming
+edges with target side normalization only (sum, mean or max aggregation,
+as in `"sage"`, `"gin"` and `"graph_conv"`). They differ for `"gcn"`,
+whose symmetric normalization uses the degree of source nodes, which is
+incomplete at the boundary of the sampled subgraph, unless the subgraph
+carries the full graph degrees: with every fanout `-1` the result has
+`node_degree` (weighted full graph in degree) and `node_self_loop`,
+which
+[`gcn_conv()`](https://adamrsophie.github.io/graphlearnR/reference/gnn-layers.md)
+uses, through
+[`gnn_model()`](https://adamrsophie.github.io/graphlearnR/reference/gnn_model.md)
+and
+[`train_graph_model()`](https://adamrsophie.github.io/graphlearnR/reference/train_graph_model.md),
+so GCN seed outputs are exact as well.
 
 ## Usage
 

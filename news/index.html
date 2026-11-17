@@ -64,130 +64,95 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="graphlearnr-010">graphlearnR 0.1.0<a class="anchor" aria-label="anchor" href="#graphlearnr-010"></a></h2>
-<p>First release.</p>
+<p>Initial release. graphlearnR provides graph machine learning for R on top of the <code>torch</code> package: graph data structures, message passing layers, model builders, training and evaluation, sampling for large graphs, heterogeneous and temporal graphs, graph transformers, and explainability.</p>
 <div class="section level3">
 <h3 id="graph-data-0-1-0">Graph data<a class="anchor" aria-label="anchor" href="#graph-data-0-1-0"></a></h3>
 <ul><li>
-<code><a href="../reference/graph_data.html">graph_data()</a></code> stores homogeneous graphs with 1-based <code>edge_index</code>, node and edge features, labels, weights, masks, and identifiers. Undirected input is given once per pair and stored in both directions with <code>edge_pair</code>.</li>
-<li>Conversions with igraph, edge lists, and dense or sparse adjacency matrices; <code><a href="../reference/graph_tensors.html">graph_tensors()</a></code> moves a graph to torch tensors on any device.</li>
+<code><a href="../reference/graph_data.html">graph_data()</a></code> stores homogeneous graphs with 1-based <code>edge_index</code>, node and edge features, labels, weights, masks, and node identifiers. Undirected input is given once per pair and stored in both directions.</li>
+<li>Conversion to and from igraph, edge lists, and dense or sparse adjacency matrices; <code><a href="../reference/graph_tensors.html">graph_tensors()</a></code> moves a graph to torch tensors on any device.</li>
 <li>
-<code><a href="../reference/graph_batch.html">graph_batch()</a></code> and <code><a href="../reference/graph_batch.html">unbatch()</a></code> combine graphs into one disconnected graph and back.</li>
-<li>Transforms: self loops, coalescing, induced subgraphs, symmetrization, feature normalization, degree features.</li>
+<code><a href="../reference/graph_batch.html">graph_batch()</a></code> and <code><a href="../reference/graph_batch.html">unbatch()</a></code> combine graphs into one disconnected graph and split them again.</li>
+<li>Transforms for self loops, duplicate edges, induced subgraphs, symmetrization, feature normalization, and degree features.</li>
+<li>Validation of graph structure, and a shared feature schema for datasets (<code><a href="../reference/graph_dataset.html">graph_schema()</a></code>).</li>
 </ul></div>
 <div class="section level3">
-<h3 id="message-passing-and-layers-0-1-0">Message passing and layers<a class="anchor" aria-label="anchor" href="#message-passing-and-layers-0-1-0"></a></h3>
+<h3 id="layers-and-message-passing-0-1-0">Layers and message passing<a class="anchor" aria-label="anchor" href="#layers-and-message-passing-0-1-0"></a></h3>
 <ul><li>
-<code><a href="../reference/cheb_conv.html">cheb_conv()</a></code> (ChebConv), <code><a href="../reference/pna_conv.html">pna_conv()</a></code> with <code><a href="../reference/pna_conv.html">pna_degree()</a></code> (PNA), <code><a href="../reference/appnp.html">appnp()</a></code> and <code><a href="../reference/appnp.html">appnp_model()</a></code> (APPNP), and <code><a href="../reference/topk_pool.html">sag_pool()</a></code> (SAGPool).</li>
-<li>Scatter aggregations (sum, mean, max, min, std, softmax) and <code><a href="../reference/message_passing.html">message_passing()</a></code> for custom layers.</li>
-<li>Layers: GraphSAGE, GCN, GraphConv, GIN and GINE, GAT, GATv2, graph transformer convolution, edge conditioned convolution (NNConv), and RGCN with basis decomposition.</li>
-<li>Global add, mean, max, and attention pooling, top-k pooling, and DiffPool (<code><a href="../reference/to_dense_adj.html">dense_diff_pool()</a></code>, <code><a href="../reference/to_dense_adj.html">to_dense_adj()</a></code>, <code><a href="../reference/to_dense_adj.html">dense_graph_conv()</a></code>, <code><a href="../reference/diffpool_model.html">diffpool_model()</a></code>), whose auxiliary losses the trainer adds.</li>
+<code><a href="../reference/message_passing.html">message_passing()</a></code> and scatter aggregations (sum, mean, max, min, std, softmax) for custom layers.</li>
+<li>Convolutions: GraphSAGE, GCN, GraphConv, GIN and GINE, GAT, GATv2, graph transformer convolution, edge conditioned convolution (NNConv), RGCN with basis decomposition, ChebConv, APPNP, PNA, and EdgeConv.</li>
+<li>Pooling: global add, mean, max, and attention pooling, top-k pooling, SAGPool, and DiffPool with its auxiliary losses.</li>
 <li>
-<code><a href="../reference/hgt_conv.html">hgt_conv()</a></code>: heterogeneous graph transformer layer, also available as <code>hetero_gnn_model(conv = "hgt")</code>.</li>
+<code><a href="../reference/meta_layer.html">meta_layer()</a></code> composes edge, node, and graph level updates into a graph network block.</li>
 <li>
 <code><a href="../reference/gnn_model.html">gnn_model()</a></code> builds node, edge, link, and graph level models with normalization, residual connections, and dropout.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="training-and-evaluation-0-1-0">Training and evaluation<a class="anchor" aria-label="anchor" href="#training-and-evaluation-0-1-0"></a></h3>
 <ul><li>
-<code><a href="../reference/train_graph_model.html">train_graph_model()</a></code> trains node, edge, link, and graph classification and regression models, full batch or with neighbor sampling, with early stopping, schedulers, checkpoints, and a reproducibility record.</li>
+<code><a href="../reference/train_graph_model.html">train_graph_model()</a></code> trains classification and regression models for nodes, edges, links, and whole graphs, full batch or on sampled subgraphs, with early stopping, learning rate schedulers, checkpoints, gradient clipping, class weights, and a reproducibility record of the settings and split members.</li>
 <li>
 <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code>, <code><a href="../reference/evaluate_graph_model.html">evaluate_graph_model()</a></code>, <code><a href="../reference/save_graph_fit.html">save_graph_fit()</a></code>, and <code><a href="../reference/save_graph_fit.html">load_graph_fit()</a></code>.</li>
-<li>Leakage-safe splits for nodes, edges, edge labels, and graphs (random, stratified, group, scaffold).</li>
-<li>Metrics for classification, calibration, regression, ranking, and clustering.</li>
+<li>Leakage safe splits for nodes, edges, edge labels, and graphs (random, stratified, group, and scaffold). Link splits treat parallel edges and both directions of an undirected pair as one unit, and remove held out pairs from paired reverse relations.</li>
+<li>Metrics for classification, calibration, regression, link ranking (filtered <a href="mailto:Hits@K" class="email">Hits@K</a> and MRR), and clustering; <code><a href="../reference/evaluate_embeddings.html">evaluate_embeddings()</a></code> with a linear probe; <code><a href="../reference/ogb_evaluate.html">ogb_evaluate()</a></code> with the official OGB metrics.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="sampling-and-scale-0-1-0">Sampling and scale<a class="anchor" aria-label="anchor" href="#sampling-and-scale-0-1-0"></a></h3>
+<h3 id="sampling-for-large-graphs-0-1-0">Sampling for large graphs<a class="anchor" aria-label="anchor" href="#sampling-for-large-graphs-0-1-0"></a></h3>
 <ul><li>
 <code><a href="../reference/sample_neighbors.html">sample_neighbors()</a></code>, <code><a href="../reference/k_hop_subgraph.html">k_hop_subgraph()</a></code>, node and graph loaders, negative sampling, and corrupted tails for ranking evaluation.</li>
 <li>
-<code><a href="../reference/cluster_loader.html">cluster_loader()</a></code> (Cluster-GCN) and <code><a href="../reference/cluster_loader.html">saint_loader()</a></code> (GraphSAINT random walks with loss and edge normalization), used through <code>train_graph_model(loader = )</code>.</li>
+<code><a href="../reference/cluster_loader.html">cluster_loader()</a></code> (Cluster-GCN), <code><a href="../reference/cluster_loader.html">saint_loader()</a></code> (GraphSAINT random walks with loss and edge normalization), and <code><a href="../reference/ladies_loader.html">ladies_loader()</a></code> (layer wise importance sampling), used through <code>train_graph_model(loader = )</code>.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="heterogeneous-temporal-and-transformer-models-0-1-0">Heterogeneous, temporal, and transformer models<a class="anchor" aria-label="anchor" href="#heterogeneous-temporal-and-transformer-models-0-1-0"></a></h3>
+<h3 id="heterogeneous-graphs-0-1-0">Heterogeneous graphs<a class="anchor" aria-label="anchor" href="#heterogeneous-graphs-0-1-0"></a></h3>
 <ul><li>
-<code><a href="../reference/hetero_graph_data.html">hetero_graph_data()</a></code>, reverse relations, typed sampling, typed link splits, <code><a href="../reference/hetero_conv.html">hetero_conv()</a></code>, and <code><a href="../reference/hetero_gnn_model.html">hetero_gnn_model()</a></code>.</li>
-<li>Event based temporal graphs, snapshots, strictly causal temporal neighbors, a graph GRU, spatiotemporal forecasting, and dynamic link prediction with baselines.</li>
+<code><a href="../reference/hetero_graph_data.html">hetero_graph_data()</a></code> with reverse relations, metapaths (<code><a href="../reference/add_metapath.html">add_metapath()</a></code>), typed neighbor sampling, and typed link splits.</li>
 <li>
-<code><a href="../reference/tgn_model.html">tgn_model()</a></code> and <code><a href="../reference/tgn_model.html">train_tgn()</a></code>: temporal graph networks with node memory and time, graph sum, or graph attention embeddings.</li>
+<code><a href="../reference/hetero_conv.html">hetero_conv()</a></code> with sum, mean, or semantic attention across relations, and <code><a href="../reference/hetero_gnn_model.html">hetero_gnn_model()</a></code> with per relation SAGE, GraphConv, or GAT layers, RGCN, HGT (<code><a href="../reference/hgt_conv.html">hgt_conv()</a></code>), and HAN.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="temporal-graphs-0-1-0">Temporal graphs<a class="anchor" aria-label="anchor" href="#temporal-graphs-0-1-0"></a></h3>
+<ul><li>Event based temporal graphs, snapshots, and strictly causal temporal neighbors.</li>
+<li>Temporal graph networks (<code><a href="../reference/tgn_model.html">tgn_model()</a></code>, <code><a href="../reference/tgn_model.html">train_tgn()</a></code>) with node memory and time, graph sum, or multi layer graph attention embeddings.</li>
+<li>Dynamic link prediction with a graph GRU or EvolveGCN-O (<code><a href="../reference/evolve_gcn_cell.html">evolve_gcn_cell()</a></code>), and spatiotemporal forecasting.</li>
 <li>
-<code>hgt_conv(temporal_encoding = TRUE)</code> and the <code>edge_time</code> field of heterogeneous relations add HGT’s relative temporal encoding.</li>
+<code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> for temporal fits uses only information available before the prediction time; temporal fits can be saved and loaded.</li>
+<li>HGT relative temporal encoding and continuous depth graph neural ODE blocks (<code><a href="../reference/graph_ode_block.html">graph_ode_block()</a></code>, <code><a href="../reference/graph_ode_block.html">graph_ode_model()</a></code>).</li>
+</ul></div>
+<div class="section level3">
+<h3 id="graph-transformers-0-1-0">Graph transformers<a class="anchor" aria-label="anchor" href="#graph-transformers-0-1-0"></a></h3>
+<ul><li>Laplacian and random walk positional encodings and shortest path distances.</li>
 <li>
-<code><a href="../reference/graph_ode_block.html">graph_ode_block()</a></code> and <code><a href="../reference/graph_ode_block.html">graph_ode_model()</a></code>: GRAND style continuous depth diffusion with fixed step Runge-Kutta or Euler integration.</li>
-<li>Laplacian and random walk positional encodings, shortest path distances, and a Graphormer style graph transformer.</li>
+<code><a href="../reference/graph_transformer_model.html">graph_transformer_model()</a></code>: a Graphormer style transformer with shortest path and edge feature attention biases.</li>
+<li>
+<code><a href="../reference/gps_layer.html">gps_layer()</a></code>: GPS layers combining local message passing with global attention, exact or linear (<code><a href="../reference/linear_attention.html">linear_attention()</a></code>, with Performer FAVOR+ and elu kernels).</li>
 </ul></div>
 <div class="section level3">
 <h3 id="explainability-0-1-0">Explainability<a class="anchor" aria-label="anchor" href="#explainability-0-1-0"></a></h3>
-<ul><li>Saliency, integrated gradients, edge gradients, occlusion, GNNExplainer, attention weights, explanation subgraphs, fidelity, and stability.</li>
+<ul><li>Saliency, integrated gradients, edge gradients, occlusion, GNNExplainer, PGExplainer (<code><a href="../reference/pg_explainer.html">pg_explainer()</a></code>), SubgraphX (<code><a href="../reference/subgraphx.html">subgraphx()</a></code>), and attention weights.</li>
+<li>Explanation subgraphs, fidelity, and stability measures.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="datasets-0-1-0">Datasets<a class="anchor" aria-label="anchor" href="#datasets-0-1-0"></a></h3>
-<ul><li>Built in: Zachary’s karate club, stochastic block models, and synthetic graph, heterogeneous, and temporal datasets.</li>
-<li>Downloaders with checksum verification for TU datasets and the LINQS citation graphs (Cora, CiteSeer); nothing third party is bundled.</li>
+<ul><li>Built in: Zachary’s karate club, stochastic block models, and synthetic graph, heterogeneous, temporal, spatiotemporal, and molecular datasets.</li>
+<li>Downloaders with checksum verification for TU datasets and the LINQS citation graphs (Cora, CiteSeer, Pubmed); no third party data is bundled.</li>
+<li>Readers for OGB node and graph property datasets with their official splits.</li>
 <li>
-<code><a href="../reference/read_ogb_node.html">download_ogb()</a></code>, <code><a href="../reference/read_ogb_node.html">read_ogb_node()</a></code>, and <code><a href="../reference/read_ogb_node.html">read_ogb_graph()</a></code> for OGB node and graph property datasets in their CSV layout, with official splits.</li>
+<code><a href="../reference/molecule_graph.html">molecule_graph()</a></code> builds molecular graphs from atoms and bonds.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="molecules-0-1-0">Molecules<a class="anchor" aria-label="anchor" href="#molecules-0-1-0"></a></h3>
-<ul><li>
-<code><a href="../reference/molecule_graph.html">molecule_graph()</a></code> builds graphs from atoms and bonds with element and bond order features; <code><a href="../reference/molecule_graph.html">dataset_synthetic_molecules()</a></code> generates small synthetic molecules with scaffold identifiers for scaffold splits.</li>
-</ul></div>
-<div class="section level3">
-<h3 id="models-evaluation-and-data-additions-0-1-0">Models, evaluation and data (additions)<a class="anchor" aria-label="anchor" href="#models-evaluation-and-data-additions-0-1-0"></a></h3>
-<ul><li>
-<code><a href="../reference/gnn-layers.html">edge_conv()</a></code> (EdgeConv of dynamic graph CNNs, max over [x_i, x_j - x_i] messages).</li>
-<li>HAN: <code>hetero_gnn_model(conv = "han")</code> with semantic attention across relations (<code>hetero_conv(aggr = "semantic")</code>), and <code><a href="../reference/add_metapath.html">add_metapath()</a></code> to compose relations into metapaths.</li>
-<li>
-<code><a href="../reference/gps_layer.html">gps_layer()</a></code>: GPS graph transformer layer (local message passing plus masked global attention per graph), with exact or linear (<code>attn_type = "performer"</code>) global attention; <code><a href="../reference/linear_attention.html">linear_attention()</a></code> provides FAVOR+ and elu kernel attention per graph.</li>
-<li>
-<code>tgn_model(num_layers = )</code> stacks TGAT style temporal attention over multiple hops of earlier interactions.</li>
-<li>
-<code><a href="../reference/pg_explainer.html">pg_explainer()</a></code> (PGExplainer: an amortized edge mask network) and <code><a href="../reference/subgraphx.html">subgraphx()</a></code> (SubgraphX: Monte Carlo tree search for subgraphs scored by Shapley values) explain predictions.</li>
-<li>
-<code><a href="../reference/meta_layer.html">meta_layer()</a></code> composes edge, node and graph level updates (graph network block, as PyG’s <code>MetaLayer</code>).</li>
-<li>
-<code><a href="../reference/evolve_gcn_cell.html">evolve_gcn_cell()</a></code> (EvolveGCN-O: GCN weights evolve with a GRU across snapshots), usable in <code>train_dynamic_link_model(cell = "evolve")</code>.</li>
-<li>
-<code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> for temporal fits: TGN continues from its stored memory and neighbor store, dynamic link models score from earlier snapshots, and spatiotemporal models forecast from given origins; temporal fits can be saved and loaded.</li>
-<li>Heterogeneous node tasks train on typed neighbor samples with <code>fanouts</code> and <code>batch_size</code>.</li>
-<li>
-<code><a href="../reference/ladies_loader.html">ladies_loader()</a></code>: layer wise importance sampled node batches (LADIES, the successor of FastGCN) for <code>train_graph_model(loader = )</code>.</li>
-<li>
-<code><a href="../reference/evaluate_embeddings.html">evaluate_embeddings()</a></code> (linear probe and clustering), average precision in classification metrics, filtered per positive link ranking in <code><a href="../reference/evaluate_graph_model.html">evaluate_graph_model()</a></code>, and <code><a href="../reference/ogb_evaluate.html">ogb_evaluate()</a></code> with the official OGB metrics; the <code>bce_masked</code> loss trains multi task targets with missing labels.</li>
-<li>Datasets check a shared feature schema (<code><a href="../reference/graph_dataset.html">graph_schema()</a></code>); <code><a href="../reference/download-datasets.html">download_pubmed_raw()</a></code> and <code><a href="../reference/download-datasets.html">read_linqs_pubmed()</a></code> read Pubmed-Diabetes.</li>
-<li>igraph conversion keeps feature names, label matrices, edge masks, graph labels, graph attributes and metadata; <code><a href="../reference/graph_batch.html">unbatch()</a></code> rebuilds heterogeneous batches.</li>
-<li>The reproducibility record keeps exact split members and all training settings.</li>
-<li>
-<code><a href="../reference/graph_transformer_model.html">graph_transformer_model()</a></code> caches shortest path distances of recent batches and, with <code>edge_dim</code>, adds a learned attention bias from edge features (Graphormer’s edge encoding for direct edges).</li>
-<li>
-<code><a href="../reference/scatter.html">scatter_std()</a></code> (and the PNA <code>std</code> aggregator) now returns 0 for empty and constant groups, as PyTorch Geometric’s <code>StdAggregation</code>; PNA layers are compared with PyG’s <code>PNAConv</code> in the benchmark workflow.</li>
-</ul></div>
-<div class="section level3">
-<h3 id="correctness-and-safety-behavior-0-1-0">Correctness and safety behavior<a class="anchor" aria-label="anchor" href="#correctness-and-safety-behavior-0-1-0"></a></h3>
-<ul><li>
-<code><a href="../reference/split_edges.html">split_edges()</a></code> and <code><a href="../reference/split_edges_hetero.html">split_edges_hetero()</a></code> treat parallel duplicates (and, for undirected or same type relations, both orientations) as one unit, so a held out pair never stays in the training graph.</li>
-<li>Masks are checked for pairwise overlap, including edge masks; <code><a href="../reference/train_spatiotemporal_model.html">train_spatiotemporal_model()</a></code> purges windows that cross split boundaries.</li>
-<li>Class labels share one level set across batches, splits and predictions; metrics check that truth and prediction lengths match.</li>
-<li>TGN updates memory in event order, never draws the positive pair as a negative, keeps events with one timestamp in one batch, and checks that train, validation and test periods do not overlap.</li>
-<li>Saved fits keep link decoders and heterogeneous link schemas; edge predictions for given pairs use the features of the matching edges.</li>
-<li>Explainers restore the model’s training mode and parameter gradient flags; <code><a href="../reference/explain.html">gnn_explainer()</a></code> supports regression and rejects models that ignore edge weights.</li>
-<li>Sub seeds are drawn with <code><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int()</a></code>, so seed arithmetic never overflows.</li>
-<li>Training errors on mini batch options a task would ignore (<code>fanouts</code>, <code>batch_size</code>, <code>loader</code>), and <code><a href="../reference/graph_dataset.html">write_graph_dataset()</a></code> will not mix files with an existing dataset unless <code>overwrite = TRUE</code>.</li>
-<li>Downloads without a recorded checksum warn; OGB archives use https.</li>
-</ul></div>
-<div class="section level3">
-<h3 id="sibling-packages-optional-0-1-0">Sibling packages (optional)<a class="anchor" aria-label="anchor" href="#sibling-packages-optional-0-1-0"></a></h3>
+<h3 id="optional-integrations-0-1-0">Optional integrations<a class="anchor" aria-label="anchor" href="#optional-integrations-0-1-0"></a></h3>
 <ul><li>
 <code><a href="../reference/graph_diffusion.html">graph_diffusion()</a></code> simulates diffusion on a graph with the modelcompR ODE solvers.</li>
 <li>
 <code><a href="../reference/graph_operator_symbolic.html">graph_operator_symbolic()</a></code> returns exact adjacency, Laplacian, and GCN operators as symcompR matrices.</li>
 <li>
-<code><a href="../reference/consistent_labels.html">consistent_labels()</a></code> finds the most probable labeling that obeys edge rules with the z3r optimizer.</li>
+<code><a href="../reference/consistent_labels.html">consistent_labels()</a></code> finds the most probable labeling that satisfies edge rules with the z3r optimizer.</li>
 <li>
 <code><a href="../reference/select_links.html">select_links()</a></code> chooses links under a budget as a 0-1 program in optcompR.</li>
 <li>
 <code><a href="../reference/aggregate_jax.html">aggregate_jax()</a></code> performs neighborhood aggregation with jaxR arrays.</li>
 <li>
-<code><a href="../reference/luz_node_dataloader.html">luz_node_dataloader()</a></code> and <code>luz_node_module</code> train node models with luz; <code>augment()</code> and <code>glance()</code> methods summarize fits for tidymodels.</li>
+<code><a href="../reference/luz_node_dataloader.html">luz_node_dataloader()</a></code> and <code>luz_node_module</code> train node models with luz; <code>augment()</code> and <code>glance()</code> summarize fits for tidymodels.</li>
 </ul></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -133,11 +133,13 @@ Forecasting: a matrix with one row per origin and one column per node.</p>
 <ul><li><p><strong>TGN</strong> (<code><a href="tgn_model.html">train_tgn()</a></code>): scores candidate pairs <code>pairs</code> at times
 <code>time</code>. The fit keeps the memory, last update times and neighbor store
 after all training, validation and test events. Events observed since
-then can be given as <code>new_data</code> (a <code>temporal_graph_data</code> with times at
-or after the last event of the fit); they update the state first, in
-the same batches as during training, and no score uses an event at or
-after its own time. Prediction times must not precede the last
-observed event.</p></li>
+then can be given as <code>new_data</code> (a <code>temporal_graph_data</code> with times
+strictly after the last event of the fit, so a group of events with one
+time stamp is never split); they update the state first, in the same
+batches as during training. Prediction times must be strictly after
+the last observed event, because the memory and neighbor store already
+contain every observed event: no score uses an event at or after its
+own time.</p></li>
 <li><p><strong>Dynamic link prediction</strong> (<code><a href="train_dynamic_link_model.html">train_dynamic_link_model()</a></code>): scores
 <code>pairs</code> as links of snapshot <code>step</code> of <code>new_data</code> (a
 <code>snapshot_sequence</code>), from the recurrent state built on snapshots

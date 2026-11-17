@@ -4,14 +4,32 @@
 fanouts[k] incoming edges of every node reached in hop k - 1
 (hop 0 is the seed set); sources of the sampled edges join the subgraph.
 Messages in a GNN flow along these edges towards the seeds, so an
-L layer model with L fanouts sees exactly the information it would see
-on the full graph when every fanout is -1 (all neighbors)."><meta property="og:description" content="Samples the computation graph of a set of seed nodes, as in GraphSAGE
+L layer model with L fanouts sees the same edges into the seeds as on
+the full graph when every fanout is -1 (all neighbors). Seed outputs then
+equal full graph outputs for layers that aggregate over incoming edges
+with target side normalization only (sum, mean or max aggregation, as in
+&quot;sage&quot;, &quot;gin&quot; and &quot;graph_conv&quot;). They differ for &quot;gcn&quot;, whose
+symmetric normalization uses the degree of source nodes, which is
+incomplete at the boundary of the sampled subgraph, unless the subgraph
+carries the full graph degrees: with every fanout -1 the result has
+node_degree (weighted full graph in degree) and node_self_loop, which
+gcn_conv() uses, through gnn_model() and train_graph_model(), so
+GCN seed outputs are exact as well."><meta property="og:description" content="Samples the computation graph of a set of seed nodes, as in GraphSAGE
 (Hamilton et al. 2017) and PyG's NeighborLoader. Hop k samples up to
 fanouts[k] incoming edges of every node reached in hop k - 1
 (hop 0 is the seed set); sources of the sampled edges join the subgraph.
 Messages in a GNN flow along these edges towards the seeds, so an
-L layer model with L fanouts sees exactly the information it would see
-on the full graph when every fanout is -1 (all neighbors)."><meta property="og:image" content="https://adamrsophie.github.io/graphlearnR/logo.svg"></head><body>
+L layer model with L fanouts sees the same edges into the seeds as on
+the full graph when every fanout is -1 (all neighbors). Seed outputs then
+equal full graph outputs for layers that aggregate over incoming edges
+with target side normalization only (sum, mean or max aggregation, as in
+&quot;sage&quot;, &quot;gin&quot; and &quot;graph_conv&quot;). They differ for &quot;gcn&quot;, whose
+symmetric normalization uses the degree of source nodes, which is
+incomplete at the boundary of the sampled subgraph, unless the subgraph
+carries the full graph degrees: with every fanout -1 the result has
+node_degree (weighted full graph in degree) and node_self_loop, which
+gcn_conv() uses, through gnn_model() and train_graph_model(), so
+GCN seed outputs are exact as well."><meta property="og:image" content="https://adamrsophie.github.io/graphlearnR/logo.svg"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -81,8 +99,17 @@ on the full graph when every fanout is -1 (all neighbors)."><meta property="og:i
 <code>fanouts[k]</code> <strong>incoming</strong> edges of every node reached in hop <code>k - 1</code>
 (hop 0 is the seed set); sources of the sampled edges join the subgraph.
 Messages in a GNN flow along these edges towards the seeds, so an
-<code>L</code> layer model with <code>L</code> fanouts sees exactly the information it would see
-on the full graph when every fanout is <code>-1</code> (all neighbors).</p>
+<code>L</code> layer model with <code>L</code> fanouts sees the same edges into the seeds as on
+the full graph when every fanout is <code>-1</code> (all neighbors). Seed outputs then
+equal full graph outputs for layers that aggregate over incoming edges
+with target side normalization only (sum, mean or max aggregation, as in
+<code>"sage"</code>, <code>"gin"</code> and <code>"graph_conv"</code>). They differ for <code>"gcn"</code>, whose
+symmetric normalization uses the degree of source nodes, which is
+incomplete at the boundary of the sampled subgraph, unless the subgraph
+carries the full graph degrees: with every fanout <code>-1</code> the result has
+<code>node_degree</code> (weighted full graph in degree) and <code>node_self_loop</code>, which
+<code><a href="gnn-layers.html">gcn_conv()</a></code> uses, through <code><a href="gnn_model.html">gnn_model()</a></code> and <code><a href="train_graph_model.html">train_graph_model()</a></code>, so
+GCN seed outputs are exact as well.</p>
     </div>
 
     <div class="section level2">

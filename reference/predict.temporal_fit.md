@@ -66,10 +66,12 @@ matrix with one row per origin and one column per node.
   scores candidate pairs `pairs` at times `time`. The fit keeps the
   memory, last update times and neighbor store after all training,
   validation and test events. Events observed since then can be given as
-  `new_data` (a `temporal_graph_data` with times at or after the last
-  event of the fit); they update the state first, in the same batches as
-  during training, and no score uses an event at or after its own time.
-  Prediction times must not precede the last observed event.
+  `new_data` (a `temporal_graph_data` with times strictly after the last
+  event of the fit, so a group of events with one time stamp is never
+  split); they update the state first, in the same batches as during
+  training. Prediction times must be strictly after the last observed
+  event, because the memory and neighbor store already contain every
+  observed event: no score uses an event at or after its own time.
 
 - **Dynamic link prediction**
   ([`train_dynamic_link_model()`](https://adamrsophie.github.io/graphlearnR/reference/train_dynamic_link_model.md)):

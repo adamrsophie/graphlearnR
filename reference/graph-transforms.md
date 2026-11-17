@@ -100,6 +100,10 @@ A `graph_data` object.
 - `compose_transforms()`: chain transforms for
   [`graph_dataset()`](https://adamrsophie.github.io/graphlearnR/reference/graph_dataset.md).
 
+The edge level transforms (loops, coalescing, subgraphs, undirected
+conversion) reject a `graph_batch`, whose membership and offsets they
+would leave stale; transform the graphs before batching them.
+
 ## Examples
 
 ``` r

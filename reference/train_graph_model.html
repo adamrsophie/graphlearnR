@@ -157,7 +157,11 @@ tasks with <code>fanouts</code>).</p></dd>
 
 <dt id="arg-fanouts">fanouts<a class="anchor" aria-label="anchor" href="#arg-fanouts"></a></dt>
 <dd><p>Neighbor sampling fanouts for node mini-batches. For a
-heterogeneous node task they go to <code><a href="sample_hetero_neighbors.html">sample_hetero_neighbors()</a></code> (a
+homogeneous graph the full graph is never moved to the device: batches
+are built one at a time, and validation runs in batches on all neighbor
+subgraphs of the validation nodes with as many hops as <code>fanouts</code>, which
+equals full graph validation for layers that aggregate incoming edges
+(all <code><a href="gnn_model.html">gnn_model()</a></code> architectures). For a heterogeneous node task they go to <code><a href="sample_hetero_neighbors.html">sample_hetero_neighbors()</a></code> (a
 vector applied to every relation, or a named list per relation), with
 training nodes of <code>target_type</code> as seeds; the loss uses the seeds only
 and validation runs on the full graph.</p></dd>
@@ -266,8 +270,8 @@ fixed.</p>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   .row node_id .pred_class .prob_Mr. Hi .prob_Officer</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1    1       1      Mr. Hi    0.9745257    0.02547433</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2    2       2      Mr. Hi    0.9680582    0.03194175</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3    3       3      Mr. Hi    0.8855029    0.11449710</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2    2       2      Mr. Hi    0.9680582    0.03194176</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    3       3      Mr. Hi    0.8855029    0.11449708</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4    4       4      Mr. Hi    0.9868816    0.01311841</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5    5       5      Mr. Hi    0.9835723    0.01642764</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6    6       6      Mr. Hi    0.9881732    0.01182682</span>

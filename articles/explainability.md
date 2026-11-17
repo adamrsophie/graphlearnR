@@ -73,7 +73,7 @@ ig <- explain_integrated_gradients(fit, g, target = 1, steps = 64)
 sum(ig$node_feature)
 #> [1] 9.833233
 ig$completeness_gap
-#> [1] 0.006706327
+#> [1] 0.006706059
 ```
 
 ## Edge attributions
@@ -89,12 +89,12 @@ with respect to those weights, and returns a table.
 eg <- explain_edges(fit, g, target = 1)
 head(eg$edges[order(-abs(eg$edges$attribution)), ])
 #>    edge from to attribution
-#> 32   32   32  1  -0.6392071
+#> 32   32   32  1  -0.6392072
 #> 22   22   13  1   0.6088946
-#> 20   20   12  1   0.5910739
-#> 12   12    7  1   0.4951163
+#> 20   20   12  1   0.5910738
+#> 12   12    7  1   0.4951162
 #> 10   10    6  1   0.4866577
-#> 8     8    5  1   0.4837199
+#> 8     8    5  1   0.4837200
 ```
 
 ### Occlusion
@@ -109,11 +109,11 @@ edges but needs no gradients and is easy to interpret.
 oc <- explain_occlusion(fit, g, target = 1)
 head(oc$edges[order(-oc$edges$attribution), ])
 #>    edge from to attribution
-#> 11   22   13  1   0.6273994
-#> 10   20   12  1   0.6089315
-#> 6    12    7  1   0.5063629
+#> 11   22   13  1   0.6274004
+#> 10   20   12  1   0.6089334
+#> 6    12    7  1   0.5063639
 #> 5    10    6  1   0.4981394
-#> 4     8    5  1   0.4943409
+#> 4     8    5  1   0.4943419
 #> 9    18   11  1   0.4860201
 ```
 
@@ -154,13 +154,39 @@ pg <- pg_explainer(fit, g, epochs = 20, edge_size = 0.05, seed = 1)
 px <- predict(pg, g, target = 1)
 head(px$edges[order(-px$edges$attribution), ])
 #>    edge from to  attribution
-#> 83   83    9 31 1.210390e-06
-#> 84   84   31  9 1.179961e-06
-#> 59   59    3 10 7.394756e-07
-#> 60   60   10  3 6.256212e-07
-#> 55   55    3 29 4.855987e-07
-#> 61   61    3  9 4.808998e-07
+#> 83   83    9 31 4.340112e-07
+#> 84   84   31  9 4.168328e-07
+#> 59   59    3 10 3.237930e-07
+#> 60   60   10  3 2.779630e-07
+#> 55   55    3 29 2.117927e-07
+#> 61   61    3  9 2.101549e-07
+range(px$edges$attribution)
+#> [1] 4.108396e-11 4.340112e-07
 ```
+
+The mask values are all close to zero. That is the answer to the
+question PGExplainer asks (the smallest set of edges that keeps the
+prediction), not a failure: with one-hot node features this model has
+memorized the nodes, and it predicts the same class for every node even
+with all edges removed.
+
+``` r
+
+tt <- graph_tensors(g)
+m <- fit$model
+m$eval()
+full <- with_no_grad(m(tt$x, tt$edge_index))
+no_edges <- with_no_grad(m(tt$x, tt$edge_index, edge_weight = torch_zeros(num_edges(g))))
+mean(as.integer(full$argmax(dim = 2)) == as.integer(no_edges$argmax(dim = 2)))
+#> [1] 1
+```
+
+Only the order of the mask values carries information here, which is
+what
+[`explanation_fidelity()`](https://adamrsophie.github.io/graphlearnR/reference/explanation_fidelity.md)
+below uses. On a model whose predictions need the graph, the mask
+separates the edges that matter; the tests of the package check that it
+recovers the one path that carries the signal in a toy graph.
 
 ### SubgraphX
 
@@ -178,15 +204,15 @@ sx <- subgraphx(fit, g, target = 1, max_nodes = 5, rollouts = 5, samples = 8, se
 sx$subgraph_nodes
 #> [1] 1 2 3 4 8
 sx$score
-#> [1] 1.045696
+#> [1] 1.045697
 head(sx$candidates)
 #>    size       nodes     score
-#> 3     5   1,2,3,4,8 1.0456963
-#> 5     5  1,2,4,8,14 0.9866302
-#> 4     5 1,2,4,14,34 0.9631625
-#> 8     5  1,3,4,8,14 0.8916118
-#> 10    5 1,3,8,14,33 0.5923036
-#> 2     5  1,2,3,4,14 0.4377630
+#> 3     5   1,2,3,4,8 1.0456966
+#> 5     5  1,2,4,8,14 0.9866305
+#> 4     5 1,2,4,14,34 0.9631630
+#> 8     5  1,3,4,8,14 0.8916120
+#> 10    5 1,3,8,14,33 0.5923033
+#> 2     5  1,2,3,4,14 0.4377623
 ```
 
 ### Explanation subgraphs
@@ -230,10 +256,10 @@ head(aw[[1]])
 #>   from to      head1      head2
 #> 1    1  2 0.19154441 0.16146892
 #> 2    2  1 0.03586031 0.07413401
-#> 3    1  3 0.16340749 0.13701235
-#> 4    3  1 0.05869362 0.03081638
+#> 3    1  3 0.16340747 0.13701235
+#> 4    3  1 0.05869362 0.03081637
 #> 5    1  4 0.22324155 0.21166605
-#> 6    4  1 0.12893747 0.06319855
+#> 6    4  1 0.12893744 0.06319855
 ```
 
 ## Is the explanation any good?
@@ -253,10 +279,10 @@ rbind(gradient = explanation_fidelity(fit, g, eg, k = 5),
       pg_explainer = explanation_fidelity(fit, g, px, k = 5),
       subgraphx = explanation_fidelity(fit, g, sx, k = sum(sx$edges$attribution)))
 #>               fidelity_plus fidelity_minus
-#> gradient         1.72813797      -3.426292
-#> gnn_explainer   -0.30329800       3.899850
-#> pg_explainer    -0.02089596       3.899850
-#> subgraphx        0.44322872       3.091657
+#> gradient         1.72813892      -3.426291
+#> gnn_explainer   -0.30329609       3.899852
+#> pg_explainer    -0.02089596       3.899852
+#> subgraphx        0.44322872       3.091658
 ```
 
 ### Stability

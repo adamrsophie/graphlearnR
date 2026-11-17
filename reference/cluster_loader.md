@@ -101,7 +101,12 @@ node indices.
   trainer sums the per node loss of the training nodes in a batch,
   weighted by `node_norm`, for the built in losses and for loss
   functions with a `reduction` argument; in expectation this is the mean
-  loss over all nodes of the graph.
+  loss over all nodes of the graph. The edge correction makes the
+  sampled aggregation an unbiased estimate of a full graph weighted
+  **sum** over incoming edges, so use a layer that sums weighted
+  messages (`gnn_model("graph_conv")`, or `"gcn"`, which renormalizes
+  the weights it receives); a mean aggregator (the default of `"sage"`)
+  divides again by the random sampled degree and loses that property.
 
 Batches are drawn in R on the CPU.
 

@@ -61,10 +61,14 @@ layers together (with the weight of the first layer that kept an edge),
 so it works with any model in
 [`train_graph_model()`](https://adamrsophie.github.io/graphlearnR/reference/train_graph_model.md);
 this is a common simplification of the layer by layer bipartite blocks
-of the paper. Models should read `edge_weight` (for example
-`gnn_model("sage")` or `gnn_model("graph")`; `gcn_conv` normalizes the
-weights again). Only the seeds carry `train_mask`, so the loss uses the
-seeds only.
+of the paper. The weights of the incoming edges of each target sum to
+one, so they already define a weighted mean: use a model that **sums**
+weighted messages, such as `gnn_model("graph_conv")`. A mean aggregator
+(the default of `"sage"`) divides by the sampled count a second time,
+and `gcn_conv` renormalizes the weights again. Validation and prediction
+run on the full graph with its own edge weights, so the operator seen in
+training approximates, but is not identical to, the one used there. Only
+the seeds carry `train_mask`, so the loss uses the seeds only.
 
 ## References
 

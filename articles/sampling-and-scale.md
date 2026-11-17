@@ -121,7 +121,7 @@ evaluate_graph_model(fit, big)
 #> 4      recall_macro 0.994444444
 #> 5          f1_macro 0.994444059
 #> 6               ece 0.004808865
-#> 7             brier 0.012243923
+#> 7             brier 0.012243922
 #> 8           roc_auc 0.997314815
 #> 9 average_precision 0.996850348
 ```
@@ -158,7 +158,7 @@ evaluate_graph_model(fit_cl, big)
 #> 3   precision_macro 0.98907104
 #> 4      recall_macro 0.98888889
 #> 5          f1_macro 0.98884064
-#> 6               ece 0.03582430
+#> 6               ece 0.03582429
 #> 7             brier 0.02780312
 #> 8           roc_auc 0.99699074
 #> 9 average_precision 0.99643901
@@ -231,8 +231,8 @@ evaluate_graph_model(fit_ld, big)
 #> 3   precision_macro 0.99453552
 #> 4      recall_macro 0.99444444
 #> 5          f1_macro 0.99444406
-#> 6               ece 0.01418163
-#> 7             brier 0.01848901
+#> 6               ece 0.01418162
+#> 7             brier 0.01848900
 #> 8           roc_auc 0.99689815
 #> 9 average_precision 0.99662898
 ```

@@ -88,8 +88,14 @@ train_graph_model(
 
 - fanouts:
 
-  Neighbor sampling fanouts for node mini-batches. For a heterogeneous
-  node task they go to
+  Neighbor sampling fanouts for node mini-batches. For a homogeneous
+  graph the full graph is never moved to the device: batches are built
+  one at a time, and validation runs in batches on all neighbor
+  subgraphs of the validation nodes with as many hops as `fanouts`,
+  which equals full graph validation for layers that aggregate incoming
+  edges (all
+  [`gnn_model()`](https://adamrsophie.github.io/graphlearnR/reference/gnn_model.md)
+  architectures). For a heterogeneous node task they go to
   [`sample_hetero_neighbors()`](https://adamrsophie.github.io/graphlearnR/reference/sample_hetero_neighbors.md)
   (a vector applied to every relation, or a named list per relation),
   with training nodes of `target_type` as seeds; the loss uses the seeds
@@ -224,8 +230,8 @@ if (torch::torch_is_installed()) {
 }
 #>   .row node_id .pred_class .prob_Mr. Hi .prob_Officer
 #> 1    1       1      Mr. Hi    0.9745257    0.02547433
-#> 2    2       2      Mr. Hi    0.9680582    0.03194175
-#> 3    3       3      Mr. Hi    0.8855029    0.11449710
+#> 2    2       2      Mr. Hi    0.9680582    0.03194176
+#> 3    3       3      Mr. Hi    0.8855029    0.11449708
 #> 4    4       4      Mr. Hi    0.9868816    0.01311841
 #> 5    5       5      Mr. Hi    0.9835723    0.01642764
 #> 6    6       6      Mr. Hi    0.9881732    0.01182682

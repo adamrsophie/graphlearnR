@@ -305,11 +305,11 @@ updates.</p>
 <span><span class="co">#&gt; 3      3  0.4855788 0.8057086</span></span>
 <span><span class="co">#&gt; 4      4  0.4264535 0.8403753</span></span>
 <span><span class="co">#&gt; 5      5  0.3848646 0.8578963</span></span>
-<span><span class="co">#&gt; 6      6  0.3400035 0.8775309</span></span>
+<span><span class="co">#&gt; 6      6  0.3400036 0.8775309</span></span>
 <span><span class="co">#&gt; 7      7  0.3274034 0.8930765</span></span>
 <span><span class="co">#&gt; 8      8  0.3020271 0.8911210</span></span>
-<span><span class="co">#&gt; 9      9  0.2973747 0.8775111</span></span>
-<span><span class="co">#&gt; 10    10  0.2969317 0.8906667</span></span>
+<span><span class="co">#&gt; 9      9  0.2973747 0.8774914</span></span>
+<span><span class="co">#&gt; 10    10  0.2969318 0.8906667</span></span>
 <span><span class="va">fit_tgn</span><span class="op">$</span><span class="va">test_metrics</span></span>
 <span><span class="co">#&gt;           roc_auc average_precision </span></span>
 <span><span class="co">#&gt;         0.8712898         0.8767697</span></span></code></pre></div>
@@ -331,7 +331,7 @@ from earlier batches are visible, for the same reason as above.</p>
 <span><span class="va">fit_att</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tgn_model.html">train_tgn</a></span><span class="op">(</span><span class="va">tgn_att</span>, <span class="va">sp_t</span>, epochs <span class="op">=</span> <span class="fl">10</span>, batch_size <span class="op">=</span> <span class="fl">50</span>, lr <span class="op">=</span> <span class="fl">0.01</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">fit_att</span><span class="op">$</span><span class="va">test_metrics</span></span>
 <span><span class="co">#&gt;           roc_auc average_precision </span></span>
-<span><span class="co">#&gt;         0.8633703         0.8617635</span></span></code></pre></div>
+<span><span class="co">#&gt;         0.8633801         0.8615132</span></span></code></pre></div>
 <p>The implementation has one embedding layer (one hop) and keeps the
 most recent message per node; the paper’s other message aggregators are
 not included.</p>

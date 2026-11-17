@@ -148,9 +148,14 @@ or to <code><a href="node_loader.html">loader_batches()</a></code>.</p>
 layers together (with the weight of the first layer that kept an edge),
 so it works with any model in <code><a href="train_graph_model.html">train_graph_model()</a></code>; this is a common
 simplification of the layer by layer bipartite blocks of the paper.
-Models should read <code>edge_weight</code> (for example <code>gnn_model("sage")</code> or
-<code>gnn_model("graph")</code>; <code>gcn_conv</code> normalizes the weights again). Only the
-seeds carry <code>train_mask</code>, so the loss uses the seeds only.</p>
+The weights of the incoming edges of each target sum to one, so they
+already define a weighted mean: use a model that <strong>sums</strong> weighted
+messages, such as <code>gnn_model("graph_conv")</code>. A mean aggregator (the
+default of <code>"sage"</code>) divides by the sampled count a second time, and
+<code>gcn_conv</code> renormalizes the weights again. Validation and prediction run
+on the full graph with its own edge weights, so the operator seen in
+training approximates, but is not identical to, the one used there. Only
+the seeds carry <code>train_mask</code>, so the loss uses the seeds only.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>

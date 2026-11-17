@@ -68,9 +68,13 @@ S^\top A S,\$\$ the auxiliary link loss \\\lVert A - S S^\top \rVert_F /
 (B L^2)\\ and entropy loss \\\mathrm{mean}\_i(-\sum_c S\_{ic} \log
 S\_{ic})\\.
 
-`dense_graph_conv()` is \\W_1 \tilde A X + W_2 X\\ on dense batches,
-\\\tilde A\\ row normalized when `normalize = TRUE`; it is the GNN used
-on coarsened graphs.
+`dense_graph_conv()` is \\W_1 \tilde A X + W_2 X\\ on dense batches.
+With `normalize = TRUE`, as PyG's `DenseGraphConv(aggr = "mean")`, each
+row of \\A X\\ is divided by \\\max(d_i, 1)\\, \\d_i\\ the row sum of
+\\A\\. For 0/1 adjacency this is the mean over neighbors; rows whose
+weighted degree is below 1 (common on coarsened graphs) are not scaled
+up, so they keep the weighted sum. It is the GNN used on coarsened
+graphs.
 
 Memory is \\O(B L^2)\\, so these suit batches of small graphs.
 

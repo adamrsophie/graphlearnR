@@ -156,7 +156,10 @@ enters preprocessing.</p></li>
 <li><p><code>add_degree_features()</code>: append in degree (optionally log scaled) or
 one-hot degree columns to <code>x</code>.</p></li>
 <li><p><code>compose_transforms()</code>: chain transforms for <code><a href="graph_dataset.html">graph_dataset()</a></code>.</p></li>
-</ul></div>
+</ul><p>The edge level transforms (loops, coalescing, subgraphs, undirected
+conversion) reject a <code>graph_batch</code>, whose membership and offsets they
+would leave stale; transform the graphs before batching them.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

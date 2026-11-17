@@ -22,7 +22,8 @@ temporal_snapshots(tg, breaks = 10L, cumulative = FALSE)
 
 - graphs:
 
-  List of `graph_data` objects with equal `num_nodes`.
+  List of `graph_data` objects on the same nodes: equal `num_nodes` and
+  identical `node_ids` in the same order.
 
 - start, end:
 

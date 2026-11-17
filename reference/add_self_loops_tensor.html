@@ -101,7 +101,8 @@ adding self loops, as in Kipf and Welling (2017).</p>
 <span>  edge_weight <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  add_self_loops <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  improved <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  dtype <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  dtype <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  node_degree <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -147,6 +148,13 @@ edge feature of their incoming edges (zero if none).</p></dd>
 <dd><p>Floating point type of the weights (default float32); layers
 pass the dtype of their input so double precision models normalize in
 double precision.</p></dd>
+
+
+<dt id="arg-node-degree">node_degree<a class="anchor" aria-label="anchor" href="#arg-node-degree"></a></dt>
+<dd><p>Optional full graph degrees for a sampled subgraph, a
+list with tensors <code>degree</code> (weighted in degree) and <code>self_loop</code> (logical),
+as <code><a href="graph_tensors.html">graph_tensors()</a></code> builds from <code><a href="sample_neighbors.html">sample_neighbors()</a></code> output; it replaces
+the degrees computed from <code>edge_index</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

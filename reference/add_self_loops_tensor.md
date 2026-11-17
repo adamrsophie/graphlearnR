@@ -27,7 +27,8 @@ gcn_norm(
   edge_weight = NULL,
   add_self_loops = TRUE,
   improved = FALSE,
-  dtype = NULL
+  dtype = NULL,
+  node_degree = NULL
 )
 ```
 
@@ -72,6 +73,15 @@ gcn_norm(
   Floating point type of the weights (default float32); layers pass the
   dtype of their input so double precision models normalize in double
   precision.
+
+- node_degree:
+
+  Optional full graph degrees for a sampled subgraph, a list with
+  tensors `degree` (weighted in degree) and `self_loop` (logical), as
+  [`graph_tensors()`](https://adamrsophie.github.io/graphlearnR/reference/graph_tensors.md)
+  builds from
+  [`sample_neighbors()`](https://adamrsophie.github.io/graphlearnR/reference/sample_neighbors.md)
+  output; it replaces the degrees computed from `edge_index`.
 
 ## Value
 
