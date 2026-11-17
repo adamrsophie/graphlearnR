@@ -347,6 +347,9 @@ train_tgn <- function(model, split, epochs = 10L, batch_size = 200L, lr = 1e-3, 
     stopf("`split` periods overlap in time: each of train, val and test must start strictly after the previous one ends.")
   }
   if (model$edge_dim > 0L && is.null(split$train$edge_attr)) stopf("The model expects event features.")
+  if (!length(split$train$t)) {
+    stopf("`split$train` has no events (ties at the cut times can move whole timestamps to later periods); choose `val_time` and `test_time` explicitly.")
+  }
   epochs <- check_count(epochs, "epochs", 1L)
   batch_size <- check_count(batch_size, "batch_size", 1L)
   dev <- resolve_device(device)

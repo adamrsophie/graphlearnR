@@ -366,6 +366,17 @@ prep_labels <- function(y, classif, levels = NULL, what = "labels") {
   y
 }
 
+# Training needs at least one supervised example, and a classification
+# example needs a class; regression targets may be partly missing for the
+# masked losses.
+check_supervision <- function(y, mask, classif, what) {
+  if (!any(mask)) stopf("The training mask selects no %s.", what)
+  if (classif && anyNA(take_rows(y, which(mask)))) {
+    stopf("%d training %s have missing labels; remove them from the training mask.",
+          sum(is.na(take_rows(y, which(mask)))), what)
+  }
+}
+
 # ---- node tasks -------------------------------------------------------------
 
 node_task_runner <- function(model, data, task, dev, fanouts, batch_size, seed, target_type,
@@ -379,6 +390,7 @@ node_task_runner <- function(model, data, task, dev, fanouts, batch_size, seed, 
     stopf("Node tasks need `train_mask`; use split_nodes() first.")
   }
   data$y <- prep_labels(data$y, classif, what = "node labels")
+  check_supervision(data$y, data$train_mask, classif, "nodes")
   has_val <- !is.null(data$val_mask) && any(data$val_mask)
   metric_fn <- node_metric(classif)
   loader <- if (!is.null(fanouts)) {
@@ -535,6 +547,9 @@ graph_task_runner <- function(model, data, val_data, task, dev, batch_size, seed
   data <- as_graph_list(data)
   if (is.null(data[[1L]]$graph_y)) stopf("Graph tasks need `graph_y` on every graph.")
   levels <- if (classif) graph_label_levels(data)
+  if (classif && any(vapply(data, function(g) anyNA(g$graph_y), logical(1)))) {
+    stopf("Some training graphs have missing labels `graph_y`; remove them first.")
+  }
   # Class codes come from the levels of the whole training set, never from
   # the graphs that happen to share a mini-batch.
   prep <- function(b) {
@@ -634,6 +649,7 @@ edge_task_runner <- function(model, data, task, dev, decoder) {
   if (is.null(data$edge_y)) stopf("Edge tasks need `edge_y`.")
   if (is.null(data$edge_train_mask)) stopf("Edge tasks need edge masks; use split_edge_labels().")
   data$edge_y <- prep_labels(data$edge_y, classif, what = "edge labels")
+  check_supervision(data$edge_y, data$edge_train_mask, classif, "edges")
   tt <- graph_tensors(data, dev)
   levels <- if (classif) levels(data$edge_y)
   if (is.null(decoder)) {

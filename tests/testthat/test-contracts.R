@@ -1112,3 +1112,15 @@ test_that("regression metrics skip missing targets", {
   expect_equal(metric_rmse(c(1, NA, 3), c(2, 5, 3)), sqrt(0.5))
   expect_error(metric_mse(c(1, 2), c(1, NA)), "missing")
 })
+
+test_that("training rejects empty supervision and missing classes", {
+  skip_if_no_torch()
+  g <- graph_data(x = diag(3), edge_index = rbind(1:2, 2:3), y = factor(c("a", "b", NA)),
+                  train_mask = c(FALSE, FALSE, FALSE))
+  m <- gnn_model("graph_conv", 3, 2, 2, num_layers = 1)
+  expect_error(train_graph_model(m, g, epochs = 1), "selects no nodes")
+  g$train_mask <- c(TRUE, TRUE, TRUE)
+  expect_error(train_graph_model(m, g, epochs = 1), "missing labels")
+  tg <- temporal_graph_data(c(1, 2, 3), c(2, 3, 1), c(1, 1, 1))
+  expect_error(train_tgn(tgn_model(3, 4, 2, 4), split_temporal(tg), epochs = 1), "no events")
+})

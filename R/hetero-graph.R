@@ -977,6 +977,7 @@ hetero_node_runner <- function(model, hg, classif, dev, target_type, fanouts = N
     stopf("Node type `%s` needs `y` and `train_mask`.", target_type)
   }
   hg$nodes[[target_type]]$y <- prep_labels(nd$y, classif, what = "node labels")
+  check_supervision(hg$nodes[[target_type]]$y, nd$train_mask, classif, "nodes")
   nd <- hg$nodes[[target_type]]
   ht <- hetero_tensors(hg, dev)
   y <- ht$y[[target_type]]
